@@ -50,13 +50,13 @@ class ModelSelector():
             search_space = {
                 'grid_size': [5],
                 'spline_order': [3],
-                'lr': [0.001, 0.005, 0.01],
+                'lr': [0.001],
                 'batch': [32],
                 'lamb': [0.0001, 0.001, 0.01] if self.input_noise else [0.],
                 'mu_1': [0.1, 0.5, 1.] if self.input_noise else [1.],
                 'mu_2': [0.1, 0.5, 1.] if self.input_noise else [1.],
-                'aggr_first': [True, False],
-                'norm': [True, False]
+                'aggr_first': [False],
+                'norm': [False]
             }
             sampler = GridSampler(search_space)
             study = optuna.create_study(direction='minimize', sampler=sampler)

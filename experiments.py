@@ -23,4 +23,4 @@ def _run(config, noise_level=None, n_trials=10, method='grid_search'):
 
 
 if __name__ == '__main__':
-    run('./configs/config_epidemics.yml')
+    run('./configs/config_neuronal.yml')
