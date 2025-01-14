@@ -3,8 +3,8 @@ PYTORCH_VERSION=2.3.1
 TORCH_GEOMETRIC_VERSION=2.3.1
 
 echo "Creating environment"
-$PYTHON_VERSION -m venv .venv/gkan-ode
-source .venv/gkan-ode/bin/activate
+$PYTHON_VERSION -m venv .venv/gkanconv-ode
+source .venv/gkanconv-ode/bin/activate
 
 echo "Environment created and activated"
 
