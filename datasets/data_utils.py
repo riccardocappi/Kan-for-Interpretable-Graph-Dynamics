@@ -1,5 +1,5 @@
 import numpy as np
-from .dynamics import Model_Biochemical, Model_Epidemics, Model_Neuronal
+from .dynamics import Model_Biochemical, Model_Epidemics, Model_Neuronal, Model_Kuramoto
 
 
 def sample_with_minimum_distance(n, k, d, rng):
@@ -38,6 +38,8 @@ def numerical_integration(G, dynamics, initial_state, time_steps, epsilon, **kwa
         xx = euler_method(Model_Epidemics, initial_state, time_steps, epsilon, G, **kwargs)
     elif dynamics == 'Neuronal':
         xx = euler_method(Model_Neuronal, initial_state, time_steps, epsilon, G, **kwargs)
+    elif dynamics == 'Kuramoto':
+        xx = euler_method(Model_Kuramoto, initial_state, time_steps, epsilon, G, **kwargs)
     else:
         raise Exception('Not supported dynamics!')
     

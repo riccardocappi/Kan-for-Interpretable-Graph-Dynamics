@@ -50,4 +50,21 @@ def Model_Neuronal(xx, t, G, B = 1., C = 1., R = 1.):
 
         dxdt.append(m_0 + m_1*m_2 )
     return np.array(dxdt)
+
+
+def Model_Kuramoto(xx, t, G, w_i, R=1.):
+    dxdt = []
+    node_to_index = node_mapping(G)
+    
+    for node in G.nodes():
+        i = node_to_index[node]
+        degree_i = len(list(G.neighbors(node)))
+        interaction_sum = sum(
+            np.sin(xx[node_to_index[neighbor]] - xx[i]) for neighbor in G.neighbors(node)
+        )
+        
+        dxdt.append(w_i[i] + (R / degree_i) * interaction_sum)
+        
+    return np.array(dxdt)  
+
     

@@ -1,0 +1,26 @@
+root: './data'
+name: 'neuronal'
+dynamics: 'Neuronal'
+model_name: 'model-neuronal'
+epochs: 200
+patience: 30
+opt: 'Adam'
+log: 10 
+hidden_layers: [1,1]
+vmin: -3
+vmax: 3
+time_steps: 500
+num_samples: 500
+step_size: 0.001
+min_sample_distance: 1
+seed: 42
+regular_samples: true
+add_noise_target: false
+noise_strengths: []
+add_noise_input: false
+in_noise_dim: 0
+device: 'cuda'
+integration_kwargs:
+  B: 1.
+  C: 1.
+  R: 1.
