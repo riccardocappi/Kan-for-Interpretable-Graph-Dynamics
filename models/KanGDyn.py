@@ -1,4 +1,3 @@
-import torch
 from .KAN import KAN
 from torch_geometric.nn import MessagePassing
 

@@ -14,7 +14,7 @@ class GraphConv(MessagePassing):
         if self.norm:
             norm, edge_index = self.get_norm(edge_index, x, self.norm_type)
         else:
-            norm = torch.ones(edge_index.shape[1])
+            norm = torch.ones(edge_index.shape[1], device=x.device)
         aggr = self.propagate(edge_index, x=x, norm=norm)
         return aggr
     
