@@ -71,10 +71,7 @@ def get_temporal_data_loader(dataset, device, batch_size):
 
 @torch.no_grad()
 def get_acts(model, dummy_x = None):
-    store_act = model.store_act
-    model.store_act = True
     _ = model.forward(dummy_x)
-    model.store_act = store_act
     
 
 def plot(folder_path, layers, show_plots=False):
@@ -109,7 +106,7 @@ def get_conf(config, noise_strength, rng):
         'time_steps': config.get('time_steps', 1000),
         'num_samples': config.get('num_samples', 1000),
         'step_size': config.get('step_size', 0.01),
-        'initializer': config.get('initializer', lambda N: np.random.random(N)),
+        'input_range': config.get('input_range', None),
         'min_sample_distance': config.get('min_sample_distance', 1),
         'rng': rng,
         'regular_samples': config.get('regular_samples', True),

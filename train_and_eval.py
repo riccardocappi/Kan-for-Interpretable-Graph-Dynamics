@@ -183,6 +183,7 @@ def train_and_eval(hidden_layers, model_path, aggregate_first, input_range, aggr
        
     if eval_model:
         # Obtains a samples from the training set by sampling graph snapshots at different time-steps
+        model.store_act = True
         dummy_x = sample_temporal_graph(train_dataset, device=device, sample_size=sample_size)
         get_acts(model, dummy_x)
         

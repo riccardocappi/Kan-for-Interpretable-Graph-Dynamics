@@ -19,7 +19,6 @@ class GraphDynamics(InMemoryDataset):
                 time_steps: int = 1000,
                 num_samples: int = 1000,
                 step_size = 0.01,
-                initializer: Callable = lambda N: np.random.random(N),
                 min_sample_distance: int = 1,
                 name_suffix: str = '',
                 rng: Optional[Generator] = None,
@@ -28,6 +27,7 @@ class GraphDynamics(InMemoryDataset):
                 noise_strength:float = 0.01,
                 add_noise_input:bool = False,
                 in_noise_dim: int = 1,
+                input_range=None,
                 **kwargs # Additional arguments passed to numerical_integration function
                 ):
                 
@@ -39,7 +39,7 @@ class GraphDynamics(InMemoryDataset):
         self.G = graph
         self.time_steps = time_steps
         self.num_samples = num_samples
-        self.initializer = initializer
+        self.input_range = input_range
         self.min_sample_distance = min_sample_distance
         self.rng = rng if rng is not None else default_rng()
 
@@ -70,7 +70,9 @@ class GraphDynamics(InMemoryDataset):
     
     def process(self):
         N = self.G.number_of_nodes()
-        initial_state = self.initializer(N)
+        initial_state = self.rng.uniform(0,1,N) if self.input_range is None else self.rng.uniform(self.input_range[0],
+                                                                                                  self.input_range[1],
+                                                                                                  N)
         assert len(initial_state) == N
         
         xs = numerical_integration(self.G, self.dynamics, initial_state, self.time_steps, self.step_size, **self.kwargs)

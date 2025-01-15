@@ -28,17 +28,16 @@ class ModelSelector():
             assert torch.cuda.is_available()
             
         conf = get_conf(config, noise_level, rng)
-        
-        
         self.train_dataset, self.valid_dataset, self.test_dataset = create_datasets(conf, root=root, name=name, graph=G)
-        self.model_path = f'./saved_models_optuna/{config["model_name"]}' + name_suffix
         self.epochs = config["epochs"]
         self.patience = config["patience"]
         self.opt = config["opt"]
         self.log = config["log"]
         self.input_noise = config["add_noise_input"]
-        self.hidden_layers = config['hidden_layers']
+        self.model_path = f'./saved_models_optuna/{config["model_name"]}' + name_suffix
         
+        # Model hyper-params
+        self.hidden_layers = config['hidden_layers']
         self.input_range = [config["vmin"], config["vmax"]]
         self.epsilon = config["step_size"]
         
@@ -70,9 +69,7 @@ class ModelSelector():
         
         
     def objective(self, trial):
-        
-        # TODO: Handle use_orig_reg param
-             
+            
         grid_size = trial.suggest_int('grid_size', 3, 10)
         spline_order = trial.suggest_int('spline_order', 1, 4)
         

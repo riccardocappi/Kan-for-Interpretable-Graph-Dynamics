@@ -1,26 +1,23 @@
 root: './data'
-name: 'neuronal'
-dynamics: 'Neuronal'
-model_name: 'model-neuronal'
+name: 'kuramoto'
+dynamics: 'Kuramoto'
+model_name: 'model-kuramoto'
 epochs: 200
 patience: 30
 opt: 'Adam'
 log: 10 
-hidden_layers: [1,1]
-vmin: -3
-vmax: 3
-time_steps: 500
-num_samples: 500
+time_steps: 1000
+num_samples: 1000
 step_size: 0.001
 min_sample_distance: 1
-seed: 42
+seed: 0
 regular_samples: true
 add_noise_target: false
 noise_strengths: []
 add_noise_input: false
 in_noise_dim: 0
-device: 'cpu'
+device: 'cuda'
+input_range: [0, 1]
 integration_kwargs:
-  B: 1.
-  C: 1.
+  w: 0.5
   R: 1.
