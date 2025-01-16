@@ -17,9 +17,9 @@ noise_strengths: []
 add_noise_input: false
 in_noise_dim: 0
 device: 'cuda'
-input_range: [-1, 1]
+input_range: [0, 1]
 reg_loss: true
-vmin: 0
+vmin: -1
 vmax: 1
 g_hidden_layers: [2,1,1]
 h_hidden_layers: [2,1]
