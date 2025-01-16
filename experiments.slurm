@@ -39,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python experiment_kuramoto.py
+python experiments.py

@@ -1,11 +1,8 @@
 import torch
-from utils.utils import sample_temporal_graph, get_temporal_data_loader, save_logs, get_acts, plot, save_acts
-from models.GKanConv_ODE import GKanConv_ODE
+from utils.utils import get_temporal_data_loader, save_logs
 import os
 from torch.optim import LBFGS
 import json
-
-
 
 
 def eval_model(model, loader, criterion):
@@ -152,52 +149,4 @@ def fit(model, train_dataset, val_dataset, test_dataset, seed=42, epochs=50, pat
         # print(log_message)
         save_logs(logs_file_path, log_message)
     return results
-
-
-
-def train_and_eval(hidden_layers, model_path, aggregate_first, input_range, aggr, norm, epsilon, device, gconv_norm, 
-                   grid_size, spline_order, train_dataset, valid_dataset, test_dataset, batch, epochs, lr, 
-                   opt, log, patience, lamb, mu_1, mu_2, eval_model, criterion=torch.nn.L1Loss(), 
-                   use_orig_reg=False, sample_size=32, show_plots=False, store_acts=False, update_grid=False):
-        
-    model = GKanConv_ODE(
-        hidden_layers,
-        grid_size=grid_size,
-        spline_order=spline_order,
-        grid_range=[input_range[0], input_range[1]],
-        aggregate_first=aggregate_first,
-        model_path=model_path,
-        aggr=aggr,
-        norm=norm,
-        epsilon=epsilon,
-        store_act=store_acts,
-        gconv_norm=gconv_norm,
-        device=device
-    )
-    
-    results = fit(model, train_dataset, valid_dataset, test_dataset, batch_size=batch, epochs=epochs, 
-                  criterion=criterion, lr=lr, opt = opt, log=log, patience=patience, lamb=lamb, 
-                  use_orig_reg=use_orig_reg, save_updates=eval_model, mu_1=mu_1, mu_2=mu_2, update_grid=update_grid)
-    
-    best_val_loss = min(results['validation_loss'])
-       
-    if eval_model:
-        # Obtains a samples from the training set by sampling graph snapshots at different time-steps
-        model.store_act = True
-        dummy_x = sample_temporal_graph(train_dataset, device=device, sample_size=sample_size)
-        get_acts(model, dummy_x)
-        
-        folder_kan_layers = f"{model.model_path}/kan_layers"
-        folder_kan_convs = f"{model.model_path}/kan_convs"
-        
-        plot(f'{folder_kan_layers}/figures', [l.kan_layer for l in model.layers], show_plots)       
-        plot(f'{folder_kan_convs}/figures', [l.kan_conv for l in model.layers], show_plots)
-        
-        save_acts([l.kan_layer for l in model.layers], f'{folder_kan_layers}/cached_acts')
-        save_acts([l.kan_conv for l in model.layers], f'{folder_kan_convs}/cached_acts')
-        
-        torch.save(dummy_x, f"{model.model_path}/sample")
-         
-    
-    return best_val_loss
 
