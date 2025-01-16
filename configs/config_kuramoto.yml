@@ -17,7 +17,7 @@ noise_strengths: []
 add_noise_input: false
 in_noise_dim: 0
 device: 'cuda'
-input_range: [0, 1]
+input_range: [-1, 1]
 reg_loss: true
 vmin: 0
 vmax: 1
