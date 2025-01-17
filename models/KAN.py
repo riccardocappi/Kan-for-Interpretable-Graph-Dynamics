@@ -70,7 +70,7 @@ class KAN(torch.nn.Module):
 
 
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor, update_grid=False):
         '''
         KAN forward pass
         '''
@@ -78,6 +78,9 @@ class KAN(torch.nn.Module):
             self.cache_data = x.detach()
         
         for layer in self.layers:
+            if update_grid:
+                layer.update_grid(x)
+                
             x = layer(x, self.store_act)
         return x
 

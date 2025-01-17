@@ -41,9 +41,6 @@ def fit(model, train_dataset, val_dataset, test_dataset, seed=42, epochs=50, pat
     val_loader = get_temporal_data_loader(val_dataset, model.device, batch_size_val)
     test_loader = get_temporal_data_loader(test_dataset, model.device, batch_size_val)
     
-    # if update_grid:
-    #    update_grid_from_samples(model, train_dataset, 32)
-    
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
@@ -68,14 +65,15 @@ def fit(model, train_dataset, val_dataset, test_dataset, seed=42, epochs=50, pat
         'entropy': []
     }
         
-    global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy
+    global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy, upd_grid
     
     def training():
-        global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy
+        global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy, upd_grid
         optimizer.zero_grad()
         y_pred, y_true = [], []
         for snapshot in batch:
-            out_tr = model.forward(snapshot)
+            out_tr = model.forward(snapshot, update_grid=upd_grid)
+            upd_grid = False
             y_pred.append(out_tr)
             y_true.append(snapshot.y)
         
@@ -103,6 +101,7 @@ def fit(model, train_dataset, val_dataset, test_dataset, seed=42, epochs=50, pat
         running_l1 = 0.
         running_entropy = 0.
         count = 0
+        upd_grid = update_grid and ((epoch +1) % 10 == 0)
         for batch in train_loader:
             if opt == 'Adam':
                 _ = training()

@@ -1,5 +1,5 @@
 root: './data'
-name: 'kuramoto-0-2pi'
+name: 'kuramoto'
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-grid'
 epochs: 200
@@ -16,7 +16,7 @@ add_noise_target: false
 noise_strengths: []
 add_noise_input: false
 in_noise_dim: 0
-device: 'cuda'
+device: 'cpu'
 input_range: [0, 6.28318530718]
 reg_loss: true
 vmin: -5
