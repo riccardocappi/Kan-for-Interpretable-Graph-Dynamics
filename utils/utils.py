@@ -65,7 +65,7 @@ def load_config(config_path='config.yml'):
 
 def get_temporal_data_loader(dataset, device, batch_size):
     collate_fn = lambda batch, dev: [snapshot.to(dev) for snapshot in batch]
-    loader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: collate_fn(x, device), shuffle=False)
+    loader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: collate_fn(x, device), shuffle=True)
     return loader
 
 
@@ -124,13 +124,13 @@ def create_datasets(conf, root, name, graph):
     conf['graph'] = graph
     conf['root'] = root
     conf['name'] = name
-    
     conf['name_suffix'] = 'train'
+    conf['n_iters'] = 3
+    
     train_dataset = GraphDynamics(**conf)
     
     conf['name_suffix'] = 'valid'
-    conf['time_steps'] //= 2
-    conf['num_samples'] //= 2
+    conf['n_iters'] = 1
     valid_dataset = GraphDynamics(**conf)
     
     conf['name_suffix'] = 'test'

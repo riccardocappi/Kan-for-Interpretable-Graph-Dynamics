@@ -18,8 +18,8 @@ def run(config_path, n_trials=10, method='grid_search'):
     
 def _run(config, noise_level=None, n_trials=10, method='grid_search'):
     
-    # G = nx.grid_2d_graph(7, 10) # TODO: Change graph
-    G = nx.complete_graph(10)
+    G = nx.grid_2d_graph(7, 10)
+    # G = nx.complete_graph(10)
     model_selector = ModelSelector(config=config, G=G, noise_level=noise_level, n_trials=n_trials, method=method)
     best_params = model_selector.optimize()
     

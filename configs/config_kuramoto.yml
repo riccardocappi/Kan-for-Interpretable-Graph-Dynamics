@@ -1,13 +1,13 @@
 root: './data'
-name: 'kuramoto'
+name: 'kuramoto-0-2pi'
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto'
+model_name: 'model-kuramoto-grid'
 epochs: 200
 patience: 30
 opt: 'Adam'
 log: 10 
-time_steps: 1000
-num_samples: 1000
+time_steps: 400
+num_samples: 400
 step_size: 0.001
 min_sample_distance: 1
 seed: 0
@@ -17,12 +17,12 @@ noise_strengths: []
 add_noise_input: false
 in_noise_dim: 0
 device: 'cuda'
-input_range: [0, 1]
+input_range: [0, 6.28318530718]
 reg_loss: true
-vmin: -1
-vmax: 1
+vmin: -5
+vmax: 5
 g_hidden_layers: [2,1,1]
 h_hidden_layers: [2,1]
 integration_kwargs:
-  w: 0.5
+  w: 2.
   R: 1.
