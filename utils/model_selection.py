@@ -54,13 +54,13 @@ class ModelSelector():
         # Maybe get search_space from config
         if self.method == 'grid_search':
             search_space = {
-                'grid_size': [5, 7],
+                'grid_size': [7],
                 'spline_order': [3],
-                'lr': [0.01, 0.005],
-                'lamb': [0., 0.0001, 0.001] if self.use_reg_loss else [0.],
+                'lr': [0.005],
+                'lamb': [0.001] if self.use_reg_loss else [0.],
                 'mu_1': [1.] if self.use_reg_loss else [1.],
                 'mu_2': [1.] if self.use_reg_loss else [1.],
-                'use_orig_reg': [True, False]
+                'use_orig_reg': [True]
             }
             sampler = GridSampler(search_space)
             study = optuna.create_study(direction='minimize', sampler=sampler)
@@ -89,7 +89,7 @@ class ModelSelector():
         
         lr = trial.suggest_float('lr', 0.001, 0.01, log=True)
         
-        lamb = trial.suggest_float('lamb', 0., 0.01, log=True) if self.use_reg_loss else 0. 
+        lamb = trial.suggest_float('lamb', 0., 0.01) if self.use_reg_loss else 0. 
         mu_1 = trial.suggest_float('mu_1', 0.1, 1., log=True) if self.use_reg_loss else 1.
         mu_2 = trial.suggest_float('mu_2', 0.1, 1., log=True) if self.use_reg_loss else 1.
         

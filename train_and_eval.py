@@ -54,7 +54,7 @@ def fit(model:NetWrapper,
         raise Exception('Optimizer not implemented yet!')
     
 
-    logs_folder = f'{model.model_path}/logs'
+    logs_folder = f'{model.model.model_path}/logs'
     if not os.path.exists(logs_folder):
         os.makedirs(logs_folder)
     logs_file_path = f'{logs_folder}/{log_file_name}'
@@ -125,7 +125,7 @@ def fit(model:NetWrapper,
     
     if save_updates:
         torch.save(best_model_state, f'{model.model.model_path}/best_state_dict.pth')
-        with open(f"{model.model_path}/results.json", "w") as outfile: 
+        with open(f"{model.model.model_path}/results.json", "w") as outfile: 
             json.dump(results, outfile)
         
         test_loss = eval_model(model, test_data, t_test, criterion)

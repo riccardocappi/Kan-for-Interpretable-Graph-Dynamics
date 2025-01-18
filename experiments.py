@@ -1,4 +1,4 @@
-from utils.utils import load_config, get_acts, save_acts, plot, sample_temporal_graph
+from utils.utils import load_config, save_acts, plot
 from utils.model_selection import ModelSelector
 import networkx as nx
 import torch
