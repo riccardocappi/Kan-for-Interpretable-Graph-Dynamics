@@ -1,13 +1,10 @@
 import torch
-from torch_geometric.data import Data
 import yaml
-
-from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import os 
 import numpy as np
+from datasets.data_utils import numerical_integration
 
-from datasets.dynamical_datasets import GraphDynamics
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -18,43 +15,7 @@ def save_logs(file_name, log_message, save_updates=True):
         print(log_message)
         with open(file_name, 'a') as logs:
             logs.write('\n'+log_message)
-            
 
-            
-def sample_temporal_graph(dataset, device='cpu', sample_size=32):
-    '''
-    Returns a sample from the given time-series consisting of graph snapshots at different time steps.
-    '''
-    interval = len(dataset) // sample_size
-    sampled_indices = torch.tensor([i * interval for i in range(sample_size)])
-
-    data_samples = dataset[sampled_indices]
-    num_nodes = data_samples[0].x.shape[0]  # Number of nodes in each graph
-
-    samples = [d.x for d in data_samples]
-    ys = [d.y for d in data_samples]
-    
-    concatenated_x = torch.cat(samples, dim=0)  # Shape: (sample_size * num_nodes, in_dim)
-    concatenated_ys = torch.cat(ys, dim=0)
-
-    all_edges = []
-    for i, d in enumerate(data_samples):
-        offset = i * num_nodes
-        edge_index = d.edge_index + offset
-        all_edges.append(edge_index)
-
-    concatenated_edge_index = torch.cat(all_edges, dim=1)
-
-    dummy_x = Data(
-        edge_index=concatenated_edge_index,
-        x=concatenated_x,
-        y = concatenated_ys,
-        delta_t=1
-    )
-
-    dummy_x = dummy_x.to(device)
-    
-    return dummy_x
 
 
 def load_config(config_path='config.yml'):
@@ -63,16 +24,6 @@ def load_config(config_path='config.yml'):
     return config
 
 
-def get_temporal_data_loader(dataset, device, batch_size):
-    collate_fn = lambda batch, dev: [snapshot.to(dev) for snapshot in batch]
-    loader = DataLoader(dataset, batch_size=batch_size, collate_fn=lambda x: collate_fn(x, device), shuffle=True)
-    return loader
-
-
-@torch.no_grad()
-def get_acts(model, dummy_x = None):
-    _ = model.forward(dummy_x)
-    
 
 def plot(folder_path, layers, show_plots=False):
     '''
@@ -98,46 +49,42 @@ def plot(folder_path, layers, show_plots=False):
                     plt.show()
                 plt.clf()
                 
-                
 
-def get_conf(config, noise_strength, rng):
-    conf = {
-        'dynamics': config['dynamics'],
-        'time_steps': config.get('time_steps', 1000),
-        'num_samples': config.get('num_samples', 1000),
-        'step_size': config.get('step_size', 0.01),
-        'input_range': config.get('input_range', None),
-        'min_sample_distance': config.get('min_sample_distance', 1),
-        'rng': rng,
-        'regular_samples': config.get('regular_samples', True),
-        'add_noise_target': config.get('add_noise_target', False),
-        'noise_strength': noise_strength,
-        'add_noise_input': config.get('add_noise_input', False),
-        'in_noise_dim': config.get('in_noise_dim', 1),
+
+def integrate(config, graph):
+    seed = config['seed']
+    rng = np.random.default_rng(seed=seed)
+    N = graph.number_of_nodes()
+    input_range = config['input_range']
+    t_span = config['t_span']
+    y0 = rng.uniform(input_range[0], input_range[1], N)
+    t_eval_steps = config['t_eval_steps']
+    dynamics = config['dynamics']
+    
+    xs, t = numerical_integration(
+        G=graph,
+        dynamics=dynamics,
+        initial_state=y0,
+        time_span=t_span,
+        t_eval_steps=t_eval_steps,
         **config.get('integration_kwargs', {})
-    }
-    
-    return conf
+    )
+    xs = np.transpose(xs)
+    return torch.from_numpy(xs).float().unsqueeze(2), torch.from_numpy(t).float()
 
 
-def create_datasets(conf, root, name, graph):
-    conf['graph'] = graph
-    conf['root'] = root
-    conf['name'] = name
-    conf['name_suffix'] = 'train'
-    conf['n_iters'] = 3
-    
-    train_dataset = GraphDynamics(**conf)
-    
-    conf['name_suffix'] = 'valid'
-    conf['n_iters'] = 1
-    valid_dataset = GraphDynamics(**conf)
-    
-    conf['name_suffix'] = 'test'
-    test_dataset = GraphDynamics(**conf)
-    
-    return train_dataset, valid_dataset, test_dataset
 
+def create_datasets(config, graph):
+    train_data, t_train = integrate(config, graph)
+    
+    config['t_eval_steps'] //= 2
+
+    valid_data, t_valid = integrate(config, graph)
+    test_data, t_test = integrate(config, graph)
+    
+    return train_data, t_train, valid_data, t_valid, test_data, t_test
+    
+    
 
 def save_acts(layers, folder_path):
     if not os.path.exists(folder_path):
@@ -146,8 +93,4 @@ def save_acts(layers, folder_path):
     for l, layer in enumerate(layers):
         assert layer.cache_act is not None and layer.cache_preact is not None, 'Populate model activations before saving them'
         torch.save(layer.cache_preact, f"{folder_path}/cache_preact_{l}")
-        torch.save(layer.cache_act, f"{folder_path}/cache_act_{l}")
-    
-    
-    
-    
+        torch.save(layer.cache_act, f"{folder_path}/cache_act_{l}")  

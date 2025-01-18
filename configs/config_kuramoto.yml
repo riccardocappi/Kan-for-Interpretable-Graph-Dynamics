@@ -1,21 +1,13 @@
-root: './data'
-name: 'kuramoto'
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-grid'
-epochs: 200
-patience: 30
+epochs: 500
+patience: 100
 opt: 'Adam'
 log: 10 
-time_steps: 400
-num_samples: 400
-step_size: 0.001
-min_sample_distance: 1
+t_span: [0,1]
+t_eval_steps: 150
 seed: 0
-regular_samples: true
-add_noise_target: false
 noise_strengths: []
-add_noise_input: false
-in_noise_dim: 0
 device: 'cpu'
 input_range: [0, 6.28318530718]
 reg_loss: true

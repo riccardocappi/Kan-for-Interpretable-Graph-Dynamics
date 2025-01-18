@@ -15,3 +15,4 @@ pip install "numpy<2"
 pip install matplotlib
 pip install numgraph
 pip install optuna
+pip install torchdiffeq

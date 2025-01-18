@@ -1,47 +1,90 @@
 import numpy as np
-from .dynamics import Model_Biochemical, Model_Epidemics, Model_Neuronal, Model_Kuramoto
+from scipy.integrate import solve_ivp
 
+import numpy as np
+# import networkx as nx
 
-def sample_with_minimum_distance(n, k, d, rng):
+node_mapping = lambda G: {node: idx for idx, node in enumerate(G.nodes)}
+
+def Model_Biochemical(t, xx, G, F = 1., B = 1., R = 1.):
     """
-    Sample of k elements from range(n), with a minimum distance d.
+    m_0 = "F-B*xx[i]"
+    m_1 = "xx[i]"
+    m_2 = "R*xx[j]"
     """
+    dxdt = np.zeros_like(xx)
+    node_to_index = node_mapping(G)
 
-    sample = list(range(n-(k-1)*(d-1)))
-    rng.shuffle(sample)
-    sample = sample[:k]
-
-    def ranks(sample):
-        """
-        Return the ranks of each element in an integer sample.
-        """
-        indices = sorted(range(len(sample)), key=lambda i: sample[i])
-        return sorted(indices, key=lambda i: indices[i])
-
-    return sorted([s + (d-1)*r for s, r in zip(sample, ranks(sample))])
-
+    for node in G.nodes():
+        i = node_to_index[node]
+        m_0 = F - B * xx[i]
+        m_1 = - R * xx[i]
+        m_2 = sum([xx[node_to_index[neighbor]] for neighbor in G.neighbors(node)])
+        dxdt[i] = m_0 + m_1*m_2
+        
+        
+    return dxdt
 
 
-def euler_method(func, initial_state, time_steps, epsilon, G, **kwargs):
-    xx = np.zeros((time_steps, len(initial_state)))
-    xx[0] = initial_state
-    for i in range(1, time_steps):
-        dxdt = func(xx[i-1], i-1, G, **kwargs)
-        xx[i] = xx[i-1] + epsilon * dxdt
-    return xx
+def Model_Epidemics(t, xx, G, B = 1., R = 1.):
+    
+    dxdt = np.zeros_like(xx)
+    node_to_index = node_mapping(G)
+    
+    for node in G.nodes():
+        i = node_to_index[node]
+        m_0 = -B * xx[i]
+        m_1 = R * (1-xx[i])
+        m_2 = sum([xx[node_to_index[neighbor]] for neighbor in G.neighbors(node)])
+        dxdt[i] = m_0 + m_1*m_2
+        
+    return dxdt
 
 
-def numerical_integration(G, dynamics, initial_state, time_steps, epsilon, **kwargs):
+def Model_Neuronal(t, xx, G, B = 1., C = 1., R = 1.):
+    tan_xx = np.tanh(xx)
+    dxdt = np.zeros_like(xx)
+    node_to_index = node_mapping(G)
+        
+    for node in G.nodes():
+        i = node_to_index[node]
+        m_0 = -B * xx[i] + C * tan_xx[i]
+        m_1 = R
+        m_2 = sum([tan_xx[node_to_index[neighbor]] for neighbor in G.neighbors(node)])
+
+        dxdt[i] = m_0 + m_1*m_2
+    return dxdt
+
+
+def Model_Kuramoto(t, xx, G, w=0., R=1.):
+    dxdt = np.zeros_like(xx)
+    node_to_index = node_mapping(G)
+    
+    for node in G.nodes():
+        i = node_to_index[node]
+        degree_i = len(list(G.neighbors(node)))
+        interaction_sum = sum(
+            [np.sin(xx[node_to_index[neighbor]] - xx[i]) for neighbor in G.neighbors(node)]
+        )
+        dxdt[i] = w + R * interaction_sum
+        
+    return dxdt  
+
+
+
+def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=100, **kwargs):
     if dynamics == 'Biochemical':
-        xx = euler_method(Model_Biochemical, initial_state, time_steps, epsilon, G, **kwargs)
+        model = lambda t, xx: Model_Biochemical(t, xx, G, **kwargs)
     elif dynamics == 'Epidemics':
-        xx = euler_method(Model_Epidemics, initial_state, time_steps, epsilon, G, **kwargs)
+        model = lambda t, xx: Model_Epidemics(t, xx, G, **kwargs)
     elif dynamics == 'Neuronal':
-        xx = euler_method(Model_Neuronal, initial_state, time_steps, epsilon, G, **kwargs)
+        model = lambda t, xx: Model_Neuronal(t, xx, G, **kwargs)
     elif dynamics == 'Kuramoto':
-        xx = euler_method(Model_Kuramoto, initial_state, time_steps, epsilon, G, **kwargs)
+        model = lambda t, xx: Model_Kuramoto(t, xx, G, **kwargs)
     else:
         raise Exception('Not supported dynamics!')
-    
-    return xx
+
+    result = solve_ivp(model, time_span, initial_state, method='RK45', t_eval=np.linspace(time_span[0], time_span[1], t_eval_steps))
+
+    return result.y, result.t
     

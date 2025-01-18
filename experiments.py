@@ -20,23 +20,29 @@ def _run(config, noise_level=None, n_trials=10, method='grid_search'):
     
     G = nx.grid_2d_graph(7, 10)
     # G = nx.complete_graph(10)
+    
     model_selector = ModelSelector(config=config, G=G, noise_level=noise_level, n_trials=n_trials, method=method)
     best_params = model_selector.optimize()
     
     model = model_selector.eval_model(best_params=best_params)
     
-    dummy_x = sample_temporal_graph(model_selector.train_dataset, device=model.device, sample_size=32)
-    model.h_net.store_act = True
-    model.g_net.store_act = True
-    get_acts(model, dummy_x)
+    net = model.model
+
+    net.h_net.store_act = True
+    net.g_net.store_act = True
     
-    plot(folder_path=f'{model.h_net.model_path}/figures', layers=model.h_net.layers, show_plots=False)
-    plot(folder_path=f'{model.g_net.model_path}/figures', layers=model.g_net.layers, show_plots=False)
-    
-    save_acts(layers=model.h_net.layers, folder_path=f'{model.h_net.model_path}/cached_acts')
-    save_acts(layers=model.g_net.layers, folder_path=f'{model.g_net.model_path}/cached_acts')
-    
-    torch.save(dummy_x, f"{model.model_path}/sample")
+    ### TODO: Implement a better way to store activations
+    y0 = model_selector.train_data[0]
+    edge_index = model_selector.edge_index
+    with torch.no_grad():
+        _ = net(y0, edge_index)
+    ###
+
+    plot(folder_path=f'{net.h_net.model_path}/figures', layers=net.h_net.layers, show_plots=False)
+    plot(folder_path=f'{net.g_net.model_path}/figures', layers=net.g_net.layers, show_plots=False)
+
+    save_acts(layers=net.h_net.layers, folder_path=f'{net.h_net.model_path}/cached_acts')
+    save_acts(layers=net.g_net.layers, folder_path=f'{net.g_net.model_path}/cached_acts')
     
 
 

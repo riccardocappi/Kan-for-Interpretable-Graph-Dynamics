@@ -13,7 +13,6 @@ class KanGDyn(MessagePassing):
                  model_path = './model',
                  store_acts = False,
                  scale_and_bias = False,
-                 epsilon=0.01,
                  norm=False,
                  device='cuda'):
         
@@ -49,7 +48,6 @@ class KanGDyn(MessagePassing):
         
         self.model_path = model_path
         self.device = device
-        self.epsilon = epsilon
         self.norm = norm
         
         self.to(self.device)
@@ -64,15 +62,10 @@ class KanGDyn(MessagePassing):
         
         
         
-    def forward(self, data, update_grid=False):
-        x, edge_index, delta_t = data.x, data.edge_index, data.delta_t
-        # self_interaction = self.f_net(x)
+    def forward(self, x, edge_index, update_grid=False):
         norm = self.get_norm(edge_index, x) if self.norm else torch.ones(edge_index.shape[1], device=x.device)
         
-        for _ in range(delta_t):
-            x = x + self.epsilon * self.propagate(edge_index, x=x, norm=norm, update_grid=update_grid)
-        
-        return x
+        return self.propagate(edge_index, x=x, norm=norm, update_grid=update_grid)
     
 
     def message(self, x_i, x_j, norm, update_grid):
