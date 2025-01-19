@@ -60,7 +60,7 @@ def integrate(config, graph):
     y0 = rng.uniform(input_range[0], input_range[1], N)
     t_eval_steps = config['t_eval_steps']
     dynamics = config['dynamics']
-    device = config['device']
+    device = torch.device(config['device'])
     
     xs, t = numerical_integration(
         G=graph,
@@ -73,10 +73,10 @@ def integrate(config, graph):
     xs = np.transpose(xs)
     
     xs_tens = torch.from_numpy(xs).float().unsqueeze(2)
-    xs_tens.to(device)
+    xs_tens = xs_tens.to(device)
     
     t_tens = torch.from_numpy(t).float()
-    t_tens.to(device)
+    t_tens = t_tens.to(device)
     return xs_tens, t_tens
 
 
