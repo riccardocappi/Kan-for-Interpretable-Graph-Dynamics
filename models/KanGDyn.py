@@ -63,18 +63,22 @@ class KanGDyn(MessagePassing):
         
         
     def forward(self, x, edge_index, update_grid=False):
-        norm = self.get_norm(edge_index, x) if self.norm else torch.ones(edge_index.shape[1], device=x.device)
+        norm = self.get_norm(edge_index, x) if self.norm else torch.ones(edge_index.shape[1], device=self.device)
         
         return self.propagate(edge_index, x=x, norm=norm, update_grid=update_grid)
     
 
     def message(self, x_i, x_j, norm, update_grid):
-        mes = self.g_net(torch.cat([x_j, x_i], dim=-1), update_grid=update_grid)
+        input = torch.cat([x_j, x_i], dim=-1)
+        input.to(self.device)
+        mes = self.g_net(input, update_grid=update_grid)
         return norm.view(-1, 1) * mes
         
     
     def update(self, aggr_out, x, update_grid):
-        return self.h_net(torch.cat([x, aggr_out], dim=-1), update_grid=update_grid)
+        input = torch.cat([x, aggr_out], dim=-1)
+        input.to(self.device)
+        return self.h_net(input, update_grid=update_grid)
     
     
     def regularization_loss(self, mu_1, mu_2, use_orig=False):
