@@ -73,10 +73,10 @@ def integrate(config, graph):
     xs = np.transpose(xs)
     
     xs_tens = torch.from_numpy(xs).float().unsqueeze(2)
-    xs_tens.to(device)
+    xs_tens = xs_tens.to(device)
     
     t_tens = torch.from_numpy(t).float()
-    t_tens.to(device)
+    t_tens = t_tens.to(device)
     return xs_tens, t_tens
 
 

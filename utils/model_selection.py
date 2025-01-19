@@ -29,7 +29,7 @@ class ModelSelector():
             
         self.train_data, self.t_train, self.valid_data, self.t_valid, self.test_data, self.t_test = create_datasets(config, G)
         self.edge_index = from_networkx(G).edge_index
-        self.edge_index.to(torch.device(self.device))
+        self.edge_index = self.edge_index.to(torch.device(self.device))
         
         self.epochs = config["epochs"]
         self.patience = config["patience"]
