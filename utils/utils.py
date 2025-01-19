@@ -72,12 +72,7 @@ def integrate(config, graph):
     )
     xs = np.transpose(xs)
     
-    xs_tens = torch.from_numpy(xs).float().unsqueeze(2)
-    xs_tens = xs_tens.to(device)
-    
-    t_tens = torch.from_numpy(t).float()
-    t_tens = t_tens.to(device)
-    return xs_tens, t_tens
+    return torch.from_numpy(xs).float().unsqueeze(2).to(device), torch.from_numpy(t).float().to(device)
 
 
 
@@ -87,7 +82,7 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     sampled_indices = torch.tensor([i * interval for i in range(sample_size)])
     samples = dataset[sampled_indices]
     concatenated_x = torch.reshape(samples, (-1, samples.size(2)))
-    concatenated_x.to(device)
+    concatenated_x = concatenated_x.to(device)
     
     all_edges = []
     num_nodes = dataset.size(1)
@@ -97,7 +92,7 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
         all_edges.append(upd_edge_index) 
         
     concatenated_edge_index = torch.cat(all_edges, dim=1)
-    concatenated_edge_index.to(device)
+    concatenated_edge_index = concatenated_edge_index.to(device)
     
     return concatenated_x, concatenated_edge_index
     
