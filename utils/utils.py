@@ -75,6 +75,26 @@ def integrate(config, graph):
 
 
 
+def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
+    device = dataset.device
+    interval = len(dataset) // sample_size
+    sampled_indices = torch.tensor([i * interval for i in range(sample_size)])
+    samples = dataset[sampled_indices]
+    concatenated_x = torch.reshape(samples, (-1, samples.size(2))).to(device)
+    
+    all_edges = []
+    num_nodes = dataset.size(1)
+    for i,s in enumerate(samples):
+        offset = i * num_nodes
+        upd_edge_index = edge_index + offset
+        all_edges.append(upd_edge_index) 
+        
+    concatenated_edge_index = torch.cat(all_edges, dim=1).to(device)
+    
+    return concatenated_x, concatenated_edge_index
+    
+  
+    
 def create_datasets(config, graph):
     train_data, t_train = integrate(config, graph)
     

@@ -1,4 +1,4 @@
-from utils.utils import load_config, save_acts, plot
+from utils.utils import load_config, save_acts, plot, sample_from_spatio_temporal_graph
 from utils.model_selection import ModelSelector
 import networkx as nx
 import torch
@@ -25,18 +25,19 @@ def _run(config, noise_level=None, n_trials=10, method='grid_search'):
     best_params = model_selector.optimize()
     
     model = model_selector.eval_model(best_params=best_params)
+    edge_index = model_selector.edge_index
     
     net = model.model
 
     net.h_net.store_act = True
     net.g_net.store_act = True
-    
-    ### TODO: Implement a better way to store activations
-    y0 = model_selector.train_data[0]
-    edge_index = model_selector.edge_index
+
+    dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(model_selector.train_data, 
+                                                                  edge_index, 
+                                                                  sample_size=32)
+
     with torch.no_grad():
-        _ = net(y0, edge_index)
-    ###
+        _ = net(dummy_x, dummy_edge_index)
 
     plot(folder_path=f'{net.h_net.model_path}/figures', layers=net.h_net.layers, show_plots=False)
     plot(folder_path=f'{net.g_net.model_path}/figures', layers=net.g_net.layers, show_plots=False)

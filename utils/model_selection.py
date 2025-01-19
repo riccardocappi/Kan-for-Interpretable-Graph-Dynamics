@@ -29,6 +29,7 @@ class ModelSelector():
             
         self.train_data, self.t_train, self.valid_data, self.t_valid, self.test_data, self.t_test = create_datasets(config, G)
         self.edge_index = from_networkx(G).edge_index
+        self.edge_index.to(self.device)
         
         self.epochs = config["epochs"]
         self.patience = config["patience"]
@@ -54,13 +55,13 @@ class ModelSelector():
         # Maybe get search_space from config
         if self.method == 'grid_search':
             search_space = {
-                'grid_size': [7],
+                'grid_size': [5, 7],
                 'spline_order': [3],
-                'lr': [0.005],
-                'lamb': [0.001] if self.use_reg_loss else [0.],
+                'lr': [0.01, 0.005],
+                'lamb': [0., 0.0001, 0.001] if self.use_reg_loss else [0.],
                 'mu_1': [1.] if self.use_reg_loss else [1.],
                 'mu_2': [1.] if self.use_reg_loss else [1.],
-                'use_orig_reg': [True]
+                'use_orig_reg': [True, False]
             }
             sampler = GridSampler(search_space)
             study = optuna.create_study(direction='minimize', sampler=sampler)
