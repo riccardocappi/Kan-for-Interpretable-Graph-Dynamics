@@ -101,6 +101,7 @@ class ModelSelector():
         self.model_config['spline_order'] = spline_order
         
         model = NetWrapper(KanGDyn, self.model_config, self.edge_index, update_grid=False)
+        model.to(self.device)
         
         results = fit(
             model,
@@ -136,6 +137,7 @@ class ModelSelector():
         self.model_config['spline_order'] = best_params['spline_order']
         
         model = NetWrapper(KanGDyn, self.model_config, self.edge_index, update_grid=False)
+        model.to(self.device)
         
         _ = fit(
             model,
