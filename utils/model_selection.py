@@ -96,7 +96,9 @@ class ModelSelector():
         
         use_orig_reg = trial.suggest_categorical("use_orig_reg", [True, False])
         
-        self.model_config['store_acts'] = (use_orig_reg and lamb > 0.)
+        store_acts = (use_orig_reg and lamb > 0.)
+        
+        self.model_config['store_acts'] = store_acts
         self.model_config['grid_size'] = grid_size
         self.model_config['spline_order'] = spline_order
         
@@ -119,7 +121,7 @@ class ModelSelector():
             mu_2=mu_2,
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
-            use_orig_reg=use_orig_reg,
+            use_orig_reg=store_acts,
             save_updates=False
         )
         
@@ -131,7 +133,8 @@ class ModelSelector():
     def eval_model(self, best_params):
         
         self.model_config['model_path'] = f'{self.model_path}/eval'
-        self.model_config['store_acts'] = (best_params['use_orig_reg'] and best_params['lamb'] > 0.)
+        store_acts = (best_params['use_orig_reg'] and best_params['lamb'] > 0.)
+        self.model_config['store_acts'] = store_acts
         self.model_config['grid_size'] = best_params['grid_size']
         self.model_config['spline_order'] = best_params['spline_order']
         
@@ -154,7 +157,7 @@ class ModelSelector():
             mu_2=best_params.get('mu_2', 1.),
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
-            use_orig_reg=best_params['use_orig_reg'],
+            use_orig_reg=store_acts,
             save_updates=True
         )
         
