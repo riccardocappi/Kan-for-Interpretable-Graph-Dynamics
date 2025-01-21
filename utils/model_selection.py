@@ -90,11 +90,11 @@ class ModelSelector():
     def objective(self, trial):
             
         grid_size = trial.suggest_int('grid_size', 3, 10)
-        spline_order = trial.suggest_int('spline_order', 1, 4)
+        spline_order = trial.suggest_int('spline_order', 2, 4)
         range_limit = trial.suggest_int('range_limit', 5, 7)
         grid_range = [-range_limit, range_limit]
         
-        lr = trial.suggest_float('lr', 0.001, 0.01, log=True)
+        lr = trial.suggest_float('lr', 0.01, 0.1, log=True)
         
         lamb = trial.suggest_float('lamb', 0., 0.01) if self.use_reg_loss else 0. 
         mu_1 = trial.suggest_float('mu_1', 0.1, 1., log=True) if self.use_reg_loss else 1.

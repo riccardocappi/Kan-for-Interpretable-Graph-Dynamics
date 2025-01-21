@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKanConv-ODE
+#SBATCH --job-name=GKanConv-ODE-optuna
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -20,10 +20,6 @@
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
 #SBATCH --time=24:00:00
-
-### GPU request
-#SBATCH --gres=gpu:1
-#SBATCH --constraint=A5000
 
 
 ### Some useful informative commands

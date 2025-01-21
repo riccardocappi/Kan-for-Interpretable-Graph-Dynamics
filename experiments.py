@@ -1,11 +1,7 @@
-from utils.utils import load_config, save_acts, plot, sample_from_spatio_temporal_graph, create_datasets, pre_processing
+from utils.utils import load_config, save_acts, plot, sample_from_spatio_temporal_graph
 from utils.model_selection import ModelSelector
 import networkx as nx
 import torch
-from torch_geometric.utils import from_networkx
-from models.NetWrapper import NetWrapper
-from models.KanGDyn import KanGDyn
-from train_and_eval import fit
 
 
 def run(config_path, n_trials=10, method='grid_search'):
@@ -51,7 +47,7 @@ def _run(config, noise_level=None, n_trials=10, method='grid_search'):
 
 
 if __name__ == '__main__':
-    run('./configs/config_kuramoto.yml')
+    run('./configs/config_kuramoto.yml', method='optuna')
     
     
     
