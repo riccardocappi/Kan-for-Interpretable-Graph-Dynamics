@@ -96,16 +96,14 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     
   
     
-def create_datasets(config, graph):
+def create_datasets(config, graph, t_f_train=100):
     rng = np.random.default_rng(seed=config['seed'])
-    train_data, t_train = integrate(config, graph, rng)
-    
-    config['t_eval_steps'] //= 2
+    data, t = integrate(config, graph, rng)
 
-    valid_data, t_valid = integrate(config, graph, rng)
-    test_data, t_test = integrate(config, graph, rng)
+    train_data = data[:t_f_train]
+    t_train = t[:t_f_train]
     
-    return train_data, t_train, valid_data, t_valid, test_data, t_test
+    return train_data, t_train, data, t
     
     
 

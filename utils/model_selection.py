@@ -27,11 +27,10 @@ class ModelSelector():
         if self.device == 'cuda':
             assert torch.cuda.is_available()
             
-        self.train_data, self.t_train, self.valid_data, self.t_valid, self.test_data, self.t_test = create_datasets(config, G)
+        self.train_data, self.t_train, self.valid_data, self.t_valid = create_datasets(config, G, t_f_train=240)
         
-        self.train_data = pre_processing(self.train_data)
-        self.valid_data = pre_processing(self.valid_data)
-        self.test_data = pre_processing(self.test_data)
+        # self.train_data = pre_processing(self.train_data)
+        # self.valid_data = pre_processing(self.valid_data)
         
         self.edge_index = from_networkx(G).edge_index
         self.edge_index = self.edge_index.to(torch.device(self.device))
@@ -60,10 +59,10 @@ class ModelSelector():
         if self.method == 'grid_search':
             search_space = {
                 'grid_size': [5, 7],
-                'range_limit': [3, 5],
+                'range_limit': [5],
                 'spline_order': [3],
                 'lr': [0.01, 0.005],
-                'lamb': [0., 0.0001] if self.use_reg_loss else [0.],
+                'lamb': [0., 0.0001, 0.001] if self.use_reg_loss else [0.],
                 'mu_1': [1.] if self.use_reg_loss else [1.],
                 'mu_2': [1.] if self.use_reg_loss else [1.],
                 'use_orig_reg': [True, False]
@@ -92,7 +91,7 @@ class ModelSelector():
             
         grid_size = trial.suggest_int('grid_size', 3, 10)
         spline_order = trial.suggest_int('spline_order', 1, 4)
-        range_limit = trial.suggest_int('range_limit', 3, 5)
+        range_limit = trial.suggest_int('range_limit', 5, 7)
         grid_range = [-range_limit, range_limit]
         
         lr = trial.suggest_float('lr', 0.001, 0.01, log=True)
@@ -119,8 +118,6 @@ class ModelSelector():
             self.t_train,
             self.valid_data,
             self.t_valid,
-            self.test_data,
-            self.t_test,
             epochs=self.epochs,
             patience=self.patience,
             lr = lr,
@@ -159,8 +156,6 @@ class ModelSelector():
             self.t_train,
             self.valid_data,
             self.t_valid,
-            self.test_data,
-            self.t_test,
             epochs=self.epochs,
             patience=self.patience,
             lr = best_params['lr'],

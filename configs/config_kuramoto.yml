@@ -4,7 +4,7 @@ epochs: 700
 patience: 150
 opt: 'Adam'
 log: 10 
-t_span: [0,2]
+t_span: [0,1]
 t_eval_steps: 300
 seed: 42
 noise_strengths: []
@@ -13,7 +13,6 @@ input_range: [0, 6.28318530718]
 reg_loss: true
 g_hidden_layers: [2,1,1]
 h_hidden_layers: [2,1]
-n_iter: 1
 integration_kwargs:
-  w: 0.
-  R: 0.5
+  w: 2.
+  R: 1.
