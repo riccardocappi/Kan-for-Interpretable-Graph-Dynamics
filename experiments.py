@@ -47,7 +47,7 @@ def _run(config, noise_level=None, n_trials=10, method='grid_search'):
 
 
 if __name__ == '__main__':
-    run('./configs/config_kuramoto.yml', method='optuna')
+    run('./configs/config_kuramoto.yml', method='optuna', n_trials=50)
     
     
     
