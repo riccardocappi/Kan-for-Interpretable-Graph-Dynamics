@@ -51,9 +51,7 @@ def plot(folder_path, layers, show_plots=False):
                 
 
 
-def integrate(config, graph):
-    seed = config['seed']
-    rng = np.random.default_rng(seed=seed)
+def integrate(config, graph, rng):
     N = graph.number_of_nodes()
     input_range = config['input_range']
     t_span = config['t_span']
@@ -86,7 +84,7 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     
     all_edges = []
     num_nodes = dataset.size(1)
-    for i,s in enumerate(samples):
+    for i in range(len(samples)):
         offset = i * num_nodes
         upd_edge_index = edge_index + offset
         all_edges.append(upd_edge_index) 
@@ -99,12 +97,13 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
   
     
 def create_datasets(config, graph):
-    train_data, t_train = integrate(config, graph)
+    rng = np.random.default_rng(seed=config['seed'])
+    train_data, t_train = integrate(config, graph, rng)
     
     config['t_eval_steps'] //= 2
 
-    valid_data, t_valid = integrate(config, graph)
-    test_data, t_test = integrate(config, graph)
+    valid_data, t_valid = integrate(config, graph, rng)
+    test_data, t_test = integrate(config, graph, rng)
     
     return train_data, t_train, valid_data, t_valid, test_data, t_test
     

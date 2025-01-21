@@ -1,7 +1,8 @@
 import torch
 from torch.optim import LBFGS
 import os
-from torchdiffeq import odeint
+# from torchdiffeq import odeint
+from torchdiffeq import odeint_adjoint as odeint
 from models.NetWrapper import NetWrapper
 from utils.utils import save_logs
 import json
@@ -11,7 +12,7 @@ def eval_model(model, data, t_eval, criterion):
     model.eval()
     y0 = data[0]
     with torch.no_grad():
-        y_pred = odeint(model, y0, t_eval, method='dopri5')
+        y_pred = odeint(model, y0, t_eval, method='dopri5', adjoint_options=dict(norm='seminorm'))
         loss = criterion(y_pred[1:], data[1:])
     return loss.item()
             
@@ -72,7 +73,7 @@ def fit(model:NetWrapper,
     def training():
         global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy, upd_grid
         optimizer.zero_grad()
-        y_pred = odeint(model, y0, t_train, method='dopri5')
+        y_pred = odeint(model, y0, t_train, method='dopri5', adjoint_options=dict(norm='seminorm'))
         training_loss = criterion(y_pred[1:], train_data[1:]) # We can implement batch learning by partitioning t_train
         running_training_loss = running_training_loss + training_loss.item()
         reg, l1, entropy = model.regularization_loss(mu_1, mu_2, use_orig_reg)
