@@ -16,7 +16,7 @@
 #SBATCH --ntasks=1
 
 ### RAM requirement
-#SBATCH --mem=1G
+#SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
 #SBATCH --time=24:00:00

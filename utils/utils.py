@@ -117,3 +117,8 @@ def save_acts(layers, folder_path):
         assert layer.cache_act is not None and layer.cache_preact is not None, 'Populate model activations before saving them'
         torch.save(layer.cache_preact, f"{folder_path}/cache_preact_{l}")
         torch.save(layer.cache_act, f"{folder_path}/cache_act_{l}")  
+
+
+def pre_processing(data):
+    scaled_data = data / (2*np.pi)
+    return scaled_data

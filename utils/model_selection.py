@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from .utils import create_datasets
+from .utils import create_datasets, pre_processing
 from train_and_eval import fit
 import optuna
 from optuna.samplers import GridSampler
@@ -28,6 +28,11 @@ class ModelSelector():
             assert torch.cuda.is_available()
             
         self.train_data, self.t_train, self.valid_data, self.t_valid, self.test_data, self.t_test = create_datasets(config, G)
+        
+        self.train_data = pre_processing(self.train_data)
+        self.valid_data = pre_processing(self.valid_data)
+        self.test_data = pre_processing(self.test_data)
+        
         self.edge_index = from_networkx(G).edge_index
         self.edge_index = self.edge_index.to(torch.device(self.device))
         
@@ -44,7 +49,6 @@ class ModelSelector():
         self.model_config = {
             'h_hidden_layers': config['h_hidden_layers'],
             'g_hidden_layers': config['g_hidden_layers'],
-            'grid_range': [config["vmin"], config["vmax"]],
             'model_path': self.model_path,
             'device': self.device
         }
@@ -56,9 +60,10 @@ class ModelSelector():
         if self.method == 'grid_search':
             search_space = {
                 'grid_size': [5, 7],
+                'range_limit': [3, 5],
                 'spline_order': [3],
                 'lr': [0.01, 0.005],
-                'lamb': [0., 0.0001, 0.001] if self.use_reg_loss else [0.],
+                'lamb': [0., 0.0001] if self.use_reg_loss else [0.],
                 'mu_1': [1.] if self.use_reg_loss else [1.],
                 'mu_2': [1.] if self.use_reg_loss else [1.],
                 'use_orig_reg': [True, False]
@@ -87,6 +92,8 @@ class ModelSelector():
             
         grid_size = trial.suggest_int('grid_size', 3, 10)
         spline_order = trial.suggest_int('spline_order', 1, 4)
+        range_limit = trial.suggest_int('range_limit', 3, 5)
+        grid_range = [-range_limit, range_limit]
         
         lr = trial.suggest_float('lr', 0.001, 0.01, log=True)
         
@@ -101,8 +108,10 @@ class ModelSelector():
         self.model_config['store_acts'] = store_acts
         self.model_config['grid_size'] = grid_size
         self.model_config['spline_order'] = spline_order
+        self.model_config['grid_range'] = grid_range
         
         model = NetWrapper(KanGDyn, self.model_config, self.edge_index, update_grid=False)
+        model.to(torch.device(self.device))
         
         results = fit(
             model,
@@ -137,8 +146,12 @@ class ModelSelector():
         self.model_config['store_acts'] = store_acts
         self.model_config['grid_size'] = best_params['grid_size']
         self.model_config['spline_order'] = best_params['spline_order']
+        range_limit = best_params['range_limit']
+        grid_range = [-range_limit, range_limit]
+        self.model_config['grid_range'] = grid_range
         
         model = NetWrapper(KanGDyn, self.model_config, self.edge_index, update_grid=False)
+        model.to(torch.device(self.device))
         
         _ = fit(
             model,

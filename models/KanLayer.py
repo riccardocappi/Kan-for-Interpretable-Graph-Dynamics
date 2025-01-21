@@ -286,7 +286,7 @@ class KANLayer(torch.nn.Module):
         else:
             output = self.get_activations_efficient(x) # (batch, out_features)
         
-        output = self.layer_scale[None,:] * output + self.layer_bias[None, :]
+        # output = self.layer_scale[None,:] * output + self.layer_bias[None, :]
     
         return output
     
