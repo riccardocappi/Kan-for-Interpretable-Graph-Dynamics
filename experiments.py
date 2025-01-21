@@ -62,6 +62,7 @@ if __name__ == '__main__':
     test_data = pre_processing(test_data)
     
     edge_index = from_networkx(G).edge_index
+    edge_index = edge_index.to(torch.device(config['device']))
     
     model_config = {
         'h_hidden_layers':[2, 1],
@@ -74,6 +75,7 @@ if __name__ == '__main__':
     }
     
     model = NetWrapper(KanGDyn, model_config, edge_index, update_grid=False)
+    model.to(torch.device(config['device']))
     
     criterion = torch.nn.MSELoss()
     lr = 0.001
