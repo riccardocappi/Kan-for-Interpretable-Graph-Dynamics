@@ -83,7 +83,8 @@ class ExperimentsGKAN(Experiments):
             opt=self.opt,
             use_orig_reg=store_acts,
             save_updates=False,
-            t_f_train=self.t_f_train
+            t_f_train=self.t_f_train,
+            n_iter=self.n_iter
         )
         
         best_val_loss = min(results['validation_loss'])
@@ -128,7 +129,8 @@ class ExperimentsGKAN(Experiments):
             opt=self.opt,
             use_orig_reg=store_acts,
             save_updates=True,
-            t_f_train=self.t_f_train
+            t_f_train=self.t_f_train,
+            n_iter=self.n_iter
         ) 
         
         return model

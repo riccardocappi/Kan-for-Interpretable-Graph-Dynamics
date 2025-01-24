@@ -31,6 +31,7 @@ class Experiments(ABC):
             assert torch.cuda.is_available()
             
         self.t_f_train = t_f_train
+        self.n_iter = config['n_iter']
         self.train_data, self.t_train, self.valid_data, self.t_valid = create_datasets(config, G, t_f_train=self.t_f_train)
         
         self.edge_index = from_networkx(G).edge_index
