@@ -1,6 +1,6 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-optuna'
-epochs: 1000
+model_name: 'model-kuramoto-grid-2-3-1'
+epochs: 700
 patience: 250
 opt: 'Adam'
 log: 10 
@@ -11,14 +11,15 @@ noise_strengths: []
 device: 'cpu'
 input_range: [0, 6.28318530718]
 reg_loss: true
-grid_size: [5, 7]
-spline_order: [2, 3]
-range_limit: [5]
-lr: [0.01, 0.05]
-lamb: [0.001]
-mu_1: [1.]
-mu_2: [1.]
-use_orig_reg: [True]
+grid_size: [3, 10]
+spline_order: [2, 4]
+range_limit: [5, 7]
+lr: [0.01, 0.1]
+lamb: [0., 0.01]
+mu_1: [0.1, 1.]
+mu_2: [0.1, 1.]
+use_orig_reg: [True, False]
+n_iter: 5
 integration_kwargs:
   w: 2.
   R: 1.

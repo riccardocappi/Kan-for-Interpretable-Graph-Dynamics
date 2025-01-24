@@ -8,12 +8,18 @@ from utils.utils import save_logs
 import json
 
 
-def eval_model(model, data, t_eval, criterion, t_f_train):
+def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
     model.eval()
-    y0 = data[0]
+    y_pred = []
     with torch.no_grad():
-        y_pred = odeint(model, y0, t_eval, method='dopri5')
-        loss = criterion(y_pred[t_f_train:], data[t_f_train:])
+        for k in range(n_iter):
+            y_true_valid = data[k]
+            t_valid = t[k]
+            y0 = y_true_valid[0]
+            y_pred.append(odeint(model, y0, t_valid, method='dopri5')[t_f_train:])
+            
+        y_pred = torch.stack(y_pred, dim=0)
+        loss = criterion(y_pred, data[:, t_f_train:, :, :])
     return loss.item()
             
     
@@ -37,14 +43,15 @@ def fit(model:NetWrapper,
         opt='Adam',
         use_orig_reg=False,
         save_updates=True,
-        t_f_train = 240
+        t_f_train = 240,
+        n_iter = 1
         ):
     
     torch.manual_seed(seed)
     best_val_loss = float('inf')
     best_epoch = 0
     best_model_state = None
-    y0 = train_data[0]
+    # y0 = train_data[0]
 
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -72,8 +79,16 @@ def fit(model:NetWrapper,
     def training():
         global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy, upd_grid
         optimizer.zero_grad()
-        y_pred = odeint(model, y0, t_train, method='dopri5')
-        training_loss = criterion(y_pred[1:], train_data[1:]) # We can implement batch learning by partitioning t_train
+        y_pred = []
+        for k in range(n_iter):
+            y_true = train_data[k]
+            t_eval = t_train[k]
+            y0 = y_true[0]
+            y_pred.append(odeint(model, y0, t_eval, method='dopri5')[1:])
+        
+        y_pred = torch.stack(y_pred, dim=0)
+        training_loss = criterion(y_pred, train_data[:, 1:, :, :])
+        
         running_training_loss = running_training_loss + training_loss.item()
         reg, l1, entropy = model.regularization_loss(mu_1, mu_2, use_orig_reg)
         loss = training_loss + lmbd * reg
@@ -99,7 +114,7 @@ def fit(model:NetWrapper,
         else:
             optimizer.step(training)
         
-        val_loss = eval_model(model, valid_data, t_valid, criterion, t_f_train)
+        val_loss = eval_model(model, valid_data, t_valid, criterion, t_f_train, n_iter=n_iter)
         results['train_loss'].append(running_training_loss)
         results['validation_loss'].append(val_loss)
         results['tot_loss'].append(running_tot_loss)
@@ -128,8 +143,4 @@ def fit(model:NetWrapper,
         with open(f"{model.model.model_path}/results.json", "w") as outfile: 
             json.dump(results, outfile)
         
-    return results
-        
-        
-        
-        
+    return results  

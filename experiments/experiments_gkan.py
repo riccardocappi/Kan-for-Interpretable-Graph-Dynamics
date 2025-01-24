@@ -7,7 +7,7 @@ from utils.utils import sample_from_spatio_temporal_graph, plot, save_acts
 
 
 class ExperimentsGKAN(Experiments):
-    def __init__(self, config, G, n_trials, model_selection_method='optuna'):
+    def __init__(self, config, G, n_trials, model_selection_method='optuna', t_f_train=240):
         
         search_space = None
         if model_selection_method == 'grid_search':
@@ -22,7 +22,7 @@ class ExperimentsGKAN(Experiments):
                 'use_orig_reg': config['use_orig_reg']
             }
             
-        super().__init__(config, G, n_trials, search_space, model_selection_method)
+        super().__init__(config, G, n_trials, search_space, model_selection_method, t_f_train=t_f_train)
         
     
     def pre_processing(self, train_data, valid_data):
@@ -53,8 +53,8 @@ class ExperimentsGKAN(Experiments):
         store_acts = (use_orig_reg and lamb > 0.)
         
         model_config = {
-            'h_hidden_layers': [2, 1],
-            'g_hidden_layers': [2, 1, 1],
+            'h_hidden_layers': [2, 3, 1],
+            'g_hidden_layers': [2, 3, 1],
             'grid_size': grid_size,
             'spline_order': spline_order,
             'grid_range': grid_range,
@@ -98,8 +98,8 @@ class ExperimentsGKAN(Experiments):
         grid_range = [-range_limit, range_limit]
         
         model_config = {
-            'h_hidden_layers': [2, 1],
-            'g_hidden_layers': [2, 1, 1],
+            'h_hidden_layers': [2, 3, 1],
+            'g_hidden_layers': [2, 3, 1],
             'grid_size': best_params['grid_size'],
             'spline_order': best_params['spline_order'],
             'grid_range': grid_range,
@@ -141,7 +141,7 @@ class ExperimentsGKAN(Experiments):
         net.h_net.store_act = True
         net.g_net.store_act = True
 
-        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.train_data, 
+        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.train_data[0], 
                                                                     self.edge_index, 
                                                                     sample_size=32)
 

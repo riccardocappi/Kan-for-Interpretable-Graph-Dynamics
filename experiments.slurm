@@ -19,7 +19,7 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=24:00:00
+#SBATCH --time=36:00:00
 
 
 ### Some useful informative commands

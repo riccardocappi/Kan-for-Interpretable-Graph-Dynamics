@@ -98,10 +98,18 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     
 def create_datasets(config, graph, t_f_train=100):
     rng = np.random.default_rng(seed=config['seed'])
-    data, t = integrate(config, graph, rng)
+    
+    data, t = [], []
+    for _ in range(config['n_iter']):
+        data_k, t_k = integrate(config, graph, rng)
+        data.append(data_k)
+        t.append(t_k)
+        
+    data = torch.stack(data, dim=0)
+    t = torch.stack(t, dim=0)
 
-    train_data = data[:t_f_train]
-    t_train = t[:t_f_train]
+    train_data = data[:, :t_f_train, :, :]
+    t_train = t[:, :t_f_train]
     
     return train_data, t_train, data, t
     

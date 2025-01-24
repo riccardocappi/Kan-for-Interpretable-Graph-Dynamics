@@ -13,7 +13,8 @@ class Experiments(ABC):
                  G, 
                  n_trials,
                  search_space = None,
-                 model_selection_method='optuna'):
+                 model_selection_method='optuna',
+                 t_f_train=240):
         
         super().__init__()
         
@@ -29,7 +30,7 @@ class Experiments(ABC):
         if self.device == 'cuda':
             assert torch.cuda.is_available()
             
-        self.t_f_train = 240
+        self.t_f_train = t_f_train
         self.train_data, self.t_train, self.valid_data, self.t_valid = create_datasets(config, G, t_f_train=self.t_f_train)
         
         self.edge_index = from_networkx(G).edge_index
