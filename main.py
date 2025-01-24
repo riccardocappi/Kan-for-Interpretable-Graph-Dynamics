@@ -11,7 +11,7 @@ def run(config_path, n_trials=10, method='optuna'):
     
     
 if __name__ == '__main__':
-    run('./configs/config_kuramoto.yml', method='optuna', n_trials=45)
+    run('./configs/config_kuramoto.yml', method='optuna', n_trials=35)
     
     
     
