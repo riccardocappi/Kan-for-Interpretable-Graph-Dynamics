@@ -21,6 +21,10 @@
 ### Time limit for our job (ten minutes here: HH:MM:SS)
 #SBATCH --time=36:00:00
 
+### GPU request
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=A5000
+
 
 ### Some useful informative commands
 echo -n 'Date: '

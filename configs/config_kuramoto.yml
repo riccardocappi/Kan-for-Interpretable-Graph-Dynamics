@@ -4,7 +4,7 @@ epochs: 700
 patience: 250
 opt: 'Adam'
 log: 10 
-t_span: [0,1]
+t_span: [0,2]
 t_eval_steps: 300
 seed: 42
 noise_strengths: []
@@ -18,8 +18,8 @@ lr: [0.01, 0.1]
 lamb: [0., 0.01]
 mu_1: [0.1, 1.]
 mu_2: [0.1, 1.]
-use_orig_reg: [True, False]
+use_orig_reg: [False]
 n_iter: 5
 integration_kwargs:
-  w: 2.
-  R: 1.
+  w: 0.
+  R: 0.3
