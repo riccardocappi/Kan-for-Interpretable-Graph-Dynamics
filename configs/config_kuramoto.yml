@@ -1,7 +1,7 @@
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-grid-optuna'
-epochs: 700
-patience: 150
+epochs: 1000
+patience: 250
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
@@ -11,8 +11,14 @@ noise_strengths: []
 device: 'cpu'
 input_range: [0, 6.28318530718]
 reg_loss: true
-g_hidden_layers: [2,1,1]
-h_hidden_layers: [2,1]
+grid_size: [5, 7]
+spline_order: [2, 3]
+range_limit: [5]
+lr: [0.01, 0.05]
+lamb: [0.001]
+mu_1: [1.]
+mu_2: [1.]
+use_orig_reg: [True]
 integration_kwargs:
   w: 2.
   R: 1.

@@ -8,12 +8,12 @@ from utils.utils import save_logs
 import json
 
 
-def eval_model(model, data, t_eval, criterion):
+def eval_model(model, data, t_eval, criterion, t_f_train):
     model.eval()
     y0 = data[0]
     with torch.no_grad():
         y_pred = odeint(model, y0, t_eval, method='dopri5')
-        loss = criterion(y_pred[1:], data[1:])
+        loss = criterion(y_pred[t_f_train:], data[t_f_train:])
     return loss.item()
             
     
@@ -36,7 +36,8 @@ def fit(model:NetWrapper,
         criterion = torch.nn.MSELoss(),
         opt='Adam',
         use_orig_reg=False,
-        save_updates=True
+        save_updates=True,
+        t_f_train = 240
         ):
     
     torch.manual_seed(seed)
@@ -98,7 +99,7 @@ def fit(model:NetWrapper,
         else:
             optimizer.step(training)
         
-        val_loss = eval_model(model, valid_data, t_valid, criterion)
+        val_loss = eval_model(model, valid_data, t_valid, criterion, t_f_train)
         results['train_loss'].append(running_training_loss)
         results['validation_loss'].append(val_loss)
         results['tot_loss'].append(running_tot_loss)
