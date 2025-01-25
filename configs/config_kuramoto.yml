@@ -1,7 +1,7 @@
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-grid-2-3-1'
-epochs: 600
-patience: 150
+epochs: 700
+patience: 200
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
@@ -18,7 +18,7 @@ lr: [0.01, 0.1]
 lamb: [0., 0.01]
 mu_1: [0.1, 1.]
 mu_2: [0.1, 1.]
-use_orig_reg: [False]
+use_orig_reg: [False, True]
 n_iter: 1
 integration_kwargs:
   w: 2.
