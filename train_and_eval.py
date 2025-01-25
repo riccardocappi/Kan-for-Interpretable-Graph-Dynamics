@@ -6,6 +6,7 @@ from torchdiffeq import odeint
 from models.NetWrapper import NetWrapper
 from utils.utils import save_logs
 import json
+from collections import defaultdict
 
 
 def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
@@ -36,12 +37,9 @@ def fit(model:NetWrapper,
         lr = 0.001,
         lmbd=0.,
         log=10,
-        mu_1=1.,
-        mu_2 = 1.,
         log_file_name='logs.txt',
         criterion = torch.nn.MSELoss(),
         opt='Adam',
-        use_orig_reg=False,
         save_updates=True,
         t_f_train = 240,
         n_iter = 1
@@ -65,19 +63,14 @@ def fit(model:NetWrapper,
     if not os.path.exists(logs_folder):
         os.makedirs(logs_folder)
     logs_file_path = f'{logs_folder}/{log_file_name}'
-    results = {
-        'train_loss': [],
-        'validation_loss': [],
-        'tot_loss': [],
-        'reg': [],
-        'l1':[],
-        'entropy': []
-    }
     
-    global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy
+    results = defaultdict(list)
+    reg_loss_metrics = defaultdict(float)
+    
+    global running_training_loss, running_tot_loss
     
     def training():
-        global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy
+        global running_training_loss, running_tot_loss
         optimizer.zero_grad()
         y_pred = []
         for k in range(n_iter):
@@ -90,12 +83,9 @@ def fit(model:NetWrapper,
         training_loss = criterion(y_pred, train_data[:, 1:, :, :])
         
         running_training_loss = running_training_loss + training_loss.item()
-        reg, l1, entropy = model.regularization_loss(mu_1, mu_2, use_orig_reg)
+        reg = model.regularization_loss(reg_loss_metrics)
         loss = training_loss + lmbd * reg
         running_tot_loss = running_tot_loss + loss.item()
-        running_reg = running_reg + reg.item()
-        running_l1 = running_l1 + l1.item()
-        running_entropy = running_entropy + entropy.item()
         loss.backward()
         if opt == 'Adam':
             optimizer.step()
@@ -106,9 +96,7 @@ def fit(model:NetWrapper,
         model.train()
         running_training_loss = 0.
         running_tot_loss = 0.
-        running_reg = 0.
-        running_l1 = 0.
-        running_entropy = 0.
+        reg_loss_metrics.clear()
         if opt == 'Adam':
             _ = training()
         else:
@@ -118,9 +106,9 @@ def fit(model:NetWrapper,
         results['train_loss'].append(running_training_loss)
         results['validation_loss'].append(val_loss)
         results['tot_loss'].append(running_tot_loss)
-        results['reg'].append(running_reg)
-        results['l1'].append(running_l1)
-        results['entropy'].append(running_entropy)
+        
+        for key, value in reg_loss_metrics.items():
+            results[key].append(value)
         
         if epoch % log == 0:
             log_message = f"Epoch: {epoch} \t Training loss: {running_training_loss:0.5f} \t Val Loss: {val_loss:0.5f} \t Tot Loss: {running_tot_loss:0.5f}"

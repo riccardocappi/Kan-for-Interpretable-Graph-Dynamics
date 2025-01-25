@@ -1,6 +1,5 @@
 import torch.nn as nn
 
-
 class NetWrapper(nn.Module):
     def __init__(self, model, model_config, edge_index, **kwargs):
         super().__init__()
@@ -13,6 +12,6 @@ class NetWrapper(nn.Module):
         return self.model(x, self.edge_index, **self.kwargs)
     
     
-    def regularization_loss(self, mu_1, mu_2, use_orig=False):
-        return self.model.regularization_loss(mu_1, mu_2, use_orig)
+    def regularization_loss(self, reg_loss_metrics:dict) -> float:
+        return self.model.regularization_loss(reg_loss_metrics)
                

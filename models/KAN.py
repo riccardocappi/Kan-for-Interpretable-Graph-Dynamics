@@ -22,7 +22,10 @@ class KAN(torch.nn.Module):
         model_path = './model',
         store_act = False,
         scale_and_bias=False,
-        device='cuda'
+        device='cuda',
+        mu_1 = 1.,
+        mu_2 = 1.,
+        use_orig_reg = False
         ):
         super(KAN, self).__init__()
         self.layers = torch.nn.ModuleList()
@@ -34,6 +37,9 @@ class KAN(torch.nn.Module):
         self.hidden_layer = layers_hidden
         self.spline_order = spline_order
         self.device = torch.device(device)
+        self.mu_1 = mu_1
+        self.mu_2 = mu_2
+        self.use_orig_reg = use_orig_reg
         
         
         if not os.path.exists(model_path):
@@ -85,17 +91,17 @@ class KAN(torch.nn.Module):
         return x
 
 
-    def regularization_loss(self, regularize_activation=1.0, regularize_entropy=1.0, use_orig=False):
+    def regularization_loss(self):
         '''
         Returns the regularization loss. You can either decide to use the original definition or the one
         proposed by the authors of efficient-kan
         '''
         tot_reg, tot_l1, tot_entropy = 0., 0., 0.
         for layer in self.layers:
-            if not use_orig:
-                reg, l1, entropy = layer.regularization_loss_fake(regularize_activation, regularize_entropy)
+            if not self.use_orig_reg:
+                reg, l1, entropy = layer.regularization_loss_fake(self.mu_1, self.mu_2)
             else:
-                reg, l1, entropy = layer.regularization_loss_orig(regularize_activation, regularize_entropy)
+                reg, l1, entropy = layer.regularization_loss_orig(self.mu_1, self.mu_2)
             tot_reg += reg
             tot_l1 += l1
             tot_entropy += entropy

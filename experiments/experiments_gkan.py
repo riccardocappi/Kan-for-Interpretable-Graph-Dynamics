@@ -60,7 +60,10 @@ class ExperimentsGKAN(Experiments):
             'grid_range': grid_range,
             'model_path': self.model_path,
             'store_acts': store_acts,
-            'device': self.device
+            'device': self.device,
+            'mu_1': mu_1,
+            'mu_2': mu_2,
+            'use_orig_reg': store_acts
         }
         
         model = NetWrapper(KanGDyn, model_config, self.edge_index, update_grid=False)
@@ -77,11 +80,8 @@ class ExperimentsGKAN(Experiments):
             lr = lr,
             lmbd=lamb,
             log=self.log,
-            mu_1=mu_1,
-            mu_2=mu_2,
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
-            use_orig_reg=store_acts,
             save_updates=False,
             t_f_train=self.t_f_train,
             n_iter=self.n_iter

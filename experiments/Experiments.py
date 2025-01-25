@@ -50,7 +50,7 @@ class Experiments(ABC):
     def run(self):
         self.train_data, self.valid_data = self.pre_processing(self.train_data,
                                                                self.valid_data)
-        best_params = self.fit()
+        best_params = self.optimize()
         
         self.post_processing(best_params)
     
@@ -60,7 +60,7 @@ class Experiments(ABC):
         raise Exception('Not implemented')
     
     
-    def fit(self):
+    def optimize(self):
         if self.method == 'grid_search':
             sampler = GridSampler(self.search_space)
             study = optuna.create_study(direction='minimize', sampler=sampler)
@@ -85,6 +85,7 @@ class Experiments(ABC):
         raise Exception('Not implemented')
     
     
+    @abstractmethod
     def post_processing(self, best_params):
         raise Exception('Not implemented')
     

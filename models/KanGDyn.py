@@ -14,19 +14,13 @@ class KanGDyn(MessagePassing):
                  store_acts = False,
                  scale_and_bias = False,
                  norm=False,
-                 device='cuda'):
+                 device='cuda',
+                 mu_1 = 1.,
+                 mu_2 = 1.,
+                 use_orig_reg = False
+                 ):
         
         super(KanGDyn, self).__init__(aggr='add')
-        
-        # self.f_net = KAN(f_hidden_layers,
-        #                 grid_size=grid_size,
-        #                 spline_order=spline_order,
-        #                 grid_range=grid_range,
-        #                 model_path=f'{model_path}/F_Net',
-        #                 store_act=store_acts,
-        #                 scale_and_bias=scale_and_bias,
-        #                 device=device)
-        
         
         self.h_net = KAN(h_hidden_layers,
                          grid_size=grid_size,
@@ -35,7 +29,11 @@ class KanGDyn(MessagePassing):
                          model_path=f'{model_path}/H_Net',
                          store_act=store_acts,
                          scale_and_bias=scale_and_bias,
-                         device=device)
+                         device=device,
+                         mu_1=mu_1,
+                         mu_2=mu_2,
+                         use_orig_reg=use_orig_reg
+                         )
         
         self.g_net = KAN(g_hidden_layers,
                          grid_size=grid_size,
@@ -44,7 +42,11 @@ class KanGDyn(MessagePassing):
                          model_path=f'{model_path}/G_Net',
                          store_act=store_acts,
                          scale_and_bias=scale_and_bias,
-                         device=device)
+                         device=device,
+                         mu_1=mu_1,
+                         mu_2=mu_2,
+                         use_orig_reg=use_orig_reg
+                         )
         
         self.model_path = model_path
         self.device = torch.device(device)
@@ -56,7 +58,6 @@ class KanGDyn(MessagePassing):
     def to(self, device):
         super().to(device)
         self.device = device
-        # self.f_net.to(device)
         self.h_net.to(device)
         self.g_net.to(device)
         
@@ -77,10 +78,21 @@ class KanGDyn(MessagePassing):
         return self.h_net(torch.cat([x, aggr_out], dim=-1), update_grid=update_grid)
     
     
-    def regularization_loss(self, mu_1, mu_2, use_orig=False):
-        reg_g, l1_g, entropy_g = self.g_net.regularization_loss(mu_1, mu_2, use_orig)
-        reg_h, l1_h, entropy_h = self.h_net.regularization_loss(mu_1, mu_2, use_orig)
-        return reg_h+reg_g, l1_g+l1_h, entropy_h+entropy_g
+    def regularization_loss(self, reg_loss_metrics:dict) -> float:
+        reg_g, l1_g, entropy_g = self.g_net.regularization_loss()
+        reg_h, l1_h, entropy_h = self.h_net.regularization_loss()
+        
+        # Update reg loss metrics 
+        reg_loss_metrics['reg_g'] += reg_g.item()
+        reg_loss_metrics['reg_h'] += reg_h.item()
+        
+        reg_loss_metrics['l1_g'] += l1_g.item()
+        reg_loss_metrics['l1_h'] += l1_h.item()
+        
+        reg_loss_metrics['entropy_g'] += entropy_g.item()
+        reg_loss_metrics['entropy_h'] += entropy_h.item()
+        
+        return reg_h+reg_g
     
     
     def get_norm(self, edge_index, x):
