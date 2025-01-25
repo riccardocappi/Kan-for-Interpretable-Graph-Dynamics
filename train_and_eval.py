@@ -74,17 +74,17 @@ def fit(model:NetWrapper,
         'entropy': []
     }
     
-    global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy, upd_grid
+    global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy
     
     def training():
-        global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy, upd_grid
+        global running_training_loss, running_tot_loss, running_reg, running_l1, running_entropy
         optimizer.zero_grad()
         y_pred = []
         for k in range(n_iter):
             y_true = train_data[k]
             t_eval = t_train[k]
             y0 = y_true[0]
-            y_pred.append(odeint(model, y0, t_eval, method='dopri5')[1:])
+            y_pred.append(odeint(model, y0, t_eval, method='dopri5')[1:]) # We can implement batch learning
         
         y_pred = torch.stack(y_pred, dim=0)
         training_loss = criterion(y_pred, train_data[:, 1:, :, :])
