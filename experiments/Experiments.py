@@ -32,7 +32,7 @@ class Experiments(ABC):
             
         self.t_f_train = t_f_train
         self.n_iter = config['n_iter']
-        self.train_data, self.t_train, self.valid_data, self.t_valid = create_datasets(config, G, t_f_train=self.t_f_train)
+        self.training_set, self.valid_set = create_datasets(config, G, t_f_train=self.t_f_train)
         
         self.edge_index = from_networkx(G).edge_index
         self.edge_index = self.edge_index.to(torch.device(self.device))
@@ -48,8 +48,7 @@ class Experiments(ABC):
     
     
     def run(self):
-        self.train_data, self.valid_data = self.pre_processing(self.train_data,
-                                                               self.valid_data)
+        self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)
         best_params = self.optimize()
         
         self.post_processing(best_params)

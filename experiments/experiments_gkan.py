@@ -25,8 +25,8 @@ class ExperimentsGKAN(Experiments):
         super().__init__(config, G, n_trials, search_space, model_selection_method, t_f_train=t_f_train)
         
     
-    def pre_processing(self, train_data, valid_data):
-        return train_data, valid_data
+    def pre_processing(self, training_set, valid_set):
+        return training_set, valid_set
     
     
     def objective(self, trial):
@@ -71,10 +71,8 @@ class ExperimentsGKAN(Experiments):
         
         results = fit(
             model,
-            self.train_data,
-            self.t_train,
-            self.valid_data,
-            self.t_valid,
+            self.training_set,
+            self.valid_set,
             epochs=self.epochs,
             patience=self.patience,
             lr = lr,
@@ -83,8 +81,9 @@ class ExperimentsGKAN(Experiments):
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
             save_updates=False,
-            t_f_train=self.t_f_train,
-            n_iter=self.n_iter
+            n_iter=self.n_iter,
+            batch_size=-1,
+            t_f_train=self.t_f_train
         )
         
         best_val_loss = min(results['validation_loss'])
@@ -106,7 +105,10 @@ class ExperimentsGKAN(Experiments):
             'grid_range': grid_range,
             'model_path': f'{self.model_path}/eval',
             'store_acts': store_acts,
-            'device': self.device
+            'device': self.device,
+            'mu_1': best_params.get('mu_1', 1.),
+            'mu_2': best_params.get('mu_2', 1.),
+            'use_orig_reg': store_acts
         }
 
         model = NetWrapper(KanGDyn, model_config, self.edge_index, update_grid=False)
@@ -114,23 +116,19 @@ class ExperimentsGKAN(Experiments):
         
         _ = fit(
             model,
-            self.train_data,
-            self.t_train,
-            self.valid_data,
-            self.t_valid,
+            self.training_set,
+            self.valid_set,
             epochs=self.epochs,
             patience=self.patience,
             lr = best_params['lr'],
             lmbd=best_params.get('lamb', 0.),
             log=self.log,
-            mu_1=best_params.get('mu_1', 1.),
-            mu_2=best_params.get('mu_2', 1.),
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
-            use_orig_reg=store_acts,
             save_updates=True,
-            t_f_train=self.t_f_train,
-            n_iter=self.n_iter
+            n_iter=self.n_iter,
+            batch_size=-1,
+            t_f_train=self.t_f_train
         ) 
         
         return model
@@ -143,7 +141,7 @@ class ExperimentsGKAN(Experiments):
         net.h_net.store_act = True
         net.g_net.store_act = True
 
-        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.train_data[0], 
+        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
                                                                     self.edge_index, 
                                                                     sample_size=32)
 

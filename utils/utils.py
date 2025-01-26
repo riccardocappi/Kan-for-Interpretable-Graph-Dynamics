@@ -7,6 +7,7 @@ from datasets.data_utils import numerical_integration
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
+from datasets.GraphDynamics import GraphDynamics
 
 
 
@@ -111,8 +112,11 @@ def create_datasets(config, graph, t_f_train=100):
     train_data = data[:, :t_f_train, :, :]
     t_train = t[:, :t_f_train]
     
-    return train_data, t_train, data, t
+    training_set = GraphDynamics(train_data, t_train)
+    validation_set = GraphDynamics(data, t)
     
+    # return train_data, t_train, data, t
+    return training_set, validation_set
     
 
 def save_acts(layers, folder_path):
