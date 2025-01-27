@@ -1,9 +1,9 @@
-from .KAN import KAN
+from .kan.KAN import KAN
 from torch_geometric.nn import MessagePassing
 import torch
 from torch_geometric.utils import degree
 
-class KanGDyn(MessagePassing):
+class GKAN_ODE(MessagePassing):
     def __init__(self, 
                  h_hidden_layers, 
                  g_hidden_layers,
@@ -12,7 +12,6 @@ class KanGDyn(MessagePassing):
                  grid_range = [-1, 1],
                  model_path = './model',
                  store_acts = False,
-                 scale_and_bias = False,
                  norm=False,
                  device='cuda',
                  mu_1 = 1.,
@@ -20,7 +19,7 @@ class KanGDyn(MessagePassing):
                  use_orig_reg = False
                  ):
         
-        super(KanGDyn, self).__init__(aggr='add')
+        super(GKAN_ODE, self).__init__(aggr='add')
         
         self.h_net = KAN(h_hidden_layers,
                          grid_size=grid_size,
@@ -28,7 +27,6 @@ class KanGDyn(MessagePassing):
                          grid_range=grid_range,
                          model_path=f'{model_path}/H_Net',
                          store_act=store_acts,
-                         scale_and_bias=scale_and_bias,
                          device=device,
                          mu_1=mu_1,
                          mu_2=mu_2,
@@ -41,7 +39,6 @@ class KanGDyn(MessagePassing):
                          grid_range=grid_range,
                          model_path=f'{model_path}/G_Net',
                          store_act=store_acts,
-                         scale_and_bias=scale_and_bias,
                          device=device,
                          mu_1=mu_1,
                          mu_2=mu_2,

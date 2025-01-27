@@ -1,7 +1,7 @@
 from .Experiments import Experiments
 import torch
-from models.NetWrapper import NetWrapper
-from models.KanGDyn import KanGDyn
+from models.utils.NetWrapper import NetWrapper
+from models.GKAN_ODE import GKAN_ODE
 from train_and_eval import fit
 from utils.utils import sample_from_spatio_temporal_graph, plot, save_acts
 
@@ -66,8 +66,8 @@ class ExperimentsGKAN(Experiments):
             'use_orig_reg': store_acts
         }
         
-        model = NetWrapper(KanGDyn, model_config, self.edge_index, update_grid=False)
-        model.to(torch.device(self.device))
+        model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)
+        model = model.to(torch.device(self.device))
         
         results = fit(
             model,
@@ -111,8 +111,8 @@ class ExperimentsGKAN(Experiments):
             'use_orig_reg': store_acts
         }
 
-        model = NetWrapper(KanGDyn, model_config, self.edge_index, update_grid=False)
-        model.to(torch.device(self.device))
+        model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)
+        model = model.to(torch.device(self.device))
         
         _ = fit(
             model,

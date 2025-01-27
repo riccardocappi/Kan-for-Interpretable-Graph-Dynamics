@@ -21,7 +21,6 @@ class KAN(torch.nn.Module):
         grid_range=[-1, 1],
         model_path = './model',
         store_act = False,
-        scale_and_bias=False,
         device='cuda',
         mu_1 = 1.,
         mu_2 = 1.,
@@ -57,9 +56,8 @@ class KAN(torch.nn.Module):
                     scale_spline=scale_spline,
                     base_activation=base_activation,
                     grid_eps=grid_eps,
-                    grid_range=grid_range,
-                    scale_and_bias=scale_and_bias
-                )
+                    grid_range=grid_range
+                    )
             )
         self.to(self.device)
         
@@ -128,8 +126,8 @@ class KAN(torch.nn.Module):
             # KAN layers params
             orig_state_dict = self.state_dict()
             
-            state_dict[f'node_bias_{l}'] = orig_state_dict[f'layers.{l}.layer_bias']
-            state_dict[f'node_scale_{l}'] = orig_state_dict[f'layers.{l}.layer_scale']
+            state_dict[f'node_bias_{l}'] = subnode_bias
+            state_dict[f'node_scale_{l}'] = subnode_scale
             
             state_dict[f'act_fun.{l}.grid'] = orig_state_dict[f'layers.{l}.grid']
             state_dict[f'act_fun.{l}.coef'] = orig_state_dict[f'layers.{l}.spline_weight'].permute(1, 0, 2)

@@ -3,7 +3,7 @@ from torch.optim import LBFGS
 import os
 from torchdiffeq import odeint
 # from torchdiffeq import odeint_adjoint as odeint
-from models.NetWrapper import NetWrapper
+from models.utils.NetWrapper import NetWrapper
 from utils.utils import save_logs
 import json
 from collections import defaultdict

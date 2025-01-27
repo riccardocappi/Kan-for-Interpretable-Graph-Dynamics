@@ -11,5 +11,6 @@ class GraphDynamics(Dataset):
     def __len__(self):
         return self.data.size(1)
 
+    
     def __getitem__(self, idx):
         return self.data[:, idx], self.time[:, idx]

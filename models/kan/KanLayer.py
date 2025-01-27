@@ -17,7 +17,6 @@ class KANLayer(torch.nn.Module):
         base_activation=torch.nn.SiLU,
         grid_eps=0.02,
         grid_range=[-1, 1],
-        scale_and_bias=False,
         compute_symbolic=False
     ):
         super(KANLayer, self).__init__()
@@ -61,9 +60,7 @@ class KANLayer(torch.nn.Module):
         self.cache_act = None
         self.cache_preact = None
         self.symb_dict_names = {}
-        
-        self.layer_scale = torch.nn.Parameter(torch.ones(out_features)).requires_grad_(scale_and_bias)
-        self.layer_bias = torch.nn.Parameter(torch.zeros(out_features)).requires_grad_(scale_and_bias)
+
         self.acts_scale_spline = None
         
         self.init_params()
@@ -286,8 +283,6 @@ class KANLayer(torch.nn.Module):
         else:
             output = self.get_activations_efficient(x) # (batch, out_features)
         
-        output = self.layer_scale[None,:] * output + self.layer_bias[None, :]
-    
         return output
     
     
