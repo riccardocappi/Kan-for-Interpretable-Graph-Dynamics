@@ -5,7 +5,8 @@ from torch_geometric.utils import from_networkx
 import optuna
 from optuna.samplers import GridSampler
 import json
-
+import os
+import logging
 
 class Experiments(ABC):
     def __init__(self, 
@@ -45,11 +46,27 @@ class Experiments(ABC):
         self.use_reg_loss = config['reg_loss']
         self.model_path = f'./saved_models_optuna/{config["model_name"]}'
         self.search_space = search_space
+        
+        logs_folder = f'{self.model_path}/optuna_logs'
+        if not os.path.exists(logs_folder):
+            os.makedirs(logs_folder)
+        logs_file_path = f'{logs_folder}/optuna_logs.txt'
+        
+        logger = logging.getLogger()
+
+        logger.setLevel(logging.INFO)  # Setup the root logger.
+        self.optuna_handler = logging.FileHandler(logs_file_path, mode="w")
+        
+        logger.addHandler(self.optuna_handler)
+        optuna.logging.enable_propagation()
     
     
     def run(self):
         self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)
         best_params = self.optimize()
+        
+        logging.getLogger().removeHandler(self.optuna_handler)
+        optuna.logging.disable_propagation()
         
         self.post_processing(best_params)
     
