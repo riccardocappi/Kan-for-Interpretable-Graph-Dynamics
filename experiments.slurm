@@ -19,7 +19,7 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=48:00:00
+#SBATCH --time=72:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
