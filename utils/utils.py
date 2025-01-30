@@ -126,4 +126,25 @@ def save_acts(layers, folder_path):
     for l, layer in enumerate(layers):
         assert layer.cache_act is not None and layer.cache_preact is not None, 'Populate model activations before saving them'
         torch.save(layer.cache_preact, f"{folder_path}/cache_preact_{l}")
-        torch.save(layer.cache_act, f"{folder_path}/cache_act_{l}")  
+        torch.save(layer.cache_act, f"{folder_path}/cache_act_{l}")
+    
+
+def pruning(kan_acts, kan_preacts, n_layers = 2, theta = 0.01):
+    def get_acts_scale_spline(l_index):
+        input_range = torch.std(kan_preacts[l_index], dim=0)
+        output_range_spline = torch.std(kan_acts[l_index], dim=0)
+        acts_scale_spline = output_range_spline / input_range
+        return acts_scale_spline
+
+    
+    for l in range(n_layers-1):
+        acts_scale_spline = get_acts_scale_spline(l)
+        I_lj, _ = torch.max(acts_scale_spline, dim=1)
+        
+        acts_scale_spline_next = get_acts_scale_spline(l+1)
+        O_lj, _ = torch.max(acts_scale_spline_next, dim=0)
+        
+        pruned_nodes = ((I_lj < theta) | (O_lj < theta)).int()
+        for j, is_pruned in enumerate(pruned_nodes):
+            if is_pruned == 1:
+                print(f"Pruning node ({l},{j})")

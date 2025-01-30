@@ -16,7 +16,9 @@ class GKAN_ODE(MessagePassing):
                  device='cuda',
                  mu_1 = 1.,
                  mu_2 = 1.,
-                 use_orig_reg = False
+                 use_orig_reg = False,
+                 lmbd_g = 0.,
+                 lmbd_h = 0.
                  ):
         
         super(GKAN_ODE, self).__init__(aggr='add')
@@ -48,6 +50,8 @@ class GKAN_ODE(MessagePassing):
         self.model_path = model_path
         self.device = torch.device(device)
         self.norm = norm
+        self.lmbd_g = lmbd_g
+        self.lmbd_h = lmbd_h
         
         self.to(self.device)
         
@@ -89,7 +93,7 @@ class GKAN_ODE(MessagePassing):
         reg_loss_metrics['entropy_g'] += entropy_g.item()
         reg_loss_metrics['entropy_h'] += entropy_h.item()
         
-        return reg_h+reg_g
+        return (self.lmbd_h * reg_h)+(self.lmbd_g * reg_g)
     
     
     def get_norm(self, edge_index, x):

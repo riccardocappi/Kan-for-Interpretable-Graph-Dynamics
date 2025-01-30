@@ -16,7 +16,8 @@ class ExperimentsGKAN(Experiments):
                 'spline_order': config['spline_order'],
                 'range_limit': config['range_limit'],
                 'lr': config['lr'],
-                'lamb': config['lamb'],
+                'lmbd_g': config['lmbd_g'],
+                'lmbd_h': config['lmbd_h'],
                 'mu_1': config['mu_1'],
                 'mu_2': config['mu_2'],
                 'use_orig_reg': config['use_orig_reg']
@@ -44,13 +45,16 @@ class ExperimentsGKAN(Experiments):
              
         lr = trial.suggest_float('lr', self.config['lr'][0], self.config['lr'][-1])
         
-        lamb = trial.suggest_float('lamb', self.config['lamb'][0], self.config['lamb'][-1]) if self.use_reg_loss else 0. 
+        lmbd_g = trial.suggest_float('lmbd_g', self.config['lmbd_g'][0], self.config['lmbd_g'][-1]) if self.use_reg_loss else 0.
+        lmbd_h = trial.suggest_float('lmbd_h', self.config['lmbd_h'][0], self.config['lmbd_h'][-1]) if self.use_reg_loss else 0.
+        is_lamb = lmbd_g > 0. or lmbd_h > 0.
+        
         mu_1 = trial.suggest_float('mu_1', self.config['mu_1'][0], self.config['mu_1'][-1]) if self.use_reg_loss else 1.
         mu_2 = trial.suggest_float('mu_2', self.config['mu_2'][0], self.config['mu_2'][-1]) if self.use_reg_loss else 1.
             
         use_orig_reg = trial.suggest_categorical("use_orig_reg", self.config['use_orig_reg'])
         
-        store_acts = (use_orig_reg and lamb > 0.)
+        store_acts = (use_orig_reg and is_lamb)
         
         model_config = {
             'h_hidden_layers': [2, 3, 1],
@@ -63,7 +67,9 @@ class ExperimentsGKAN(Experiments):
             'device': self.device,
             'mu_1': mu_1,
             'mu_2': mu_2,
-            'use_orig_reg': store_acts
+            'use_orig_reg': store_acts,
+            'lmbd_g': lmbd_g,
+            'lmbd_h': lmbd_h
         }
         
         model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)
@@ -76,7 +82,7 @@ class ExperimentsGKAN(Experiments):
             epochs=self.epochs,
             patience=self.patience,
             lr = lr,
-            lmbd=lamb,
+            lmbd=1.,
             log=self.log,
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
@@ -93,7 +99,8 @@ class ExperimentsGKAN(Experiments):
     
     
     def eval_model(self, best_params):
-        store_acts = (best_params['use_orig_reg'] and best_params['lamb'] > 0.)
+        is_lamb = best_params['lmbd_g'] > 0. or best_params['lmbd_h'] > 0.
+        store_acts = (best_params['use_orig_reg'] and is_lamb)
         range_limit = best_params['range_limit']
         grid_range = [-range_limit, range_limit]
         
@@ -108,7 +115,9 @@ class ExperimentsGKAN(Experiments):
             'device': self.device,
             'mu_1': best_params.get('mu_1', 1.),
             'mu_2': best_params.get('mu_2', 1.),
-            'use_orig_reg': store_acts
+            'use_orig_reg': store_acts,
+            'lmbd_g': best_params['lmbd_g'],
+            'lmbd_h': best_params['lmbd_h']
         }
 
         model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)
@@ -121,7 +130,7 @@ class ExperimentsGKAN(Experiments):
             epochs=self.epochs,
             patience=self.patience,
             lr = best_params['lr'],
-            lmbd=best_params.get('lamb', 0.),
+            lmbd=1.,
             log=self.log,
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
