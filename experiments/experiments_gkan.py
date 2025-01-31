@@ -2,7 +2,6 @@ from .Experiments import Experiments
 import torch
 from models.utils.NetWrapper import NetWrapper
 from models.GKAN_ODE import GKAN_ODE
-from train_and_eval import fit
 from utils.utils import sample_from_spatio_temporal_graph, plot, save_acts
 
 
@@ -16,7 +15,7 @@ class ExperimentsGKAN(Experiments):
         return training_set, valid_set
     
     
-    def objective(self, trial):
+    def get_model_opt(self, trial):
             
         grid_size = trial.suggest_int('grid_size', self.search_space['grid_size'][0],
                                       self.search_space['grid_size'][-1])
@@ -28,9 +27,7 @@ class ExperimentsGKAN(Experiments):
                                         self.search_space['range_limit'][-1])
         
         grid_range = [-range_limit, range_limit]
-             
-        lr = trial.suggest_float('lr', self.search_space['lr'][0], self.search_space['lr'][-1])
-        
+                     
         lmbd_g = trial.suggest_float('lmbd_g', self.search_space['lmbd_g'][0], self.search_space['lmbd_g'][-1]) if self.use_reg_loss else 0.
         lmbd_h = trial.suggest_float('lmbd_h', self.search_space['lmbd_h'][0], self.search_space['lmbd_h'][-1]) if self.use_reg_loss else 0.
         is_lamb = lmbd_g > 0. or lmbd_h > 0.
@@ -42,97 +39,60 @@ class ExperimentsGKAN(Experiments):
         
         store_acts = (use_orig_reg and is_lamb)
         
-        model_config = {
-            'h_hidden_layers': [2, 3, 1],
-            'g_hidden_layers': [2, 3, 1],
-            'grid_size': grid_size,
-            'spline_order': spline_order,
-            'grid_range': grid_range,
-            'model_path': self.model_path,
-            'store_acts': store_acts,
-            'device': self.device,
-            'mu_1': mu_1,
-            'mu_2': mu_2,
-            'use_orig_reg': store_acts,
-            'lmbd_g': lmbd_g,
-            'lmbd_h': lmbd_h
-        }
-        
-        model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)
-        model = model.to(torch.device(self.device))
-        
-        results = fit(
-            model,
-            self.training_set,
-            self.valid_set,
-            epochs=self.epochs,
-            patience=self.patience,
-            lr = lr,
-            lmbd=1.,
-            log=self.log,
-            criterion=torch.nn.MSELoss(),
-            opt=self.opt,
-            save_updates=False,
-            n_iter=self.n_iter,
-            batch_size=-1,
-            t_f_train=self.t_f_train
+        net = GKAN_ODE(
+            h_hidden_layers = [2, 3, 1],
+            g_hidden_layers = [2, 3, 1],
+            grid_size = grid_size,
+            spline_order = spline_order,
+            grid_range = grid_range,
+            model_path = self.model_path,
+            store_acts = store_acts,
+            device = self.device,
+            mu_1 = mu_1,
+            mu_2 = mu_2,
+            use_orig_reg = store_acts,
+            lmbd_g = lmbd_g,
+            lmbd_h = lmbd_h
         )
         
-        best_val_loss = min(results['validation_loss'])
+        model = NetWrapper(net, self.edge_index, update_grid=False)
+        model = model.to(torch.device(self.device))
         
-        return best_val_loss
+        return model
     
     
     
-    def eval_model(self, best_params):
+    def get_best_model(self, best_params):
         is_lamb = best_params['lmbd_g'] > 0. or best_params['lmbd_h'] > 0.
         store_acts = (best_params['use_orig_reg'] and is_lamb)
         range_limit = best_params['range_limit']
         grid_range = [-range_limit, range_limit]
         
-        model_config = {
-            'h_hidden_layers': [2, 3, 1],
-            'g_hidden_layers': [2, 3, 1],
-            'grid_size': best_params['grid_size'],
-            'spline_order': best_params['spline_order'],
-            'grid_range': grid_range,
-            'model_path': f'{self.model_path}/eval',
-            'store_acts': store_acts,
-            'device': self.device,
-            'mu_1': best_params.get('mu_1', 1.),
-            'mu_2': best_params.get('mu_2', 1.),
-            'use_orig_reg': store_acts,
-            'lmbd_g': best_params.get('lmbd_g', 0.),
-            'lmbd_h': best_params.get('lmbd_h', 0.)
-        }
+        net = GKAN_ODE(
+            h_hidden_layers = [2, 3, 1],
+            g_hidden_layers = [2, 3, 1],
+            grid_size = best_params['grid_size'],
+            spline_order = best_params['spline_order'],
+            grid_range = grid_range,
+            model_path = f'{self.model_path}/eval',
+            store_acts = store_acts,
+            device = self.device,
+            mu_1 = best_params.get('mu_1', 1.),
+            mu_2 = best_params.get('mu_2', 1.),
+            use_orig_reg = store_acts,
+            lmbd_g = best_params.get('lmbd_g', 0.),
+            lmbd_h = best_params.get('lmbd_h', 0.)
+        )
 
-        model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)
+        model = NetWrapper(net, self.edge_index, update_grid=False)
         model = model.to(torch.device(self.device))
-        
-        _ = fit(
-            model,
-            self.training_set,
-            self.valid_set,
-            epochs=self.epochs,
-            patience=self.patience,
-            lr = best_params['lr'],
-            lmbd=1.,
-            log=self.log,
-            criterion=torch.nn.MSELoss(),
-            opt=self.opt,
-            save_updates=True,
-            n_iter=self.n_iter,
-            batch_size=-1,
-            t_f_train=self.t_f_train
-        ) 
         
         return model
 
      
-    def post_processing(self, best_params):
-        model = self.eval_model(best_params)
+    def post_processing(self, best_model):
         
-        net = model.model
+        net = best_model.model
         net.h_net.store_act = True
         net.g_net.store_act = True
 

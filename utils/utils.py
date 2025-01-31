@@ -49,6 +49,7 @@ def plot(folder_path, layers, show_plots=False):
                 if show_plots:
                     plt.show()
                 plt.clf()
+                plt.close()
                 
 
 

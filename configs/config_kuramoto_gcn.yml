@@ -1,5 +1,6 @@
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-grid-gcn'
+model_type: 'GCN'
 epochs: 100
 patience: 200
 opt: 'Adam'

@@ -2,7 +2,8 @@ from .Experiments import Experiments
 from models.utils.NetWrapper import NetWrapper
 from models.baseline.baseline import GCN, GIN
 import torch
-from train_and_eval import fit
+from utils.utils import sample_from_spatio_temporal_graph
+import os
 
 
 class ExperimentsBaseline(Experiments):
@@ -16,7 +17,7 @@ class ExperimentsBaseline(Experiments):
         return train_data, valid_data
     
     
-    def objective(self, trial):
+    def get_model_opt(self, trial):
         if self.model_type == 'GCN':
             model = self._get_GCN(trial)
         elif self.model_type == 'GIN':
@@ -24,38 +25,19 @@ class ExperimentsBaseline(Experiments):
         else:
             raise Exception('Model not supported')
 
-        lr = trial.suggest_float('lr', self.search_space['lr'][0], self.search_space['lr'][-1])
-        
-        results = fit(
-            model,
-            self.training_set,
-            self.valid_set,
-            epochs=self.epochs,
-            patience=self.patience,
-            lr = lr,
-            log=self.log,
-            criterion=torch.nn.MSELoss(),
-            opt=self.opt,
-            save_updates=False,
-            n_iter=self.n_iter,
-            batch_size=-1,
-            t_f_train=self.t_f_train
-        )
-        
-        best_val_loss = min(results['validation_loss']) 
-        return best_val_loss
+        return model
         
 
     def _get_GCN(self, trial):
         hidden_dims = trial.suggest_int('hidden_dim', self.search_space['hidden_dim'][0], self.search_space['hidden_dim'][-1])
-        model_config = {
-            'input_dim': self.config['in_dim'],
-            'hidden_dim': hidden_dims,
-            'output_dim': self.config['in_dim'],
-            'model_path': self.model_path
-        }
+        net = GCN(
+            input_dim = self.config['in_dim'],
+            hidden_dim = hidden_dims,
+            output_dim = self.config['in_dim'],
+            model_path = self.model_path
+        )
         
-        model = NetWrapper(GCN, model_config, self.edge_index)
+        model = NetWrapper(net, self.edge_index)
         model = model.to(torch.device(self.device))
         
         return model
@@ -65,20 +47,20 @@ class ExperimentsBaseline(Experiments):
         hidden_dims = trial.suggest_int('hidden_dim', self.search_space['hidden_dim'][0], self.search_space['hidden_dim'][-1])
         epsilon = trial.suggest_float('epsilon', self.search_space['epsilon'][0], self.search_space['epsilon'][-1])
         
-        model_config = {
-            'input_dim': self.config['in_dim'],
-            'hidden_dim': hidden_dims,
-            'output_dim': self.config['in_dim'],
-            'model_path': self.model_path,
-            'epsilon': epsilon
-        }
-        model = NetWrapper(GIN, model_config, self.edge_index)
+        net = GIN(
+            input_dim = self.config['in_dim'],
+            hidden_dim = hidden_dims,
+            output_dim = self.config['in_dim'],
+            model_path = self.model_path,
+            epsilon = epsilon
+        )
+        model = NetWrapper(net, self.edge_index)
         model = model.to(torch.device(self.device))
         
         return model
 
     
-    def post_processing(self, best_params):
+    def get_best_model(self, best_params):
         model_config = {}
         for key in self.search_space.keys():
             if key != 'lr':
@@ -89,24 +71,31 @@ class ExperimentsBaseline(Experiments):
         model_config['output_dim'] = self.config['in_dim']
         
         net = GCN if self.model_type == 'GCN' else GIN          #TODO: Generalize this
-        model = NetWrapper(net, model_config, self.edge_index)
+        net_instance = net(**model_config)
+        
+        model = NetWrapper(net_instance, self.edge_index)
         model = model.to(torch.device(self.device))
         
-        _ = fit(
-            model,
-            self.training_set,
-            self.valid_set,
-            epochs=self.epochs,
-            patience=self.patience,
-            lr = best_params['lr'],
-            lmbd=1.,
-            log=self.log,
-            criterion=torch.nn.MSELoss(),
-            opt=self.opt,
-            save_updates=True,
-            n_iter=self.n_iter,
-            batch_size=-1,
-            t_f_train=self.t_f_train
-        )
-        
         return model
+
+    
+    def post_processing(self, best_model):
+        
+        net = best_model.model
+        
+        net.save_black_box = True
+        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
+                                                                      self.edge_index, 
+                                                                      sample_size=32)
+        
+        with torch.no_grad():
+            _ = net(dummy_x, dummy_edge_index)
+            
+        folder_path = f'{net.model_path}/cached_data'
+        
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            
+        torch.save(net.cache_input, f'{folder_path}/cached_input')
+        torch.save(net.cache_output, f'{folder_path}/cached_output')
+        

@@ -1,5 +1,6 @@
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-grid-gin'
+model_type: 'GIN'
 epochs: 100
 patience: 200
 opt: 'Adam'

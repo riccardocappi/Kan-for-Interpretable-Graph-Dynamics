@@ -7,6 +7,7 @@ from optuna.samplers import GridSampler
 import json
 import os
 import logging
+from train_and_eval import fit
 
 class Experiments(ABC):
     def __init__(self, 
@@ -61,16 +62,13 @@ class Experiments(ABC):
     def run(self):
         self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)
         best_params = self.optimize()
-        
+
         logging.getLogger().removeHandler(self.optuna_handler)
         optuna.logging.disable_propagation()
         
-        self.post_processing(best_params)
-    
-    
-    @abstractmethod
-    def pre_processing(self, train_data, valid_data):
-        raise Exception('Not implemented')
+        best_model = self.eval_model(best_params)
+        
+        self.post_processing(best_model)
     
     
     def optimize(self):
@@ -93,13 +91,78 @@ class Experiments(ABC):
         return best_params
     
     
-    @abstractmethod
     def objective(self, trial):
+        model = self.get_model_opt(trial)
+        
+        lr_space = self.search_space.get('lr', [0.001])
+        lr = trial.suggest_float('lr', lr_space[0], lr_space[-1])
+        
+        lamb_space = self.search_space.get('lamb', [0.])
+        lamb = trial.suggest_float('lamb', lamb_space[0], lamb_space[-1])
+        
+        results = fit(
+            model,
+            self.training_set,
+            self.valid_set,
+            epochs=self.epochs,
+            patience=self.patience,
+            lr = lr,
+            lmbd=lamb,
+            log=self.log,
+            criterion=torch.nn.MSELoss(),
+            opt=self.opt,
+            save_updates=False,
+            n_iter=self.n_iter,
+            batch_size=-1,
+            t_f_train=self.t_f_train
+        )
+        
+        best_val_loss = min(results['validation_loss'])
+        
+        return best_val_loss
+    
+    
+    def eval_model(self, best_params):
+        best_model = self.get_best_model(best_params)
+        
+        lr = best_params.get('lr', 0.001)
+        lamb = best_params.get('lamb', 0.)
+        
+        _ = fit(
+            best_model,
+            self.training_set,
+            self.valid_set,
+            epochs=self.epochs,
+            patience=self.patience,
+            lr = lr,
+            lmbd=lamb,
+            log=self.log,
+            criterion=torch.nn.MSELoss(),
+            opt=self.opt,
+            save_updates=True,
+            n_iter=self.n_iter,
+            batch_size=-1,
+            t_f_train=self.t_f_train
+        ) 
+        
+        return best_model
+    
+    
+    @abstractmethod
+    def pre_processing(self, train_data, valid_data):
         raise Exception('Not implemented')
     
     
     @abstractmethod
-    def post_processing(self, best_params):
+    def get_model_opt(self, trial):
         raise Exception('Not implemented')
     
     
+    @abstractmethod
+    def get_best_model(self, best_params):
+        raise Exception('Not implemented')
+    
+    
+    @abstractmethod
+    def post_processing(self, best_model):
+        raise Exception('Not implemented')

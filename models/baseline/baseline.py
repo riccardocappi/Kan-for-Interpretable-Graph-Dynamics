@@ -4,18 +4,29 @@ from torch_geometric.nn import GCNConv, GINConv
 
 
 class GCN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, model_path='./models'):
+    def __init__(self, input_dim, hidden_dim, output_dim, model_path='./models', save_black_box=False):
         super(GCN, self).__init__()
         self.conv1 = GCNConv(input_dim, hidden_dim)
         self.conv2 = GCNConv(hidden_dim, output_dim)
         self.model_path = model_path
+        self.save_black_box = save_black_box
+        self.cache_input = None
+        self.cache_output = None
+        
 
 
     def forward(self, x, edge_index):
+        if self.save_black_box:
+            self.cache_input = x.detach()
+            
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         # x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv2(x, edge_index)
+        
+        if self.save_black_box:
+            self.cache_output = x.detach()
+            
         return x
     
     
@@ -25,7 +36,7 @@ class GCN(torch.nn.Module):
     
     
 class GIN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, model_path='./models', epsilon=0.):
+    def __init__(self, input_dim, hidden_dim, output_dim, model_path='./models', epsilon=0., save_black_box=False):
         super(GIN, self).__init__()
         nn1 = torch.nn.Sequential(
             torch.nn.Linear(input_dim, hidden_dim),
@@ -35,10 +46,20 @@ class GIN(torch.nn.Module):
         self.conv1 = GINConv(nn1, eps=epsilon, train_eps=False)
         
         self.model_path = model_path
+        self.save_black_box = save_black_box
+        self.cache_input = None
+        self.cache_output = None
 
 
     def forward(self, x, edge_index):
+        if self.save_black_box:
+            self.cache_input = x.detach()
+            
         x = self.conv1(x, edge_index)
+        
+        if self.save_black_box:
+            self.cache_output = x.detach()
+            
         return x
     
     

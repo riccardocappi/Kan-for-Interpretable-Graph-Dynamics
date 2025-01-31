@@ -1,9 +1,9 @@
 import torch.nn as nn
 
 class NetWrapper(nn.Module):
-    def __init__(self, model, model_config, edge_index, **kwargs):
+    def __init__(self, model, edge_index, **kwargs):
         super().__init__()
-        self.model = model(**model_config)
+        self.model = model
         self.edge_index = edge_index
         self.kwargs = kwargs
         
