@@ -7,23 +7,9 @@ from utils.utils import sample_from_spatio_temporal_graph, plot, save_acts
 
 
 class ExperimentsGKAN(Experiments):
-    def __init__(self, config, G, n_trials, model_selection_method='optuna', t_f_train=240):
-        
-        search_space = None
-        if model_selection_method == 'grid_search':
-            search_space = {
-                'grid_size': config['grid_size'],
-                'spline_order': config['spline_order'],
-                'range_limit': config['range_limit'],
-                'lr': config['lr'],
-                'lmbd_g': config['lmbd_g'],
-                'lmbd_h': config['lmbd_h'],
-                'mu_1': config['mu_1'],
-                'mu_2': config['mu_2'],
-                'use_orig_reg': config['use_orig_reg']
-            }
+    def __init__(self, config, G, n_trials, model_selection_method='optuna'):
             
-        super().__init__(config, G, n_trials, search_space, model_selection_method, t_f_train=t_f_train)
+        super().__init__(config, G, n_trials, model_selection_method)
         
     
     def pre_processing(self, training_set, valid_set):
@@ -32,27 +18,27 @@ class ExperimentsGKAN(Experiments):
     
     def objective(self, trial):
             
-        grid_size = trial.suggest_int('grid_size', self.config['grid_size'][0],
-                                      self.config['grid_size'][-1])
+        grid_size = trial.suggest_int('grid_size', self.search_space['grid_size'][0],
+                                      self.search_space['grid_size'][-1])
         
-        spline_order = trial.suggest_int('spline_order', self.config['spline_order'][0], 
-                                         self.config['spline_order'][-1])
+        spline_order = trial.suggest_int('spline_order', self.search_space['spline_order'][0], 
+                                         self.search_space['spline_order'][-1])
         
-        range_limit = trial.suggest_int('range_limit', self.config['range_limit'][0], 
-                                        self.config['range_limit'][-1])
+        range_limit = trial.suggest_int('range_limit', self.search_space['range_limit'][0], 
+                                        self.search_space['range_limit'][-1])
         
         grid_range = [-range_limit, range_limit]
              
-        lr = trial.suggest_float('lr', self.config['lr'][0], self.config['lr'][-1])
+        lr = trial.suggest_float('lr', self.search_space['lr'][0], self.search_space['lr'][-1])
         
-        lmbd_g = trial.suggest_float('lmbd_g', self.config['lmbd_g'][0], self.config['lmbd_g'][-1]) if self.use_reg_loss else 0.
-        lmbd_h = trial.suggest_float('lmbd_h', self.config['lmbd_h'][0], self.config['lmbd_h'][-1]) if self.use_reg_loss else 0.
+        lmbd_g = trial.suggest_float('lmbd_g', self.search_space['lmbd_g'][0], self.search_space['lmbd_g'][-1]) if self.use_reg_loss else 0.
+        lmbd_h = trial.suggest_float('lmbd_h', self.search_space['lmbd_h'][0], self.search_space['lmbd_h'][-1]) if self.use_reg_loss else 0.
         is_lamb = lmbd_g > 0. or lmbd_h > 0.
         
-        mu_1 = trial.suggest_float('mu_1', self.config['mu_1'][0], self.config['mu_1'][-1]) if self.use_reg_loss else 1.
-        mu_2 = trial.suggest_float('mu_2', self.config['mu_2'][0], self.config['mu_2'][-1]) if self.use_reg_loss else 1.
+        mu_1 = trial.suggest_float('mu_1', self.search_space['mu_1'][0], self.search_space['mu_1'][-1]) if self.use_reg_loss else 1.
+        mu_2 = trial.suggest_float('mu_2', self.search_space['mu_2'][0], self.search_space['mu_2'][-1]) if self.use_reg_loss else 1.
             
-        use_orig_reg = trial.suggest_categorical("use_orig_reg", self.config['use_orig_reg'])
+        use_orig_reg = trial.suggest_categorical("use_orig_reg", self.search_space['use_orig_reg'])
         
         store_acts = (use_orig_reg and is_lamb)
         
@@ -116,8 +102,8 @@ class ExperimentsGKAN(Experiments):
             'mu_1': best_params.get('mu_1', 1.),
             'mu_2': best_params.get('mu_2', 1.),
             'use_orig_reg': store_acts,
-            'lmbd_g': best_params['lmbd_g'],
-            'lmbd_h': best_params['lmbd_h']
+            'lmbd_g': best_params.get('lmbd_g', 0.),
+            'lmbd_h': best_params.get('lmbd_h', 0.)
         }
 
         model = NetWrapper(GKAN_ODE, model_config, self.edge_index, update_grid=False)

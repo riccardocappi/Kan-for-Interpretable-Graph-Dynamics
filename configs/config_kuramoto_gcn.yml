@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-2-3-1(2)'
+model_name: 'model-kuramoto-grid-gcn'
 epochs: 100
 patience: 200
 opt: 'Adam'
@@ -11,16 +11,10 @@ noise_strengths: []
 device: 'cpu'
 input_range: [0, 6.28318530718]
 reg_loss: true
+in_dim: 1
 search_space:
-  grid_size: [3, 10]
-  spline_order: [2, 4]
-  range_limit: [5, 7]
-  lr: [0.01, 0.1]
-  lmbd_g: [0.001, 0.01]
-  lmbd_h: [0.001, 0.01]
-  mu_1: [1.]
-  mu_2: [1.]
-  use_orig_reg: [False, True]
+  hidden_dim: [8, 32]
+  lr: [0.001, 0.01]
 n_iter: 1
 integration_kwargs:
   w: 2.

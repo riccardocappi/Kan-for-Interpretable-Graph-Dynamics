@@ -13,15 +13,12 @@ class Experiments(ABC):
                  config, 
                  G, 
                  n_trials,
-                 search_space = None,
-                 model_selection_method='optuna',
-                 t_f_train=240):
+                 model_selection_method='optuna'):
         
         super().__init__()
         
         assert model_selection_method != 'optuna' or n_trials is not None
         assert model_selection_method == 'optuna' or model_selection_method == 'grid_search', 'Optimization method not supported!'
-        assert model_selection_method != 'grid_search' or search_space is not None
         
         self.config = config
         self.n_trials = n_trials
@@ -31,7 +28,7 @@ class Experiments(ABC):
         if self.device == 'cuda':
             assert torch.cuda.is_available()
             
-        self.t_f_train = t_f_train
+        self.t_f_train = int(0.8 * config['t_eval_steps'])
         self.n_iter = config['n_iter']
         self.training_set, self.valid_set = create_datasets(config, G, t_f_train=self.t_f_train)
         
@@ -45,7 +42,7 @@ class Experiments(ABC):
         
         self.use_reg_loss = config['reg_loss']
         self.model_path = f'./saved_models_optuna/{config["model_name"]}'
-        self.search_space = search_space
+        self.search_space = config['search_space']
         
         logs_folder = f'{self.model_path}/optuna_logs'
         if not os.path.exists(logs_folder):
