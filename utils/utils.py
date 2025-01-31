@@ -138,6 +138,8 @@ def pruning(kan_acts, kan_preacts, n_layers = 2, theta = 0.01):
         acts_scale_spline = output_range_spline / input_range
         return acts_scale_spline
 
+    pruned_kan = []
+    pruned_shape = [kan_preacts[0].size(1)]
     
     for l in range(n_layers-1):
         acts_scale_spline = get_acts_scale_spline(l)
@@ -146,7 +148,20 @@ def pruning(kan_acts, kan_preacts, n_layers = 2, theta = 0.01):
         acts_scale_spline_next = get_acts_scale_spline(l+1)
         O_lj, _ = torch.max(acts_scale_spline_next, dim=0)
         
-        pruned_nodes = ((I_lj < theta) | (O_lj < theta)).int()
+        pruned_nodes = ((I_lj < theta) | (O_lj < theta)).bool()
+        remaining_indices = torch.where(~pruned_nodes)[0] 
+        
+        remaining_acts = kan_acts[l][:, remaining_indices, :]
+        pruned_kan.append(remaining_acts)
+        pruned_shape.append(remaining_acts.size(1))
+        
         for j, is_pruned in enumerate(pruned_nodes):
-            if is_pruned == 1:
+            if is_pruned:
                 print(f"Pruning node ({l},{j})")
+                
+    pruned_shape.append(kan_acts[-1].size(1))
+    pruned_kan.append(kan_acts[-1])
+    
+    return pruned_kan, pruned_shape
+                
+        

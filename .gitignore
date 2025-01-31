@@ -3,8 +3,8 @@ saved_models_optuna
 .venv
 __pycache__
 saved_models
-gkanconv-ode.err
-gkanconv-ode.out
+gkanconv-ode*
 notebooks
 old_experiments
 .vscode
+
