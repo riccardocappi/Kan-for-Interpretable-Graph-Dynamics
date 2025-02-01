@@ -1,13 +1,13 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKanConv-ODE-baseline
+#SBATCH --job-name=GKAN-ODE-grid-search
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
 
 ### Standard output and standard error for our job
-#SBATCH --error=gkanconv-ode-baseline.err
-#SBATCH --output=gkanconv-ode-baseline.out
+#SBATCH --error=gkanconv-ode.err
+#SBATCH --output=gkanconv-ode.out
 
 ### queue/partition choosed
 #SBATCH --partition=testing
@@ -39,5 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto_gcn.yml --method=optuna --n_trials=30
-python main.py --config=./configs/config_kuramoto_gin.yml --method=optuna --n_trials=30
+python main.py --config=./configs/config_kuramoto.yml --method=grid_search --n_trials=1

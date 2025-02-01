@@ -1,7 +1,7 @@
 dynamics: 'Kuramoto'
-model_name: model-kuramoto-grid-2-3-1(2)
+model_name: model-kuramoto-grid-2-3-1(2)_grid_search
 model_type: 'GKAN'
-epochs: 100
+epochs: 600
 patience: 200
 opt: 'Adam'
 log: 10 
@@ -9,21 +9,21 @@ t_span: [0,1]
 t_eval_steps: 300
 seed: 42
 noise_strengths: []
-device: 'cpu'
+device: 'cuda'
 input_range: [0, 6.28318530718]
 reg_loss: true
 search_space:
-  grid_size: [3, 10]
-  spline_order: [2, 4]
+  grid_size: [7]
+  spline_order: [3]
   range_limit: [5, 7]
-  lr: [0.01, 0.1]
-  lmbd_g: [0.001, 0.01]
-  lmbd_h: [0.001, 0.01]
+  lr: [0.01, 0.05]
+  lmbd_g: [0.001, 0.005]
+  lmbd_h: [0.001, 0.005]
   mu_1: [1.]
   mu_2: [1.]
   use_orig_reg: [False, True]
   lamb: [1.]
-n_iter: 1
+n_iter: 2
 integration_kwargs:
   w: 2.
   R: 1.

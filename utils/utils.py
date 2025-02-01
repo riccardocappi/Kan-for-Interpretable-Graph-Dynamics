@@ -162,6 +162,8 @@ def pruning(kan_acts, kan_preacts, n_layers = 2, theta = 0.01):
     pruned_shape.append(kan_acts[-1].size(1))
     pruned_kan.append(kan_acts[-1])
     
+    #TODO: Prune also preacts
+    
     return pruned_kan, pruned_shape
                 
         
