@@ -131,15 +131,17 @@ def save_acts(layers, folder_path):
         torch.save(layer.acts_scale_spline, f"{folder_path}/cache_act_scale_spline_{l}")
         
 
-def pruning(kan_acts, kan_preacts, n_layers = 2, theta = 0.01):
+def pruning(kan_acts, kan_preacts, theta = 0.01):
+    
     def get_acts_scale_spline(l_index):
-        input_range = torch.std(kan_preacts[l_index], dim=0)
-        output_range_spline = torch.std(kan_acts[l_index], dim=0)
+        input_range = torch.std(pruned_preacts[l_index], dim=0)
+        output_range_spline = torch.std(pruned_acts[l_index], dim=0)
         acts_scale_spline = output_range_spline / input_range
         return acts_scale_spline
 
-    pruned_kan = []
-    pruned_shape = [kan_preacts[0].size(1)]
+    n_layers = len(kan_acts)
+    pruned_acts = kan_acts.copy()
+    pruned_preacts = kan_preacts.copy()    
     
     for l in range(n_layers-1):
         acts_scale_spline = get_acts_scale_spline(l)
@@ -150,20 +152,16 @@ def pruning(kan_acts, kan_preacts, n_layers = 2, theta = 0.01):
         
         pruned_nodes = ((I_lj < theta) | (O_lj < theta)).bool()
         remaining_indices = torch.where(~pruned_nodes)[0] 
+        remaining_acts = pruned_acts[l][:, remaining_indices, :]
         
-        remaining_acts = kan_acts[l][:, remaining_indices, :]
-        pruned_kan.append(remaining_acts)
-        pruned_shape.append(remaining_acts.size(1))
+        pruned_acts[l] = remaining_acts
+        pruned_acts[l+1] = pruned_acts[l+1][:, :, remaining_indices]
+        pruned_preacts[l+1] = pruned_preacts[l+1][:, remaining_indices]
         
         for j, is_pruned in enumerate(pruned_nodes):
             if is_pruned:
-                print(f"Pruning node ({l},{j})")
-                
-    pruned_shape.append(kan_acts[-1].size(1))
-    pruned_kan.append(kan_acts[-1])
+                print(f"Pruning node ({l},{j})")    
     
-    #TODO: Prune also preacts
-    
-    return pruned_kan, pruned_shape
+    return pruned_acts, pruned_preacts
                 
         
