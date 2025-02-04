@@ -18,7 +18,8 @@ class GKAN_ODE(MessagePassing):
                  mu_2 = 1.,
                  use_orig_reg = False,
                  lmbd_g = 0.,
-                 lmbd_h = 0.
+                 lmbd_h = 0.,
+                 compute_symbolic=False
                  ):
         
         super(GKAN_ODE, self).__init__(aggr='add')
@@ -32,7 +33,8 @@ class GKAN_ODE(MessagePassing):
                          device=device,
                          mu_1=mu_1,
                          mu_2=mu_2,
-                         use_orig_reg=use_orig_reg
+                         use_orig_reg=use_orig_reg,
+                         compute_symbolic=compute_symbolic
                          )
         
         self.g_net = KAN(g_hidden_layers,
@@ -44,7 +46,8 @@ class GKAN_ODE(MessagePassing):
                          device=device,
                          mu_1=mu_1,
                          mu_2=mu_2,
-                         use_orig_reg=use_orig_reg
+                         use_orig_reg=use_orig_reg,
+                         compute_symbolic=compute_symbolic
                          )
         
         self.model_path = model_path

@@ -3,7 +3,6 @@ import yaml
 import torch
 from .KanLayer import KANLayer
 
-
 class KAN(torch.nn.Module):
     '''
     Implementation from scratch of KAN model. 
@@ -24,7 +23,8 @@ class KAN(torch.nn.Module):
         device='cuda',
         mu_1 = 1.,
         mu_2 = 1.,
-        use_orig_reg = False
+        use_orig_reg = False,
+        compute_symbolic = False
         ):
         super(KAN, self).__init__()
         self.layers = torch.nn.ModuleList()
@@ -56,7 +56,8 @@ class KAN(torch.nn.Module):
                     scale_spline=scale_spline,
                     base_activation=base_activation,
                     grid_eps=grid_eps,
-                    grid_range=grid_range
+                    grid_range=grid_range,
+                    compute_symbolic=compute_symbolic
                     )
             )
         self.to(self.device)
@@ -104,54 +105,11 @@ class KAN(torch.nn.Module):
             tot_l1 += l1
             tot_entropy += entropy
         return tot_reg, tot_l1, tot_entropy
-                         
-                
-    def to_original_kan(self):
-        '''
-        Save the models parameters so that they can be loaded to a corresponding model based on the original
-        KAN implementation.
-        '''
-        folder = f'{self.model_path}/original-kan-state'
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        
-        state_dict = {}
-        for l, layer in enumerate(self.layers):
-            subnode_bias = torch.nn.Parameter(torch.zeros(layer.out_features)).to(self.device).detach().requires_grad_(False)
-            subnode_scale = torch.nn.Parameter(torch.ones(layer.out_features)).to(self.device).detach().requires_grad_(False)
-            
-            state_dict[f'subnode_bias_{l}'] = subnode_bias
-            state_dict[f'subnode_scale_{l}'] = subnode_scale
-            
-            # KAN layers params
-            orig_state_dict = self.state_dict()
-            
-            state_dict[f'node_bias_{l}'] = subnode_bias
-            state_dict[f'node_scale_{l}'] = subnode_scale
-            
-            state_dict[f'act_fun.{l}.grid'] = orig_state_dict[f'layers.{l}.grid']
-            state_dict[f'act_fun.{l}.coef'] = orig_state_dict[f'layers.{l}.spline_weight'].permute(1, 0, 2)
-            
-            state_dict[f'act_fun.{l}.mask'] =  orig_state_dict[f'layers.{l}.layer_mask'].permute(1, 0)
-            
-            state_dict[f'act_fun.{l}.scale_base'] = orig_state_dict[f'layers.{l}.base_weight'].permute(1, 0)
-            
-            state_dict[f'act_fun.{l}.scale_sp'] = orig_state_dict[f'layers.{l}.spline_scaler'].permute(1, 0)
-            
-            # Symbolic layer params
-            state_dict[f'symbolic_fun.{l}.mask'] = orig_state_dict[f'layers.{l}.symb_mask']
-            state_dict[f'symbolic_fun.{l}.affine'] = orig_state_dict[f'layers.{l}.affine_params']
-        
-        torch.save(state_dict, f'{folder}/original-kan-state.pth')
-        torch.save(self.cache_data, f'{folder}/cache_data')
-        config = dict(
-            hidden_layers = self.hidden_layer,
-            grid_size = self.grid_size,
-            grid_range = self.grid_range,
-            spline_order = self.spline_order
-        )
-        for l, layer in enumerate(self.layers):
-            config[f'symbolic_functions_layer_{l}'] = layer.symb_dict_names
-        with open(f'{folder}/config.yml', 'w') as outfile:
-            yaml.dump(config, outfile, default_flow_style=False)
+    
+    
+    def fix_symbolic(self, l, j, i, func):
+        layer = self.layers[l]
+        layer.symbolic_functions[j][i] = func
+        layer.layer_mask.data[j][i] = 0
+        layer.symb_mask.data[j][i] = 1
     
