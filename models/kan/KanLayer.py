@@ -56,7 +56,7 @@ class KANLayer(torch.nn.Module):
         self.layer_mask = torch.nn.Parameter(torch.ones((out_features, in_features))).requires_grad_(False)
         self.symb_mask = torch.nn.Parameter(torch.zeros((out_features, in_features))).requires_grad_(False)
         self.symbolic_functions = [[lambda x: 0*x for _ in range(in_features)] for _ in range(out_features)]
-        # self.affine_params = torch.nn.Parameter(torch.rand((out_features, in_features, 4)))
+        self.affine_params = torch.nn.Parameter(torch.rand((out_features, in_features, 4)))
         self.cache_act = None
         self.cache_preact = None
         self.symb_dict_names = {}

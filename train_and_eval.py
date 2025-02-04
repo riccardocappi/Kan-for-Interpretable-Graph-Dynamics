@@ -30,7 +30,6 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
 def fit(model:NetWrapper,
         training_set,
         valid_set, 
-        seed=42,
         epochs=50,
         patience=30,
         lr = 0.001,
@@ -45,7 +44,6 @@ def fit(model:NetWrapper,
         t_f_train=240
         ):
     
-    torch.manual_seed(seed)
     train_size = len(training_set)
     batch_size_train = train_size if batch_size == -1 else batch_size
     

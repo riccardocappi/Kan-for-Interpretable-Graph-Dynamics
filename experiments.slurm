@@ -39,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto.yml --method=grid_search --n_trials=1
+python main.py --config=./configs/config_kuramoto.yml --method=grid_search

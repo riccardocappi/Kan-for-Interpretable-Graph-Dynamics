@@ -44,6 +44,7 @@ class Experiments(ABC):
         self.use_reg_loss = config['reg_loss']
         self.model_path = f'./saved_models_optuna/{config["model_name"]}'
         self.search_space = config['search_space']
+        self.seed = config['seed']
         
         logs_folder = f'{self.model_path}/optuna_logs'
         if not os.path.exists(logs_folder):
@@ -92,6 +93,7 @@ class Experiments(ABC):
     
     
     def objective(self, trial):
+        torch.manual_seed(self.seed)
         model = self.get_model_opt(trial)
         
         lr_space = self.search_space.get('lr', [0.001])
@@ -123,6 +125,7 @@ class Experiments(ABC):
     
     
     def eval_model(self, best_params):
+        torch.manual_seed(self.seed)
         best_model = self.get_best_model(best_params)
         
         lr = best_params.get('lr', 0.001)
