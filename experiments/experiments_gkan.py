@@ -2,7 +2,7 @@ from .Experiments import Experiments
 import torch
 from models.utils.NetWrapper import NetWrapper
 from models.GKAN_ODE import GKAN_ODE
-from utils.utils import sample_from_spatio_temporal_graph, plot, save_acts
+
 
 
 class ExperimentsGKAN(Experiments):
@@ -88,23 +88,3 @@ class ExperimentsGKAN(Experiments):
         model = model.to(torch.device(self.device))
         
         return model
-
-     
-    def post_processing(self, best_model):
-        
-        net = best_model.model
-        net.h_net.store_act = True
-        net.g_net.store_act = True
-
-        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
-                                                                    self.edge_index, 
-                                                                    sample_size=32)
-
-        with torch.no_grad():
-            _ = net(dummy_x, dummy_edge_index)
-
-        plot(folder_path=f'{net.h_net.model_path}/figures', layers=net.h_net.layers, show_plots=False)
-        plot(folder_path=f'{net.g_net.model_path}/figures', layers=net.g_net.layers, show_plots=False)
-
-        save_acts(layers=net.h_net.layers, folder_path=f'{net.h_net.model_path}/cached_acts')
-        save_acts(layers=net.g_net.layers, folder_path=f'{net.g_net.model_path}/cached_acts') 

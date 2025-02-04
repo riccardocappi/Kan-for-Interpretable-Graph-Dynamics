@@ -8,6 +8,9 @@ import json
 import os
 import logging
 from train_and_eval import fit
+from models.utils.NetWrapper import NetWrapper
+from utils.utils import sample_from_spatio_temporal_graph
+
 
 class Experiments(ABC):
     def __init__(self, 
@@ -157,15 +160,18 @@ class Experiments(ABC):
     
     
     @abstractmethod
-    def get_model_opt(self, trial):
+    def get_model_opt(self, trial) -> NetWrapper:
         raise Exception('Not implemented')
     
     
     @abstractmethod
-    def get_best_model(self, best_params):
+    def get_best_model(self, best_params) -> NetWrapper:
         raise Exception('Not implemented')
     
     
-    @abstractmethod
-    def post_processing(self, best_model):
-        raise Exception('Not implemented')
+    def post_processing(self, best_model: NetWrapper):
+        
+        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
+                                                                    self.edge_index, 
+                                                                    sample_size=32)
+        best_model.model.save_cached_data(dummy_x, dummy_edge_index)

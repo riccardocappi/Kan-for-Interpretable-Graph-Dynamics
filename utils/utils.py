@@ -130,6 +130,15 @@ def save_acts(layers, folder_path):
         torch.save(layer.cache_act, f"{folder_path}/cache_act_{l}")
         torch.save(layer.acts_scale_spline, f"{folder_path}/cache_act_scale_spline_{l}")
         
+        
+
+def save_black_box_to_file(folder_path, cache_input, cache_output):    
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        
+    torch.save(cache_input, f'{folder_path}/cached_input')
+    torch.save(cache_output, f'{folder_path}/cached_output')
+        
 
 def pruning(kan_acts, kan_preacts, theta = 0.01):
     

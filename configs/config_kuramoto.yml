@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: model-kuramoto-grid-2-3-1(5)_grid_search
+model_name: model-kuramoto-grid-2-3-1(1)_grid_search
 model_type: 'GKAN'
 epochs: 700
 patience: 200
@@ -19,11 +19,11 @@ search_space:
   lr: [0.05]
   lmbd_g: [0.001, 0.005]
   lmbd_h: [0.001, 0.005]
-  mu_1: [1.]
-  mu_2: [1.]
+  mu_1: [0.5, 1.]
+  mu_2: [0.5, 1.]
   use_orig_reg: [False, True]
   lamb: [1.]
-n_iter: 5
+n_iter: 1
 integration_kwargs:
   w: 2.
   R: 1.

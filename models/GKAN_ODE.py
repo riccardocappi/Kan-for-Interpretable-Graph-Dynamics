@@ -2,8 +2,11 @@ from .kan.KAN import KAN
 from torch_geometric.nn import MessagePassing
 import torch
 from torch_geometric.utils import degree
+from models.utils.ModelInterface import ModelInterface
+from utils.utils import plot, save_acts
 
-class GKAN_ODE(MessagePassing):
+
+class GKAN_ODE(MessagePassing, ModelInterface):
     def __init__(self, 
                  h_hidden_layers, 
                  g_hidden_layers,
@@ -22,7 +25,9 @@ class GKAN_ODE(MessagePassing):
                  compute_symbolic=False
                  ):
         
-        super(GKAN_ODE, self).__init__(aggr='add')
+        MessagePassing.__init__(self, aggr='add')
+        ModelInterface.__init__(self, model_path=model_path)
+        
         
         self.h_net = KAN(h_hidden_layers,
                          grid_size=grid_size,
@@ -50,7 +55,6 @@ class GKAN_ODE(MessagePassing):
                          compute_symbolic=compute_symbolic
                          )
         
-        self.model_path = model_path
         self.device = torch.device(device)
         self.norm = norm
         self.lmbd_g = lmbd_g
@@ -104,6 +108,23 @@ class GKAN_ODE(MessagePassing):
         deg = degree(row, x.size(0), dtype=x.dtype)  # Compute degree for source nodes
         norm = 1. / deg[row]  # Normalize using the source node degree
         return norm
+    
+    
+    def save_cached_data(self, dummy_x, dummy_edge_index):
+        self.g_net.store_act = True
+        self.h_net.store_act = True
+        
+        with torch.no_grad():
+            _ = self.forward(dummy_x, dummy_edge_index, update_grid=False)
+        
+        
+        plot(folder_path=f'{self.h_net.model_path}/figures', layers=self.h_net.layers, show_plots=False)
+        plot(folder_path=f'{self.g_net.model_path}/figures', layers=self.g_net.layers, show_plots=False)
+
+        save_acts(layers=self.h_net.layers, folder_path=f'{self.h_net.model_path}/cached_acts')
+        save_acts(layers=self.g_net.layers, folder_path=f'{self.g_net.model_path}/cached_acts') 
+            
+    
         
 
 

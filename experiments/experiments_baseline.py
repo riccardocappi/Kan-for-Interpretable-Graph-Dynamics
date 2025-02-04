@@ -77,25 +77,4 @@ class ExperimentsBaseline(Experiments):
         model = model.to(torch.device(self.device))
         
         return model
-
-    
-    def post_processing(self, best_model):
-        
-        net = best_model.model
-        
-        net.save_black_box = True
-        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
-                                                                      self.edge_index, 
-                                                                      sample_size=32)
-        
-        with torch.no_grad():
-            _ = net(dummy_x, dummy_edge_index)
-            
-        folder_path = f'{net.model_path}/cached_data'
-        
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-            
-        torch.save(net.cache_input, f'{folder_path}/cached_input')
-        torch.save(net.cache_output, f'{folder_path}/cached_output')
         
