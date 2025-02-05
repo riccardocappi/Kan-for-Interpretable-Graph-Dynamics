@@ -2,6 +2,7 @@ import argparse
 from utils.utils import load_config
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_baseline import ExperimentsBaseline
+from experiments.experiments_mpnn import ExperimentsMPNN
 import networkx as nx
 
 def run(config_path, n_trials=10, method='optuna'):
@@ -13,6 +14,8 @@ def run(config_path, n_trials=10, method='optuna'):
         exp = ExperimentsGKAN(config, G, n_trials, method)
     elif model_type in ['GCN', 'GIN']:
         exp = ExperimentsBaseline(config, G, n_trials, method, model_type=model_type)
+    elif model_type == 'MPNN':
+        exp = ExperimentsMPNN(config, G, n_trials, method)
     else:
         raise ValueError('Unknown model type')
     

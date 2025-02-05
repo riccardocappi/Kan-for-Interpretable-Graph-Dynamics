@@ -2,8 +2,6 @@ from .Experiments import Experiments
 from models.utils.NetWrapper import NetWrapper
 from models.baseline.baseline import GCN, GIN
 import torch
-from utils.utils import sample_from_spatio_temporal_graph
-import os
 
 
 class ExperimentsBaseline(Experiments):
