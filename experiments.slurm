@@ -1,13 +1,13 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-grid-search
+#SBATCH --job-name=GKAN-ODE-base
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
 
 ### Standard output and standard error for our job
-#SBATCH --error=gkanconv-ode.err
-#SBATCH --output=gkanconv-ode.out
+#SBATCH --error=gkanconv-ode-baseline.err
+#SBATCH --output=gkanconv-ode-baseline.out
 
 ### queue/partition choosed
 #SBATCH --partition=testing
@@ -19,7 +19,7 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=24:00:00
+#SBATCH --time=72:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
@@ -39,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=10
+python main.py --config=./configs/config_kuramoto_mpnn.yml --method=optuna --n_trials=30
