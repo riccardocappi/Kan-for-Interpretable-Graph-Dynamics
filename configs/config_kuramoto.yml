@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: "model-kuramoto-grid-2-3-1(1)_optuna_new_optim"
+model_name: "model-kuramoto-grid-2-3-1(2)_optuna_new_optim"
 model_type: 'GKAN'
 epochs: 700
 patience: 200
@@ -23,7 +23,7 @@ search_space:
   mu_2: [0.1, 1.]
   use_orig_reg: [False, True]
   lamb: [1.]
-n_iter: 1
+n_iter: 2
 integration_kwargs:
   w: 2.
   R: 1.

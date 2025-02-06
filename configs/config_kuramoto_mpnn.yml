@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-mpnn(1)_optuna_new_optim'
+model_name: 'model-kuramoto-grid-mpnn(2)_optuna_new_optim'
 model_type: 'MPNN'
 epochs: 700
 patience: 200
@@ -17,7 +17,7 @@ search_space:
   n_hidden_layers: [1, 2]
   hidden_dims: [16, 64]
   lr: [0.001, 0.05]
-n_iter: 1
+n_iter: 2
 integration_kwargs:
   w: 2.
   R: 1.
