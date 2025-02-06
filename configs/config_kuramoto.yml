@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-2-3-1(1)_optuna'
+model_name: 'model-kuramoto-grid-2-3-1(2)_optuna'
 model_type: 'GKAN'
 epochs: 700
 patience: 200
@@ -13,17 +13,17 @@ device: 'cuda'
 input_range: [0, 6.28318530718]
 reg_loss: true
 search_space:
-  grid_size: [10]
+  grid_size: [5, 10]
   spline_order: [3]
   range_limit: [7]
   lr: [0.01, 0.05]
-  lmbd_g: [0.005]
-  lmbd_h: [0.001]
-  mu_1: [0.5]
-  mu_2: [1.]
+  lmbd_g: [0.001, 0.01]
+  lmbd_h: [0.001, 0.01]
+  mu_1: [0.1, 1.]
+  mu_2: [0.1, 1.]
   use_orig_reg: [False, True]
   lamb: [1.]
-n_iter: 1
+n_iter: 2
 integration_kwargs:
   w: 2.
   R: 1.
