@@ -10,7 +10,7 @@ from collections import defaultdict
 from torch.utils.data import DataLoader
 
 
-def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
+def eval_model(model, data, t, criterion, n_iter=1):
     model.eval()
     y_pred = []
     with torch.no_grad():
@@ -18,10 +18,10 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
             y_true_valid = data[k]
             t_valid = t[k]
             y0 = y_true_valid[0]
-            y_pred.append(odeint(model, y0, t_valid, method='dopri5')[t_f_train:])
+            y_pred.append(odeint(model, y0, t_valid, method='dopri5')[1:])
             
         y_pred = torch.stack(y_pred, dim=0)
-        loss = criterion(y_pred, data[:, t_f_train:, :, :])
+        loss = criterion(y_pred, data[:, 1:, :, :])
     return loss.item()
             
     
@@ -114,7 +114,6 @@ def fit(model:NetWrapper,
                               valid_set.data, 
                               valid_set.time, 
                               criterion=criterion, 
-                              t_f_train=t_f_train,
                               n_iter=n_iter
                               )
         results['train_loss'].append(running_training_loss / count)
