@@ -78,11 +78,13 @@ def fit(model:NetWrapper,
         for k in range(n_iter):
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
-            y_pred.append(odeint(model, y0, t_eval, method='dopri5')[1:])
+            y_pred.append(odeint(model, y0, t_eval, method='dopri5')) # Shape (t_steps, n_iter, n_nodes, in_dim)
         
         y_pred = torch.stack(y_pred, dim=1)
-        training_loss = criterion(y_pred, batch_data[1:, :, :, :])
-        
+        u_1 = y_pred[1, :, :, :]
+        u_M = y_pred[-1, :, :, :]
+        training_loss = criterion(u_1, batch_data[1, :, :, :]) + criterion(u_M, batch_data[-1, :, :, :])
+        #training_loss = criterion(y_pred, batch_data[1:, :, :, :])
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)
         loss = training_loss + lmbd * reg
