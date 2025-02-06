@@ -6,8 +6,8 @@
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
 
 ### Standard output and standard error for our job
-#SBATCH --error=gkanconv-ode(1).err
-#SBATCH --output=gkanconv-ode(1).out
+#SBATCH --error=gkanconv-ode.err
+#SBATCH --output=gkanconv-ode.out
 
 ### queue/partition choosed
 #SBATCH --partition=testing
