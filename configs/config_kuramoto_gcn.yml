@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-gcn'
+model_name: 'model-kuramoto-grid-gcn-new-optim'
 model_type: 'GCN'
 epochs: 700
 patience: 200

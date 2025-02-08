@@ -1,5 +1,5 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-gin'
+model_name: 'model-kuramoto-grid-gin-new-optim'
 model_type: 'GIN'
 epochs: 700
 patience: 200
