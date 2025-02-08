@@ -16,3 +16,4 @@ pip install matplotlib
 pip install numgraph
 pip install optuna
 pip install torchdiffeq
+pip install dill

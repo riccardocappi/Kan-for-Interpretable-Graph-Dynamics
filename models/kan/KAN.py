@@ -1,7 +1,8 @@
 import os
-import yaml
 import torch
 from .KanLayer import KANLayer
+import dill
+
 
 class KAN(torch.nn.Module):
     '''
@@ -112,4 +113,21 @@ class KAN(torch.nn.Module):
         layer.symbolic_functions[j][i] = func
         layer.layer_mask.data[j][i] = 0
         layer.symb_mask.data[j][i] = 1
+        
+    
+    
+    # TODO: test
+    def automatic_fix_symbolic(self, symb_functions_file):
+        with open(symb_functions_file, "rb") as f:
+            all_functions = dill.load(f)
+        
+        for l, layer in enumerate(self.layers):
+            symb_layer = all_functions[l]
+            for j in range(layer.out_features):
+                for i in range(layer.in_features):
+                    func = lambda x: torch.Tensor(symb_layer[j][i] (x.cpu().detach().numpy()), device=self.device)
+                    self.fix_symbolic(l, j, i, func)
+                    
+    
+        
     

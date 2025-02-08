@@ -105,6 +105,9 @@ class Experiments(ABC):
         lamb_space = self.search_space.get('lamb', [0.])
         lamb = trial.suggest_float('lamb', lamb_space[0], lamb_space[-1])
         
+        batch_size_space = self.search_space.get('batch_size', [-1])
+        batch_size = trial.suggest_int('batch_size', batch_size_space[0], batch_size_space[-1])
+        
         results = fit(
             model,
             self.training_set,
@@ -118,7 +121,7 @@ class Experiments(ABC):
             opt=self.opt,
             save_updates=False,
             n_iter=self.n_iter,
-            batch_size=-1,
+            batch_size=batch_size,
             t_f_train=self.t_f_train
         )
         
@@ -133,6 +136,7 @@ class Experiments(ABC):
         
         lr = best_params.get('lr', 0.001)
         lamb = best_params.get('lamb', 0.)
+        batch_size = best_params.get('batch_size', -1)
         
         _ = fit(
             best_model,
@@ -147,7 +151,7 @@ class Experiments(ABC):
             opt=self.opt,
             save_updates=True,
             n_iter=self.n_iter,
-            batch_size=-1,
+            batch_size=batch_size,
             t_f_train=self.t_f_train
         ) 
         

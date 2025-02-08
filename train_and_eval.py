@@ -79,6 +79,7 @@ def fit(model:NetWrapper,
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
             y_pred.append(odeint(model, y0, t_eval, method='dopri5')) # Shape (t_steps, n_iter, n_nodes, in_dim)
+            # test = odeint(model, y0, torch.Tensor([t_eval[0], t_eval[1], t_eval[-1]]), method='dopri5')
         
         y_pred = torch.stack(y_pred, dim=1)
         u_1 = y_pred[1, :, :, :]
