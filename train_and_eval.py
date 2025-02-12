@@ -8,6 +8,7 @@ from utils.utils import save_logs
 import json
 from collections import defaultdict
 from torch.utils.data import DataLoader
+from datasets.SlidingWindowSampler import SlidingWindowSampler
 
 
 def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
@@ -51,7 +52,8 @@ def fit(model:NetWrapper,
     best_epoch = 0
     best_model_state = None
     
-    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=False)
+    sampler = SlidingWindowSampler(training_set, batch_size_train, 1)
+    train_loader = DataLoader(training_set, batch_sampler=sampler, shuffle=False)
     
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)

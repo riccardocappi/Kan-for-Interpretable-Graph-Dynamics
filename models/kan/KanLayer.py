@@ -223,7 +223,8 @@ class KANLayer(torch.nn.Module):
             postacts_ = []
             for i in range(self.in_features):
                 fn = self.symbolic_functions[j][i]
-                x_ji = fn(x[:, i])
+                input = x[:, i].cpu().detach().numpy()
+                x_ji = torch.tensor(fn(input)).to(x.device).expand(x.size(0))
                 postacts_.append(x_ji)
             postacts.append(torch.stack(postacts_, dim=1))
         return torch.stack(postacts, dim = 1)

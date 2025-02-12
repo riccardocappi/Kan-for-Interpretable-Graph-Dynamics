@@ -7,4 +7,7 @@ gkanconv-ode*
 notebooks
 old_experiments
 .vscode
+symb_fitting.py
+hall_of_fame*
+pysr
 

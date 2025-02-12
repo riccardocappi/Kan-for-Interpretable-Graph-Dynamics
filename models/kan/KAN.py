@@ -125,8 +125,9 @@ class KAN(torch.nn.Module):
             symb_layer = all_functions[l]
             for j in range(layer.out_features):
                 for i in range(layer.in_features):
-                    func = lambda x: torch.Tensor(symb_layer[j][i] (x.cpu().detach().numpy()), device=self.device)
-                    self.fix_symbolic(l, j, i, func)
+                    self.fix_symbolic(l, j, i, symb_layer[j][i])
+                    
+                    
                     
     
         
