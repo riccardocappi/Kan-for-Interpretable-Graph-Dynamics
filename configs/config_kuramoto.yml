@@ -9,7 +9,7 @@ t_span: [0,1]
 t_eval_steps: 500
 seed: 42
 noise_strengths: []
-device: 'cuda'
+device: 'cpu'
 input_range: [0, 6.28318530718]
 reg_loss: true
 search_space:

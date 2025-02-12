@@ -17,3 +17,4 @@ pip install numgraph
 pip install optuna
 pip install torchdiffeq
 pip install dill
+pip install pysr
