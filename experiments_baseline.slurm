@@ -39,5 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto_gin.yml --method=optuna --n_trials=30
-python main.py --config=./configs/config_kuramoto_gcn.yml --method=optuna --n_trials=30
+python main.py --config=./configs/config_kuramoto_mpnn.yml --method=grid_search

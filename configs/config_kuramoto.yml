@@ -1,29 +1,30 @@
 dynamics: 'Kuramoto'
-model_name: "model-kuramoto-grid-2-3-1-grid-search-2-new-optim-batch"
+model_name: "model-kuramoto-grid-2-3-1-grid-search-2-new-optim-slide-window-2"
 model_type: 'GKAN'
 epochs: 700
 patience: 200
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
-t_eval_steps: 500
+t_eval_steps: 300
 seed: 42
 noise_strengths: []
-device: 'cpu'
+device: 'cuda'
 input_range: [0, 6.28318530718]
 reg_loss: true
 search_space:
   grid_size: [10]
   spline_order: [3]
   range_limit: [7]
-  lr: [0.01, 0.05]
+  lr: [0.05]
   lmbd_g: [0.001]
   lmbd_h: [0.005]
   mu_1: [0.5]
   mu_2: [0.5]
   use_orig_reg: [False]
   lamb: [1.]
-  batch_size: [8, 16, 32, 64] 
+  batch_size: [60, 120]
+  stride: [10, 40, 60]
 n_iter: 2
 integration_kwargs:
   w: 2.

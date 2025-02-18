@@ -1,8 +1,8 @@
 dynamics: 'Kuramoto'
-model_name: 'model-kuramoto-grid-mpnn(2)_optuna_new_optim'
+model_name: 'model-kuramoto-grid-mpnn-2-optuna-new-optim-sliding-window'
 model_type: 'MPNN'
-epochs: 700
-patience: 200
+epochs: 300
+patience: 150
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
@@ -14,9 +14,11 @@ input_range: [0, 6.28318530718]
 reg_loss: false
 in_dim: 1
 search_space:
-  n_hidden_layers: [1, 2]
-  hidden_dims: [16, 64]
-  lr: [0.001, 0.05]
+  n_hidden_layers: [2]
+  hidden_dims: [32]
+  lr: [0.01, 0.05]
+  batch_size: [8]
+  stride: [1, 4, 8]
 n_iter: 2
 integration_kwargs:
   w: 2.

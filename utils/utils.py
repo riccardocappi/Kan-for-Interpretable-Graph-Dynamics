@@ -181,9 +181,9 @@ def pruning(kan_acts, kan_preacts, theta = 0.01):
 
 
 
-def fit_acts_pysr(x, y):
+def get_pysr_model(n_iterations=100, binary_operators = ['+', '-', '*', '/'], extra_sympy_mappings = {}, **kwargs):
     model = PySRRegressor(
-        niterations=100,  # Number of iterations
+        niterations=n_iterations,  # Number of iterations
         unary_operators=[
         "exp",
         "sin",
@@ -195,9 +195,9 @@ def fit_acts_pysr(x, y):
         "log10",
         "sqrt",
         "tan",
-        "tanh",
-        "zero(x) = 0*x"
+        "tanh"
         ],
+        binary_operators=binary_operators,
         elementwise_loss="loss(prediction, target) = (prediction - target)^2",
         early_stop_condition=(
             "stop_if(loss, complexity) = loss < 1e-4 && complexity < 5"
@@ -206,12 +206,22 @@ def fit_acts_pysr(x, y):
         maxsize=7,
         maxdepth=5,
         verbosity=0,
-        extra_sympy_mappings={"zero": lambda x: 0*x},
+        extra_sympy_mappings=extra_sympy_mappings,
         delete_tempfiles=True,
         temp_equation_file=True,
-        tempdir='./pysr'
-
+        tempdir='./pysr',
+        **kwargs
     )
+    
+    return model
+    
+
+
+def fit_acts_pysr(x, y, pysr_model = None):
+    if pysr_model is None:
+        model = get_pysr_model()
+    else:
+        model = pysr_model()
     model.fit(x, y)
     best_equation = model.equations_.nlargest(1, 'score').iloc[0]['sympy_format']
     sympy_function = sp.sympify(best_equation)
@@ -220,7 +230,7 @@ def fit_acts_pysr(x, y):
     # return model.equations_.nlargest(5, 'score')
 
 
-def fit_layer(cached_act, cached_preact, symb_xs, device='cpu'):
+def fit_layer(cached_act, cached_preact, symb_xs, device='cpu', pysr_model = None):
     symb_layer_acts = []
     in_dim = cached_act.size(2)
     out_dim = cached_act.size(1)
@@ -231,7 +241,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cpu'):
         for i in range(in_dim):
             x = cached_preact[:, i].cpu().detach().numpy().reshape(-1, 1)
             y = cached_act[:, j, i].cpu().detach().numpy().reshape(-1, 1)
-            symb_func = fit_acts_pysr(x, y)
+            symb_func = fit_acts_pysr(x, y, pysr_model)
             # pdb.set_trace()
 
             symbolic_functions[j][i] = sp.lambdify(sp.Symbol('x0'), symb_func)
@@ -244,7 +254,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cpu'):
     return symb_layer_acts, symbolic_functions
 
 
-def fit_kan(kan_acts, kan_preacts, symb_xs, save_path='./symb_functions'):
+def fit_kan(kan_acts, kan_preacts, symb_xs, save_path='./symb_functions', pysr_model = None):
     n_layers = len(kan_acts)
     all_functions = []
     for l in range(n_layers):
@@ -255,7 +265,8 @@ def fit_kan(kan_acts, kan_preacts, symb_xs, save_path='./symb_functions'):
             cached_act=acts,
             cached_preact=preacts,
             symb_xs=symb_xs,
-            device='cpu'
+            device='cpu',
+            pysr_model=pysr_model
         )
         all_functions.append(symb_functions)
 
@@ -286,14 +297,15 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None):
     # G_net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/G_Net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
     symb_g = fit_kan(pruned_acts,
                      pruned_preacts,
                      symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
-                     save_path=f'{model_path}/G_Net/symb_functions'
+                     save_path=f'{model_path}/G_Net/symb_functions',
+                     pysr_model=pysr_model
                      )
 
     # H_Net
@@ -303,21 +315,21 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1):
     symb_h = fit_kan(pruned_acts,
                      pruned_preacts,
                      symb_xs=symb_h_in,
-                     save_path=f'{model_path}/H_Net/symb_functions'
+                     save_path=f'{model_path}/H_Net/symb_functions',
+                     pysr_model=pysr_model
                      )
 
-    return symb_h
+    return symb_h[0]
 
 
-def fit_black_box(cached_input, cached_output, symb_xs):
+def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None):
     in_dim = cached_input.size(1)
     out_dim = cached_output.size(1)
 
     x = cached_input.detach().numpy().reshape(-1, in_dim)
     y = cached_output.detach().numpy().reshape(-1, out_dim)
 
-    symb_func = fit_acts_pysr(x, y)
-    # pdb.set_trace()
+    symb_func = fit_acts_pysr(x, y, pysr_model=pysr_model)
 
     subs_dict = {sp.Symbol(f'x{i}'): symb_xs[i] for i in range(len(symb_xs))}
 
@@ -327,23 +339,23 @@ def fit_black_box(cached_input, cached_output, symb_xs):
 
 
 
-def fit_mpnn(model_path, device='cpu'):
+def fit_mpnn(model_path, device='cpu', pysr_model = None):
     # G_Net
     cached_input = torch.load(f'{model_path}/G_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/G_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
-    symb_g = fit_black_box(cached_input, cached_output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')])
+    symb_g = fit_black_box(cached_input, cached_output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], pysr_model=pysr_model)
 
     # H_Net
     cached_input = torch.load(f'{model_path}/H_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/H_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
 
     symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
-    symb_h = fit_black_box(cached_input, cached_output, symb_xs=symb_h_in)
+    symb_h = fit_black_box(cached_input, cached_output, symb_xs=symb_h_in, pysr_model=pysr_model)
 
     return symb_h
 
 
-def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, device='cpu', theta=0.1):
+def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, device='cpu', theta=0.1, pysr_model = None):
     #G_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/G_Net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
@@ -351,7 +363,7 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
     input = pruned_preacts[0]
     output = pruned_acts[-1].sum(dim=2)
 
-    symb_g = fit_black_box(input, output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')])
+    symb_g = fit_black_box(input, output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], pysr_model=pysr_model)
 
     #H_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/H_Net')
@@ -362,6 +374,6 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
 
     symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
 
-    symb_h = fit_black_box(input, output, symb_xs=symb_h_in)
+    symb_h = fit_black_box(input, output, symb_xs=symb_h_in, pysr_model=pysr_model)
 
     return symb_h

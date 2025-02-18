@@ -108,6 +108,9 @@ class Experiments(ABC):
         batch_size_space = self.search_space.get('batch_size', [-1])
         batch_size = trial.suggest_int('batch_size', batch_size_space[0], batch_size_space[-1])
         
+        stride_space = self.search_space.get('stride', [1])
+        stride = trial.suggest_int('stride', stride_space[0], stride_space[-1])
+        
         results = fit(
             model,
             self.training_set,
@@ -122,7 +125,8 @@ class Experiments(ABC):
             save_updates=False,
             n_iter=self.n_iter,
             batch_size=batch_size,
-            t_f_train=self.t_f_train
+            t_f_train=self.t_f_train,
+            stride=stride
         )
         
         best_val_loss = min(results['validation_loss'])
@@ -137,6 +141,7 @@ class Experiments(ABC):
         lr = best_params.get('lr', 0.001)
         lamb = best_params.get('lamb', 0.)
         batch_size = best_params.get('batch_size', -1)
+        stride = best_params.get('stride', 1)
         
         _ = fit(
             best_model,
@@ -152,7 +157,8 @@ class Experiments(ABC):
             save_updates=True,
             n_iter=self.n_iter,
             batch_size=batch_size,
-            t_f_train=self.t_f_train
+            t_f_train=self.t_f_train,
+            stride=stride
         ) 
         
         return best_model

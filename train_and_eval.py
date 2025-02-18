@@ -42,7 +42,8 @@ def fit(model:NetWrapper,
         save_updates=True,
         n_iter = 1,
         batch_size=-1,
-        t_f_train=240
+        t_f_train=240,
+        stride = 1
         ):
     
     train_size = len(training_set)
@@ -52,7 +53,7 @@ def fit(model:NetWrapper,
     best_epoch = 0
     best_model_state = None
     
-    sampler = SlidingWindowSampler(training_set, batch_size_train, 1)
+    sampler = SlidingWindowSampler(training_set, batch_size_train, stride)
     train_loader = DataLoader(training_set, batch_sampler=sampler, shuffle=False)
     
     if opt == 'Adam':
@@ -80,14 +81,17 @@ def fit(model:NetWrapper,
         for k in range(n_iter):
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
-            y_pred.append(odeint(model, y0, t_eval, method='dopri5')) # Shape (t_steps, n_iter, n_nodes, in_dim)
-            # test = odeint(model, y0, torch.Tensor([t_eval[0], t_eval[1], t_eval[-1]]), method='dopri5')
+            # y_pred.append(odeint(model, y0, t_eval, method='dopri5'))
+            y_pred.append(odeint(model, 
+                                 y0, 
+                                 torch.tensor([t_eval[0], t_eval[1], t_eval[-1]]).to(torch.device(y0.device)), 
+                                 method='dopri5')[1:])
         
-        y_pred = torch.stack(y_pred, dim=1)
-        u_1 = y_pred[1, :, :, :]
-        u_M = y_pred[-1, :, :, :]
-        training_loss = criterion(u_1, batch_data[1, :, :, :]) + criterion(u_M, batch_data[-1, :, :, :])
-        #training_loss = criterion(y_pred, batch_data[1:, :, :, :])
+        y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
+        # u_1 = y_pred[1, :, :, :]
+        # u_M = y_pred[-1, :, :, :]
+        # training_loss = criterion(u_1, batch_data[1, :, :, :]) + criterion(u_M, batch_data[-1, :, :, :])
+        training_loss = criterion(y_pred, batch_data[[1, -1], :, :, :])
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)
         loss = training_loss + lmbd * reg

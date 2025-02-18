@@ -9,7 +9,7 @@ class SlidingWindowSampler(Sampler):
     
     def __iter__(self):
         for i in self.indices:
-            yield self.indices[i:i+self.window_size]
+            yield list(range(i, i + self.window_size))
 
     def __len__(self):
         return len(self.indices)
