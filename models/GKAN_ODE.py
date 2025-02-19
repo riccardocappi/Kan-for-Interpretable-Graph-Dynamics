@@ -7,53 +7,23 @@ from utils.utils import plot, save_acts
 
 
 class GKAN_ODE(MessagePassing, ModelInterface):
-    def __init__(self, 
-                 h_hidden_layers, 
-                 g_hidden_layers,
-                 grid_size=5,
-                 spline_order=3,
-                 grid_range = [-1, 1],
+    def __init__(self,
+                 h_net: KAN,
+                 g_net: KAN,
                  model_path = './model',
-                 store_acts = False,
                  norm=False,
                  device='cuda',
-                 mu_1 = 1.,
-                 mu_2 = 1.,
-                 use_orig_reg = False,
-                 lmbd_g = 0.,
-                 lmbd_h = 0.,
-                 compute_symbolic=False
+                 lmbd_g=0.,
+                 lmbd_h=0.
                  ):
         
         MessagePassing.__init__(self, aggr='add')
         ModelInterface.__init__(self, model_path=model_path)
         
         
-        self.h_net = KAN(h_hidden_layers,
-                         grid_size=grid_size,
-                         spline_order=spline_order,
-                         grid_range=grid_range,
-                         model_path=f'{model_path}/H_Net',
-                         store_act=store_acts,
-                         device=device,
-                         mu_1=mu_1,
-                         mu_2=mu_2,
-                         use_orig_reg=use_orig_reg,
-                         compute_symbolic=compute_symbolic
-                         )
+        self.h_net = h_net
         
-        self.g_net = KAN(g_hidden_layers,
-                         grid_size=grid_size,
-                         spline_order=spline_order,
-                         grid_range=grid_range,
-                         model_path=f'{model_path}/G_Net',
-                         store_act=store_acts,
-                         device=device,
-                         mu_1=mu_1,
-                         mu_2=mu_2,
-                         use_orig_reg=use_orig_reg,
-                         compute_symbolic=compute_symbolic
-                         )
+        self.g_net = g_net
         
         self.device = torch.device(device)
         self.norm = norm
@@ -101,7 +71,8 @@ class GKAN_ODE(MessagePassing, ModelInterface):
         reg_loss_metrics['entropy_h'] += entropy_h.item()
         
         return (self.lmbd_h * reg_h)+(self.lmbd_g * reg_g)
-    
+        # return reg_h + reg_g
+       
     
     def get_norm(self, edge_index, x):
         row, _ = edge_index  # Use the source nodes

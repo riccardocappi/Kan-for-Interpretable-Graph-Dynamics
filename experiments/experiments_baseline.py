@@ -6,8 +6,18 @@ import torch
 
 class ExperimentsBaseline(Experiments):
     
-    def __init__(self, config, G, n_trials, model_selection_method='optuna', model_type='GCN'):
-        super().__init__(config, G, n_trials, model_selection_method)
+    def __init__(
+        self,
+        config, 
+        G, 
+        n_trials, 
+        model_selection_method='optuna', 
+        model_type='GCN',
+        study_name='example',
+        eval_model=True,
+        process_id = 0
+    ):
+        super().__init__(config, G, n_trials, model_selection_method, study_name=study_name, eval_model=eval_model, process_id=process_id)
         self.model_type = model_type
     
     

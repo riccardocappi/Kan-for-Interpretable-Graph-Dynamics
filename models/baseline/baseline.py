@@ -73,16 +73,16 @@ class GIN(torch.nn.Module, ModelInterface):
 
 class MPNN(MessagePassing, ModelInterface):
     def __init__(self,
-                 g_hidden_layers,
-                 h_hidden_layers,
+                 g_net:MLP,
+                 h_net:MLP,
                  aggr = "add",
                  model_path='./models'):
         
         MessagePassing.__init__(self, aggr=aggr)
         ModelInterface.__init__(self, model_path=model_path)
         
-        self.h_net = MLP(h_hidden_layers, af=F.relu, model_path=f'{model_path}/H_net')
-        self.g_net = MLP(g_hidden_layers, af=F.relu, model_path=f'{model_path}/G_net')
+        self.h_net = h_net
+        self.g_net = g_net
                 
     
     def forward(self, x, edge_index):

@@ -17,7 +17,10 @@ class Experiments(ABC):
                  config, 
                  G, 
                  n_trials,
-                 model_selection_method='optuna'):
+                 model_selection_method='optuna',
+                 eval_model = True,
+                 study_name='example',
+                 process_id=0):
         
         super().__init__()
         
@@ -44,10 +47,13 @@ class Experiments(ABC):
         self.opt = config["opt"]
         self.log = config["log"]
         
-        self.use_reg_loss = config['reg_loss']
-        self.model_path = f'./saved_models_optuna/{config["model_name"]}'
+        self.model_path = f'./saved_models_optuna/{config["model_name"]}/{study_name}/{str(process_id)}'
+        
         self.search_space = config['search_space']
         self.seed = config['seed']
+        
+        self.eval = eval_model
+        self.study_name = study_name
         
         logs_folder = f'{self.model_path}/optuna_logs'
         if not os.path.exists(logs_folder):
@@ -66,32 +72,38 @@ class Experiments(ABC):
     def run(self):
         self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)
         best_params = self.optimize()
-
+        
         logging.getLogger().removeHandler(self.optuna_handler)
         optuna.logging.disable_propagation()
         
-        best_model = self.eval_model(best_params)
-        
-        self.post_processing(best_model)
+        if self.eval:
+            log_file_name = "best_params.json"
+            log_file_path = f"{self.model_path}/{log_file_name}"
+            with open(log_file_path, 'w') as f:
+                json.dump(best_params, f)
+                
+            best_model = self.eval_model(best_params)
+            
+            self.post_processing(best_model)
     
     
     def optimize(self):
         if self.method == 'grid_search':
             sampler = GridSampler(self.search_space)
-            study = optuna.create_study(direction='minimize', sampler=sampler)
-            study.optimize(self.objective, n_trials=len(sampler._all_grids))
+            n_trials = len(sampler._all_grids)
         else:
-            study = optuna.create_study(direction='minimize')
-            study.optimize(self.objective, n_trials=self.n_trials)
+            sampler = optuna.samplers.TPESampler()
+            n_trials = self.n_trials
+        
+        study = optuna.create_study(
+            direction='minimize',
+            study_name=f'{self.config["model_name"]}-{self.study_name}',
+            sampler=sampler
+        )
+        
+        study.optimize(self.objective, n_trials=n_trials)
 
         best_params = study.best_params
-        model_path = self.model_path
-        log_file_name = "best_params.json"
-        log_file_path = f"{model_path}/{log_file_name}"
-        
-        with open(log_file_path, 'w') as f:
-            json.dump(best_params, f)
-        
         return best_params
     
     
