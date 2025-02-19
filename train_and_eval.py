@@ -1,8 +1,8 @@
 import torch
 from torch.optim import LBFGS
 import os
-from torchdiffeq import odeint
-# from torchdiffeq import odeint_adjoint as odeint
+# from torchdiffeq import odeint
+from torchdiffeq import odeint_adjoint as odeint
 from models.utils.NetWrapper import NetWrapper
 from utils.utils import save_logs
 import json
@@ -19,7 +19,15 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
             y_true_valid = data[k]
             t_valid = t[k]
             y0 = y_true_valid[0]
-            y_pred.append(odeint(model, y0, t_valid, method='dopri5')[t_f_train:])
+            y_pred.append(odeint(
+                model, 
+                y0, 
+                t_valid, 
+                method='dopri5', 
+                adjoint_options=dict(norm="seminorm"),
+                atol=1e-3,
+                rtol=1e-6  
+            )[t_f_train:])
             
         y_pred = torch.stack(y_pred, dim=0)
         loss = criterion(y_pred, data[:, t_f_train:, :, :])
@@ -82,10 +90,15 @@ def fit(model:NetWrapper,
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
             # y_pred.append(odeint(model, y0, t_eval, method='dopri5'))
-            y_pred.append(odeint(model, 
-                                 y0, 
-                                 torch.tensor([t_eval[0], t_eval[1], t_eval[-1]]).to(torch.device(y0.device)), 
-                                 method='dopri5')[1:])
+            y_pred.append(odeint(
+                model, 
+                y0, 
+                torch.tensor([t_eval[0], t_eval[1], t_eval[-1]]).to(torch.device(y0.device)), 
+                method='dopri5',
+                adjoint_options=dict(norm="seminorm"),
+                atol=1e-3,
+                rtol=1e-6  
+            )[1:])
         
         y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
         # u_1 = y_pred[1, :, :, :]

@@ -98,7 +98,9 @@ class Experiments(ABC):
         study = optuna.create_study(
             direction='minimize',
             study_name=f'{self.config["model_name"]}-{self.study_name}',
-            sampler=sampler
+            sampler=sampler,
+            storage="sqlite:///optuna_study.db",
+            load_if_exists=True
         )
         
         study.optimize(self.objective, n_trials=n_trials)
