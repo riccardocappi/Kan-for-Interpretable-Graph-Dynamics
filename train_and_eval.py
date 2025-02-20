@@ -26,8 +26,8 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
                 method='dopri5', 
                 adjoint_options=dict(norm="seminorm"),
                 atol=1e-3,
-                rtol=1e-6  
-            )[t_f_train:])
+                rtol=1e-6)[t_f_train:]
+            )
             
         y_pred = torch.stack(y_pred, dim=0)
         loss = criterion(y_pred, data[:, t_f_train:, :, :])
@@ -93,12 +93,12 @@ def fit(model:NetWrapper,
             y_pred.append(odeint(
                 model, 
                 y0, 
-                torch.tensor([t_eval[0], t_eval[1], t_eval[-1]]).to(torch.device(y0.device)), 
+                torch.tensor([t_eval[0], t_eval[1], t_eval[-1]], dtype=y0.dtype).to(torch.device(y0.device)), 
                 method='dopri5',
                 adjoint_options=dict(norm="seminorm"),
                 atol=1e-3,
-                rtol=1e-6  
-            )[1:])
+                rtol=1e-6)[1:]
+            )
         
         y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
         # u_1 = y_pred[1, :, :, :]

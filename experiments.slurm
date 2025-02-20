@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-grid-search
+#SBATCH --job-name=GKAN-ODE-barbasi
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -19,7 +19,11 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=1:00:00
+#SBATCH --time=80:00:00
+
+### GPU request
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=A5000
 
 
 ### Some useful informative commands
@@ -35,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=2 --study_name=test --process_id=0
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=barbasi-albert --process_id=1

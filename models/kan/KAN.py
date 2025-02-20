@@ -115,8 +115,6 @@ class KAN(torch.nn.Module):
         layer.symb_mask.data[j][i] = 1
         
     
-    
-    # TODO: test
     def automatic_fix_symbolic(self, symb_functions_file):
         with open(symb_functions_file, "rb") as f:
             all_functions = dill.load(f)

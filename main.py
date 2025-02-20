@@ -8,7 +8,8 @@ import networkx as nx
 def run(config_path, n_trials=10, method='optuna', study_name='example', eval_model=True, process_id=0):
     config = load_config(config_path)
     model_type=config['model_type']
-    G = nx.grid_2d_graph(7, 10)
+    # G = nx.grid_2d_graph(7, 10)
+    G = nx.barabasi_albert_graph(70, 3, seed=config['seed'])
     
     if model_type == 'GKAN':
         exp = ExperimentsGKAN(config, G, n_trials, method, study_name=study_name, eval_model=eval_model, process_id=process_id)
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_trials', type=int, default=10, help='Number of trials')
     parser.add_argument('--study_name', default='example', help='Name of the optuna study to load/create')
     parser.add_argument('--process_id', type=int, default=0, help='ID for the running process')
-    parser.add_argument('--eval_model', type=bool, default=True, help='Whether to evaluate the model after the training process')
+    parser.add_argument('--eval_model', default=False, action="store_true", help='Whether to evaluate the model after the training process')
     
     
     args = parser.parse_args()
