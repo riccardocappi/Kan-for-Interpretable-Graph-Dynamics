@@ -83,6 +83,8 @@ def integrate(config, graph, rng):
 
 def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     device = dataset.device
+    
+    sample_size = sample_size if sample_size != -1 else len(dataset)
     interval = len(dataset) // sample_size
     sampled_indices = torch.tensor([i * interval for i in range(sample_size)])
     samples = dataset[sampled_indices]
@@ -181,22 +183,32 @@ def pruning(kan_acts, kan_preacts, theta = 0.01):
 
 
 
-def get_pysr_model(n_iterations=100, binary_operators = ['+', '-', '*', '/'], extra_sympy_mappings = {}, **kwargs):
+def get_pysr_model(
+    n_iterations=100,
+    binary_operators = ['+', '-', '*', '/'], 
+    extra_sympy_mappings = {},
+    unary_operators = None,
+    **kwargs):
+    
+    extra_mapping = {"zero": lambda x: x*0}
+    extra_mapping.update(extra_sympy_mappings)
+    
+    if unary_operators is None:
+        unary_operators = [
+            "exp",
+            "sin",
+            "neg",
+            "square",
+            "cube",
+            "abs",
+            "tan",
+            "tanh",
+            "zero(x) = 0*x"
+        ]
+    
     model = PySRRegressor(
         niterations=n_iterations,  # Number of iterations
-        unary_operators=[
-        "exp",
-        "sin",
-        "neg",
-        "square",
-        "cube",
-        "abs",
-        "log",
-        "log10",
-        "sqrt",
-        "tan",
-        "tanh"
-        ],
+        unary_operators=unary_operators,
         binary_operators=binary_operators,
         elementwise_loss="loss(prediction, target) = (prediction - target)^2",
         early_stop_condition=(
@@ -206,7 +218,7 @@ def get_pysr_model(n_iterations=100, binary_operators = ['+', '-', '*', '/'], ex
         maxsize=7,
         maxdepth=5,
         verbosity=0,
-        extra_sympy_mappings=extra_sympy_mappings,
+        extra_sympy_mappings=extra_mapping,
         delete_tempfiles=True,
         temp_equation_file=True,
         tempdir='./pysr',
@@ -223,8 +235,7 @@ def fit_acts_pysr(x, y, pysr_model = None):
     else:
         model = pysr_model()
     model.fit(x, y)
-    best_equation = model.equations_.nlargest(1, 'score').iloc[0]['sympy_format']
-    sympy_function = sp.sympify(best_equation)
+    sympy_function = sp.sympify(model.sympy())
 
     return sympy_function
     # return model.equations_.nlargest(5, 'score')
@@ -299,23 +310,23 @@ def get_kan_arch(n_layers, model_path):
 
 def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None):
     # G_net
-    cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/G_Net')
+    cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
     symb_g = fit_kan(pruned_acts,
                      pruned_preacts,
                      symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
-                     save_path=f'{model_path}/G_Net/symb_functions',
+                     save_path=f'{model_path}/g_net/symb_functions',
                      pysr_model=pysr_model
                      )
 
     # H_Net
-    cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/H_Net')
+    cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
-    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_j( ' + str(symb_g[0]) + ')')]
+    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g[0]) + ')')]
     symb_h = fit_kan(pruned_acts,
                      pruned_preacts,
                      symb_xs=symb_h_in,
-                     save_path=f'{model_path}/H_Net/symb_functions',
+                     save_path=f'{model_path}/h_net/symb_functions',
                      pysr_model=pysr_model
                      )
 
@@ -341,13 +352,13 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None):
 
 def fit_mpnn(model_path, device='cpu', pysr_model = None):
     # G_Net
-    cached_input = torch.load(f'{model_path}/G_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
-    cached_output = torch.load(f'{model_path}/G_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
+    cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
+    cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
     symb_g = fit_black_box(cached_input, cached_output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], pysr_model=pysr_model)
 
     # H_Net
-    cached_input = torch.load(f'{model_path}/H_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
-    cached_output = torch.load(f'{model_path}/H_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
+    cached_input = torch.load(f'{model_path}/h_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
+    cached_output = torch.load(f'{model_path}/h_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
 
     symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
     symb_h = fit_black_box(cached_input, cached_output, symb_xs=symb_h_in, pysr_model=pysr_model)
@@ -357,7 +368,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None):
 
 def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, device='cpu', theta=0.1, pysr_model = None):
     #G_Net
-    cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/G_Net')
+    cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
 
     input = pruned_preacts[0]
@@ -366,7 +377,7 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
     symb_g = fit_black_box(input, output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], pysr_model=pysr_model)
 
     #H_Net
-    cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/H_Net')
+    cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
 
     input = pruned_preacts[0]

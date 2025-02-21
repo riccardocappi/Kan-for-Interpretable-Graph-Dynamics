@@ -193,9 +193,21 @@ class Experiments(ABC):
         raise Exception('Not implemented')
     
     
-    def post_processing(self, best_model: NetWrapper):
+    def post_processing(self, best_model: NetWrapper, sample_size = -1):
         
         dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
                                                                     self.edge_index, 
-                                                                    sample_size=32)
+                                                                    sample_size=sample_size)
         best_model.model.save_cached_data(dummy_x, dummy_edge_index)
+        
+        
+    def load_experiment(self, study_name):
+        study = optuna.load_study(
+            study_name=study_name,
+            storage="sqlite:///optuna_study.db"
+        )
+        
+        best_params = study.best_params
+        return best_params
+        
+        

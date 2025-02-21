@@ -19,7 +19,7 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=72:00:00
+#SBATCH --time=80:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
@@ -39,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto_mpnn.yml --method=grid_search
+python main.py --config=./configs/config_kuramoto_mpnn.yml --method=optuna --n_trials=30 --study_name=barbasi-albert-mpnn --process_id=1
