@@ -11,6 +11,18 @@ from torch.utils.data import DataLoader
 from datasets.SlidingWindowSampler import SlidingWindowSampler
 
 
+def call_ODE(model, y0, t):
+    return odeint(
+        model, 
+        y0, 
+        t, 
+        method='dopri5', 
+        adjoint_options=dict(norm="seminorm"), 
+        atol=1e-3,
+        rtol=1e-6  
+    )
+
+
 def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
     model.eval()
     y_pred = []
@@ -19,15 +31,7 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
             y_true_valid = data[k]
             t_valid = t[k]
             y0 = y_true_valid[0]
-            y_pred.append(odeint(
-                model, 
-                y0, 
-                t_valid, 
-                method='dopri5', 
-                adjoint_options=dict(norm="seminorm"),
-                atol=1e-3,
-                rtol=1e-6)[t_f_train:]
-            )
+            y_pred.append(call_ODE(model, y0, t_valid)[t_f_train:])
             
         y_pred = torch.stack(y_pred, dim=0)
         loss = criterion(y_pred, data[:, t_f_train:, :, :])
@@ -90,20 +94,10 @@ def fit(model:NetWrapper,
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
             # y_pred.append(odeint(model, y0, t_eval, method='dopri5'))
-            y_pred.append(odeint(
-                model, 
-                y0, 
-                torch.tensor([t_eval[0], t_eval[1], t_eval[-1]], dtype=y0.dtype).to(torch.device(y0.device)), 
-                method='dopri5',
-                adjoint_options=dict(norm="seminorm"),
-                atol=1e-3,
-                rtol=1e-6)[1:]
-            )
+            t = torch.tensor([t_eval[0], t_eval[1], t_eval[-1]], dtype=y0.dtype).to(torch.device(y0.device))
+            y_pred.append(call_ODE(model, y0, t)[1:])
         
         y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
-        # u_1 = y_pred[1, :, :, :]
-        # u_M = y_pred[-1, :, :, :]
-        # training_loss = criterion(u_1, batch_data[1, :, :, :]) + criterion(u_M, batch_data[-1, :, :, :])
         training_loss = criterion(y_pred, batch_data[[1, -1], :, :, :])
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)

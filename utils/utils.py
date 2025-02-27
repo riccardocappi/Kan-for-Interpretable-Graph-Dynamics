@@ -7,6 +7,7 @@ import numpy as np
 from datasets.data_utils import numerical_integration
 import sympy as sp
 import dill
+from models.kan.KanLayer import KANLayer
 
 
 
@@ -55,6 +56,23 @@ def plot(folder_path, layers, show_plots=False):
                     plt.show()
                 plt.clf()
                 plt.close()
+                
+
+def fix_symbolic(layer:KANLayer, i, j, func):
+    layer.symbolic_functions[j][i] = func
+    layer.layer_mask.data[j][i] = 0
+    layer.symb_mask.data[j][i] = 1
+                
+                
+def automatic_fix_symbolic_kan(layers, symb_functions_file):
+    with open(symb_functions_file, "rb") as f:
+            all_functions = dill.load(f)
+        
+    for l, layer in enumerate(layers):
+        symb_layer = all_functions[l]
+        for j in range(layer.out_features):
+            for i in range(layer.in_features):
+                fix_symbolic(layer, j, i, symb_layer[j][i])
                 
 
 
@@ -243,15 +261,15 @@ def fit_acts_pysr(x, y, pysr_model = None):
 
 def fit_layer(cached_act, cached_preact, symb_xs, device='cpu', pysr_model = None):
     symb_layer_acts = []
-    in_dim = cached_act.size(2)
-    out_dim = cached_act.size(1)
+    in_dim = cached_act.shape[2]
+    out_dim = cached_act.shape[1]
     symbolic_functions = [[lambda x: 0*x for _ in range(in_dim)] for _ in range(out_dim)]
 
     for j in range(out_dim):
         symb_out = 0
         for i in range(in_dim):
-            x = cached_preact[:, i].cpu().detach().numpy().reshape(-1, 1)
-            y = cached_act[:, j, i].cpu().detach().numpy().reshape(-1, 1)
+            x = cached_preact[:, i].reshape(-1, 1)
+            y = cached_act[:, j, i].reshape(-1, 1)
             symb_func = fit_acts_pysr(x, y, pysr_model)
             # pdb.set_trace()
 
@@ -269,8 +287,8 @@ def fit_kan(kan_acts, kan_preacts, symb_xs, save_path='./symb_functions', pysr_m
     n_layers = len(kan_acts)
     all_functions = []
     for l in range(n_layers):
-        acts = kan_acts[l]
-        preacts = kan_preacts[l]
+        acts = kan_acts[l].cpu().detach().numpy()
+        preacts = kan_preacts[l].cpu().detach().numpy()
 
         symb_xs, symb_functions = fit_layer(
             cached_act=acts,
