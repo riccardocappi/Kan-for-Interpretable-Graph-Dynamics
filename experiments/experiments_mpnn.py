@@ -5,6 +5,12 @@ import torch
 import torch.nn.functional as F
 from models.baseline.baseline import MLP
 
+activations = {
+    "relu": F.relu,
+    "sigmoid": F.sigmoid,
+    "softplus": F.softplus
+}
+
 
 class ExperimentsMPNN(Experiments):
     def __init__(
@@ -14,10 +20,9 @@ class ExperimentsMPNN(Experiments):
         n_trials, 
         model_selection_method='optuna',
         study_name = 'example',
-        eval_model=True,
         process_id = 0
     ):
-        super().__init__(config, G, n_trials, model_selection_method, study_name=study_name,eval_model=eval_model, process_id=process_id)
+        super().__init__(config, G, n_trials, model_selection_method, study_name=study_name, process_id=process_id)
         
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
@@ -43,10 +48,24 @@ class ExperimentsMPNN(Experiments):
         hidden_layers = [hidden_dims for _ in range(n_hidden_layers)]
         hidden_layers = [2*self.config['in_dim']] + hidden_layers + [self.config['in_dim']]
         
+        activation = trial.suggest_categorical(
+            f'af_{net_suffix}',
+            self.search_space[f'af_{net_suffix}']
+        )
+        
+        af = activations[activation]
+        
+        dropout_rate = trial.suggest_float(
+            f'drop_p_{net_suffix}',
+            self.search_space[f'drop_p_{net_suffix}'][0],
+            self.search_space[f'drop_p_{net_suffix}'][-1]
+        )
+        
         mlp_config = {
             'hidden_layers': hidden_layers,
-            'af': F.relu,
-            'model_path': f'{self.model_path}/{net_suffix}'
+            'af': af,
+            'model_path': f'{self.model_path}/{net_suffix}',
+            'dropout_rate': dropout_rate
         }
         
         return mlp_config
@@ -64,43 +83,6 @@ class ExperimentsMPNN(Experiments):
             g_net=g_net,
             h_net=h_net,
             model_path=self.model_path
-        )
-        
-        model = NetWrapper(net, self.edge_index)
-        model = model.to(torch.device(self.device))
-        
-        return model
-        
-    
-    
-    def _get_best_mlp_config(self, best_params, net_suffix):
-        n_hidden_layers = best_params[f'n_hidden_layers_{net_suffix}']
-        hidden_dims = best_params[f'hidden_dims_{net_suffix}']
-        
-        hidden_layers = [hidden_dims for _ in range(n_hidden_layers)]
-        hidden_layers = [2*self.config['in_dim']] + hidden_layers + [self.config['in_dim']]
-        
-        mlp_config = {
-            'hidden_layers': hidden_layers,
-            'af': F.relu,
-            'model_path': f'{self.model_path}/eval/{net_suffix}'
-        }
-        
-        return mlp_config
-    
-    
-    def get_best_model(self, best_params):
-        
-        g_net_config = self._get_best_mlp_config(best_params=best_params, net_suffix=self.g_net_suffix)
-        h_net_config = self._get_best_mlp_config(best_params=best_params, net_suffix=self.h_net_suffix)
-        
-        g_net = MLP(**g_net_config)
-        h_net = MLP(**h_net_config)
-        
-        net = MPNN(
-            g_net=g_net,
-            h_net=h_net,
-            model_path=f'{self.model_path}/eval'
         )
         
         model = NetWrapper(net, self.edge_index)

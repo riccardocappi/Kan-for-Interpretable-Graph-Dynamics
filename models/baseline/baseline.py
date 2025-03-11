@@ -7,34 +7,35 @@ from utils.utils import save_black_box_to_file
 
 
 class MLP(torch.nn.Module):
-    def __init__(self, hidden_layers, af, model_path, save_black_box=False):
+    def __init__(self, hidden_layers, af, model_path, dropout_rate=0.0, save_black_box=False):
         super(MLP, self).__init__()
         self.af = af    # Activation function
         self.layers = torch.nn.ModuleList()
         self.model_path = model_path
+        self.dropouts = torch.nn.ModuleList()
         
         for in_dim, out_dim in zip(hidden_layers, hidden_layers[1:]):
-            self.layers.append(
-                torch.nn.Linear(in_dim, out_dim)
-            )
+            self.layers.append(torch.nn.Linear(in_dim, out_dim))
+            self.dropouts.append(torch.nn.Dropout(p=dropout_rate))
         
         self.cache_input = None
         self.cache_output = None
         self.save_black_box = save_black_box
     
     
-    def forward(self, x:torch.Tensor):
+    def forward(self, x: torch.Tensor):
         if self.save_black_box:
             self.cache_input = x.detach()
         
-        for i, layer in enumerate(self.layers):
+        for i, (layer, dropout) in enumerate(zip(self.layers, self.dropouts)):
             x = layer(x)
-            if i < len(self.layers) - 1:  
+            if i < len(self.layers) - 1:  # Apply activation and dropout except on the last layer
                 x = self.af(x)
+                x = dropout(x)
         
         if self.save_black_box:
             self.cache_output = x.detach()
-            
+        
         return x
         
     

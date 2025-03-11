@@ -4,6 +4,7 @@ import torch
 from torch_geometric.utils import degree
 from models.utils.ModelInterface import ModelInterface
 from utils.utils import plot, save_acts
+import os
 
 
 class GKAN_ODE(MessagePassing, ModelInterface):
@@ -14,7 +15,7 @@ class GKAN_ODE(MessagePassing, ModelInterface):
                  norm=False,
                  device='cuda',
                  lmbd_g=0.,
-                 lmbd_h=0.
+                 lmbd_h=0.,
                  ):
         
         MessagePassing.__init__(self, aggr='add')
@@ -29,9 +30,9 @@ class GKAN_ODE(MessagePassing, ModelInterface):
         self.norm = norm
         self.lmbd_g = lmbd_g
         self.lmbd_h = lmbd_h
-        
+               
         self.to(self.device)
-        
+
 
     def to(self, device):
         super().to(device)
@@ -39,8 +40,7 @@ class GKAN_ODE(MessagePassing, ModelInterface):
         self.h_net.to(device)
         self.g_net.to(device)
         
-        
-        
+    
     def forward(self, x, edge_index, update_grid=False):
         norm = self.get_norm(edge_index, x) if self.norm else torch.ones(edge_index.shape[1], device=x.device)
         
@@ -89,11 +89,17 @@ class GKAN_ODE(MessagePassing, ModelInterface):
             _ = self.forward(dummy_x, dummy_edge_index, update_grid=False)
         
         
-        plot(folder_path=f'{self.h_net.model_path}/figures', layers=self.h_net.layers, show_plots=False)
-        plot(folder_path=f'{self.g_net.model_path}/figures', layers=self.g_net.layers, show_plots=False)
+        g_net_model_path = f"{self.model_path}/g_net"
+        h_net_model_path = f"{self.model_path}/h_net"
+        
+        os.makedirs(g_net_model_path, exist_ok=True)
+        os.makedirs(h_net_model_path, exist_ok=True)
+        
+        plot(folder_path=f'{h_net_model_path}/figures', layers=self.h_net.layers, show_plots=False)
+        plot(folder_path=f'{g_net_model_path}/figures', layers=self.g_net.layers, show_plots=False)
 
-        save_acts(layers=self.h_net.layers, folder_path=f'{self.h_net.model_path}/cached_acts')
-        save_acts(layers=self.g_net.layers, folder_path=f'{self.g_net.model_path}/cached_acts') 
+        save_acts(layers=self.h_net.layers, folder_path=f'{h_net_model_path}/cached_acts')
+        save_acts(layers=self.g_net.layers, folder_path=f'{g_net_model_path}/cached_acts') 
             
     
         

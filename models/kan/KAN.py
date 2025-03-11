@@ -19,7 +19,6 @@ class KAN(torch.nn.Module):
         base_activation=torch.nn.SiLU,
         grid_eps=0.02,
         grid_range=[-1, 1],
-        model_path = './model',
         store_act = False,
         device='cuda',
         mu_1 = 1.,
@@ -30,7 +29,6 @@ class KAN(torch.nn.Module):
         super(KAN, self).__init__()
         self.layers = torch.nn.ModuleList()
         self.cache_data = None
-        self.model_path = model_path
         self.store_act = store_act
         self.grid_size = grid_size
         self.grid_range = grid_range
@@ -41,9 +39,6 @@ class KAN(torch.nn.Module):
         self.mu_2 = mu_2
         self.use_orig_reg = use_orig_reg
         
-        
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
         
         for in_features, out_features in zip(layers_hidden, layers_hidden[1:]):
             self.layers.append(

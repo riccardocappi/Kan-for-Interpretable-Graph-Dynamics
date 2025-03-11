@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-barbasi-2
+#SBATCH --job-name=GKAN-ODE-1
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -38,5 +38,5 @@ echo
 SHELL=/bin/bash
 
 ### Jobs execution commands
-source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=10 --study_name=barbasi-albert-700 --process_id=2
+conda activate my_env
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=barabasi-albert-ic1-shuffle --process_id=1

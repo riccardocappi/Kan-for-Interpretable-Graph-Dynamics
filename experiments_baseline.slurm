@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-baseline
+#SBATCH --job-name=GKAN-ODE-base-1
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -22,7 +22,7 @@
 #SBATCH --time=80:00:00
 
 ### GPU request
-#SBATCH --gres=gpu:1
+#SBATCH --gres=mps:30
 #SBATCH --constraint=A5000
 
 
@@ -39,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto_mpnn.yml --method=optuna --n_trials=30 --study_name=barbasi-albert-mpnn --process_id=1
+python main.py --config=./configs/config_kuramoto_mpnn.yml --method=optuna --n_trials=30 --study_name=barabasi-albert-mpnn-ic1 --process_id=1

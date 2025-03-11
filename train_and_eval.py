@@ -16,10 +16,9 @@ def call_ODE(model, y0, t):
         model, 
         y0, 
         t, 
-        method='dopri5', 
-        adjoint_options=dict(norm="seminorm"), 
-        atol=1e-3,
-        rtol=1e-6  
+        method='dopri5',
+        atol=1e-6,
+        rtol=1e-4  
     )
 
 
@@ -65,8 +64,8 @@ def fit(model:NetWrapper,
     best_epoch = 0
     best_model_state = None
     
-    sampler = SlidingWindowSampler(training_set, batch_size_train, stride)
-    train_loader = DataLoader(training_set, batch_sampler=sampler, shuffle=False)
+    sampler = SlidingWindowSampler(training_set, batch_size_train, stride, shuffle=True)
+    train_loader = DataLoader(training_set, batch_sampler=sampler)
     
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -75,11 +74,13 @@ def fit(model:NetWrapper,
     else:
         raise Exception('Optimizer not implemented yet!')
     
-
-    logs_folder = f'{model.model.model_path}/logs'
-    if not os.path.exists(logs_folder):
-        os.makedirs(logs_folder)
-    logs_file_path = f'{logs_folder}/{log_file_name}'
+    if save_updates:
+        logs_folder = f'{model.model.model_path}/logs'
+        if not os.path.exists(logs_folder):
+            os.makedirs(logs_folder)
+        logs_file_path = f'{logs_folder}/{log_file_name}'
+    else:
+        logs_file_path = ''
     
     results = defaultdict(list)
     reg_loss_metrics = defaultdict(float)
@@ -93,7 +94,6 @@ def fit(model:NetWrapper,
         for k in range(n_iter):
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
-            # y_pred.append(odeint(model, y0, t_eval, method='dopri5'))
             t = torch.tensor([t_eval[0], t_eval[1], t_eval[-1]], dtype=y0.dtype).to(torch.device(y0.device))
             y_pred.append(call_ODE(model, y0, t)[1:])
         
@@ -104,6 +104,7 @@ def fit(model:NetWrapper,
         loss = training_loss + lmbd * reg
         running_tot_loss = running_tot_loss + loss.item()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         if opt == 'Adam':
             optimizer.step()
         return loss
@@ -152,11 +153,6 @@ def fit(model:NetWrapper,
         
     log_message = f"\nLoading best model found at epoch {best_epoch} with val loss {best_val_loss}" 
     save_logs(logs_file_path, log_message, save_updates)
-    model.load_state_dict(best_model_state)
-    
-    if save_updates:
-        torch.save(best_model_state, f'{model.model.model_path}/best_state_dict.pth')
-        with open(f"{model.model.model_path}/results.json", "w") as outfile: 
-            json.dump(results, outfile)
+    model.load_state_dict(best_model_state)        
         
-    return results  
+    return results 

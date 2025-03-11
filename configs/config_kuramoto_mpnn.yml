@@ -1,8 +1,8 @@
 dynamics: 'Kuramoto'
 model_name: 'model-kuramoto-mpnn'
 model_type: 'MPNN'
-epochs: 400
-patience: 150
+epochs: 500
+patience: 200
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
@@ -15,12 +15,16 @@ in_dim: 1
 search_space:
   n_hidden_layers_g_net: [1]
   n_hidden_layers_h_net: [1]
-  hidden_dims_g_net: [16, 64]
-  hidden_dims_h_net: [16, 64]
-  lr: [0.01, 0.05]
-  batch_size: [16, 120]
-  stride: [16, 120]
-n_iter: 2
+  hidden_dims_g_net: [9, 42]
+  hidden_dims_h_net: [9, 42]
+  af_g_net: ["relu", "sigmoid", "softplus"]
+  af_h_net: ["relu", "sigmoid", "softplus"]
+  drop_p_g_net: [0.0, 0.5]
+  drop_p_h_net: [0.0, 0.5]
+  lr: [0.008, 0.05]
+  batch_size: [10, 20, 40, 80, 120]
+  stride: [20, 40, 80, 120]
+n_iter: 1
 integration_kwargs:
   w: 2.
   R: 0.5

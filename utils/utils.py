@@ -6,8 +6,9 @@ import os
 import numpy as np
 from datasets.data_utils import numerical_integration
 import sympy as sp
-import dill
+import json
 from models.kan.KanLayer import KANLayer
+from collections import defaultdict
 
 
 
@@ -64,15 +65,17 @@ def fix_symbolic(layer:KANLayer, i, j, func):
     layer.symb_mask.data[j][i] = 1
                 
                 
-def automatic_fix_symbolic_kan(layers, symb_functions_file):
-    with open(symb_functions_file, "rb") as f:
-            all_functions = dill.load(f)
+def automatic_fix_symbolic_kan(layers, symb_functions_file, eq_index=0):
+    with open(symb_functions_file, "r") as f:
+        all_functions = json.load(f)
         
     for l, layer in enumerate(layers):
-        symb_layer = all_functions[l]
+        symb_layer = all_functions[f"{l}"]
         for j in range(layer.out_features):
             for i in range(layer.in_features):
-                fix_symbolic(layer, j, i, symb_layer[j][i])
+                str_func =  symb_layer[f"{j}"][f"{i}"][eq_index]
+                symb_func = sp.lambdify(sp.Symbol('x0'), sp.sympify(str_func))
+                fix_symbolic(layer, i, j, symb_func)
                 
 
 
@@ -247,60 +250,80 @@ def get_pysr_model(
     
 
 
-def fit_acts_pysr(x, y, pysr_model = None):
+def fit_acts_pysr(x, y, pysr_model = None, sample_size = -1):
     if pysr_model is None:
         model = get_pysr_model()
     else:
         model = pysr_model()
-    model.fit(x, y)
-    sympy_function = sp.sympify(model.sympy())
+    
+    if sample_size > 0 and sample_size < len(x):
+        indices = np.random.choice(len(x), sample_size, replace=False)
+        x_sampled = x[indices]
+        y_sampled = y[indices]
+    else:
+        x_sampled = x
+        y_sampled = y
+    
+    model.fit(x_sampled, y_sampled)
+    top_5_eq = model.equations_.nlargest(5, 'score')
+    return top_5_eq 
 
-    return sympy_function
-    # return model.equations_.nlargest(5, 'score')
 
-
-def fit_layer(cached_act, cached_preact, symb_xs, device='cpu', pysr_model = None):
+def fit_layer(cached_act, cached_preact, symb_xs, device='cpu', pysr_model = None, sample_size=-1):
     symb_layer_acts = []
     in_dim = cached_act.shape[2]
     out_dim = cached_act.shape[1]
-    symbolic_functions = [[lambda x: 0*x for _ in range(in_dim)] for _ in range(out_dim)]
+    symbolic_functions = defaultdict(dict)
+    top_5_equations = {}
 
     for j in range(out_dim):
         symb_out = 0
         for i in range(in_dim):
             x = cached_preact[:, i].reshape(-1, 1)
             y = cached_act[:, j, i].reshape(-1, 1)
-            symb_func = fit_acts_pysr(x, y, pysr_model)
-            # pdb.set_trace()
-
-            symbolic_functions[j][i] = sp.lambdify(sp.Symbol('x0'), symb_func)
-
+            top_5_eq = fit_acts_pysr(x, y, pysr_model, sample_size=sample_size)
+            top_5_equations[(i, j)] = top_5_eq[ ["complexity", "loss", "score", "sympy_format"] ]
+            
+            symbolic_functions[j][i] = [str(eq) for eq in top_5_eq["sympy_format"]]
+            
+            symb_func = sp.sympify(top_5_eq["sympy_format"].iloc[0])
+            
             symb_func = symb_func.subs(sp.Symbol('x0'), symb_xs[i])
             symb_out += symb_func
 
         symb_layer_acts.append(symb_out)
 
-    return symb_layer_acts, symbolic_functions
+    return symb_layer_acts, symbolic_functions, top_5_equations
 
 
-def fit_kan(kan_acts, kan_preacts, symb_xs, save_path='./symb_functions', pysr_model = None):
+def fit_kan(kan_acts, kan_preacts, symb_xs, model_path='./model', pysr_model = None, sample_size=-1):
     n_layers = len(kan_acts)
-    all_functions = []
+    all_functions = {}
+    
+    top_5_save_path = f"{model_path}/spline-wise"
+    if not os.path.exists(top_5_save_path):
+        os.makedirs(top_5_save_path)
+    
     for l in range(n_layers):
         acts = kan_acts[l].cpu().detach().numpy()
         preacts = kan_preacts[l].cpu().detach().numpy()
 
-        symb_xs, symb_functions = fit_layer(
+        symb_xs, symb_functions, top_5_eqs = fit_layer(
             cached_act=acts,
             cached_preact=preacts,
             symb_xs=symb_xs,
             device='cpu',
-            pysr_model=pysr_model
+            pysr_model=pysr_model,
+            sample_size=sample_size
         )
-        all_functions.append(symb_functions)
+        all_functions[l] = symb_functions
+        
+        for k, df in top_5_eqs.items():
+            df.to_csv(f"{top_5_save_path}/top_5_equations({l}, {k[1]}, {k[0]}).csv")
 
-    with open(save_path, "wb") as f:
-        dill.dump(all_functions, f)
+    save_path = f"{model_path}/symb_functions.json"
+    with open(save_path, "w") as f:
+        json.dump(all_functions, f)
 
     return symb_xs
                 
@@ -326,65 +349,83 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None, sample_size=-1):
     # G_net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
-    pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
+    pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)    
     symb_g = fit_kan(pruned_acts,
                      pruned_preacts,
                      symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
-                     save_path=f'{model_path}/g_net/symb_functions',
-                     pysr_model=pysr_model
+                     model_path=f'{model_path}/g_net',
+                     pysr_model=pysr_model,
+                     sample_size=sample_size
                      )
 
+    
     # H_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
-    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g[0]) + ')')]
+    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(sp.simplify(symb_g[0])) + ')')]
     symb_h = fit_kan(pruned_acts,
                      pruned_preacts,
                      symb_xs=symb_h_in,
-                     save_path=f'{model_path}/h_net/symb_functions',
-                     pysr_model=pysr_model
+                     model_path=f'{model_path}/h_net',
+                     pysr_model=pysr_model,
+                     sample_size=sample_size
                      )
 
     return symb_h[0]
 
 
-def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None):
+def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
     in_dim = cached_input.size(1)
     out_dim = cached_output.size(1)
 
     x = cached_input.detach().numpy().reshape(-1, in_dim)
     y = cached_output.detach().numpy().reshape(-1, out_dim)
 
-    symb_func = fit_acts_pysr(x, y, pysr_model=pysr_model)
+    top_5_eq = fit_acts_pysr(x, y, pysr_model=pysr_model, sample_size=sample_size)
+    
+    symb_func = sp.sympify(top_5_eq["sympy_format"].iloc[0])
 
     subs_dict = {sp.Symbol(f'x{i}'): symb_xs[i] for i in range(len(symb_xs))}
 
     symb_func = symb_func.subs(subs_dict)
 
-    return symb_func
+    return symb_func, top_5_eq[["complexity", "loss", "score", "sympy_format"]]
 
 
 
-def fit_mpnn(model_path, device='cpu', pysr_model = None):
+def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1):
     # G_Net
     cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
-    symb_g = fit_black_box(cached_input, cached_output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], pysr_model=pysr_model)
-
+    symb_g, top_5_eqs_g = fit_black_box(
+        cached_input, cached_output, 
+        symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
+        pysr_model=pysr_model,
+        sample_size=sample_size
+    )
+    top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
+    
     # H_Net
     cached_input = torch.load(f'{model_path}/h_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/h_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
 
     symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
-    symb_h = fit_black_box(cached_input, cached_output, symb_xs=symb_h_in, pysr_model=pysr_model)
+    symb_h, top_5_eqs_h = fit_black_box(
+        cached_input, 
+        cached_output, 
+        symb_xs=symb_h_in, 
+        pysr_model=pysr_model,
+        sample_size=sample_size
+    )
+    top_5_eqs_h.to_csv(f"{model_path}/top_5_equations_h.csv")
 
     return symb_h
 
 
-def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, device='cpu', theta=0.1, pysr_model = None):
+def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, device='cpu', theta=0.1, pysr_model = None, sample_size=-1):
     #G_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
@@ -392,7 +433,19 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
     input = pruned_preacts[0]
     output = pruned_acts[-1].sum(dim=2)
 
-    symb_g = fit_black_box(input, output, symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], pysr_model=pysr_model)
+    symb_g, top_5_eqs_g = fit_black_box(
+        input, 
+        output, 
+        symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
+        pysr_model=pysr_model,
+        sample_size=sample_size
+    )
+    
+    save_path = f"{model_path}/black-box"
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    
+    top_5_eqs_g.to_csv(f"{save_path}/top_5_equations_g.csv")
 
     #H_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
@@ -403,6 +456,13 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
 
     symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
 
-    symb_h = fit_black_box(input, output, symb_xs=symb_h_in, pysr_model=pysr_model)
+    symb_h, top_5_eqs_h = fit_black_box(
+        input, 
+        output, 
+        symb_xs=symb_h_in, 
+        pysr_model=pysr_model,
+        sample_size=sample_size
+    )
+    top_5_eqs_h.to_csv(f"{save_path}/top_5_equations_h.csv")
 
     return symb_h
