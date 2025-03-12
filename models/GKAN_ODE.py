@@ -100,6 +100,15 @@ class GKAN_ODE(MessagePassing, ModelInterface):
 
         save_acts(layers=self.h_net.layers, folder_path=f'{h_net_model_path}/cached_acts')
         save_acts(layers=self.g_net.layers, folder_path=f'{g_net_model_path}/cached_acts') 
+        
+        
+    def reset_params(self):
+        for layer in self.g_net.layers:
+            layer.init_params()
+        
+        for layer in self.h_net.layers:
+            layer.init_params()
+    
             
     
         

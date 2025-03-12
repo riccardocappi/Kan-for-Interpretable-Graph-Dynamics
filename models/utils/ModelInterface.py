@@ -17,3 +17,6 @@ class ModelInterface():
     def save_cached_data(self, dummy_x, dummy_edge_index):
         pass
     
+    def reset_params(self):
+        pass
+    

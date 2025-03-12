@@ -51,6 +51,7 @@ class Experiments(ABC):
         
         self.search_space = config['search_space']
         self.seed = config['seed']
+        self.torch_seed = config["pytorch_seed"]
         
         self.study_name = study_name
         
@@ -68,11 +69,9 @@ class Experiments(ABC):
         optuna.logging.enable_propagation()
         
         self.current_model = None
-        self.current_results = {}
         
         self.best_params = {}
         self.best_model = None
-        self.best_results = {}
         
       
     def run(self):
@@ -87,13 +86,10 @@ class Experiments(ABC):
         with open(log_file_path, 'w') as f:
             json.dump(self.best_params, f)
         
-        torch.save(self.best_model.state_dict(), f'{self.model_path}/best_state_dict.pth')
-        
-        with open(f"{self.model_path}/results.json", "w") as outfile: 
-            json.dump(self.best_results, outfile)
-        
-    
-        self.post_processing(self.best_model)
+        if self.best_model is not None:
+            self.eval_model(self.best_model, self.best_params)
+            
+            self.post_processing(self.best_model)
     
     
     def optimize(self):
@@ -120,12 +116,10 @@ class Experiments(ABC):
         if study.best_trial == trial:
             self.best_params = best_params
             self.best_model = self.current_model
-            self.best_results = self.current_results
     
     
     def objective(self, trial):
-        self.current_model = self.get_model_opt(trial)
-        
+        R = 2
         lr_space = self.search_space.get('lr', [0.001])
         lr = trial.suggest_float('lr', lr_space[0], lr_space[-1])
         
@@ -138,8 +132,50 @@ class Experiments(ABC):
         stride_space = self.search_space.get('stride', [1])
         stride = trial.suggest_categorical('stride', stride_space)
         
-        self.current_results = fit(
-            self.current_model,
+        tot_val_loss = 0.
+        
+        model = self.get_model_opt(trial)
+        
+        for _ in range(R):
+            results = fit(
+                model,
+                self.training_set,
+                self.valid_set,
+                epochs=self.epochs,
+                patience=self.patience,
+                lr = lr,
+                lmbd=lamb,
+                log=self.log,
+                criterion=torch.nn.MSELoss(),
+                opt=self.opt,
+                save_updates=False,
+                n_iter=self.n_iter,
+                batch_size=batch_size,
+                t_f_train=self.t_f_train,
+                stride=stride
+            )
+            
+            best_val_loss = min(results['validation_loss'])
+            tot_val_loss += best_val_loss
+            model.model.reset_params()
+                
+        trial.set_user_attr("process_id", self.process_id)
+        
+        self.current_model = model
+        
+        return tot_val_loss / R
+
+
+    def eval_model(self, best_model:NetWrapper, best_params):
+        best_model.model.reset_params()
+        
+        lr = best_params.get('lr', 0.001)
+        lamb = best_params.get('lamb', 0.)
+        batch_size = best_params.get('batch_size', -1)
+        stride = best_params.get('stride', 1)
+        
+        results = fit(
+            best_model,
             self.training_set,
             self.valid_set,
             epochs=self.epochs,
@@ -149,19 +185,16 @@ class Experiments(ABC):
             log=self.log,
             criterion=torch.nn.MSELoss(),
             opt=self.opt,
-            save_updates=False,
+            save_updates=True,
             n_iter=self.n_iter,
             batch_size=batch_size,
             t_f_train=self.t_f_train,
             stride=stride
         )
         
-        best_val_loss = min(self.current_results['validation_loss'])
-        
-        trial.set_user_attr("process_id", self.process_id)
-        
-        return best_val_loss
-    
+        with open(f"{best_model.model.model_path}/results.json", "w") as outfile: 
+            json.dump(results, outfile)
+          
     
     @abstractmethod
     def pre_processing(self, train_data, valid_data):

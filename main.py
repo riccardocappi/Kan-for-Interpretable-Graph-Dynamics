@@ -3,9 +3,21 @@ from utils.utils import load_config
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
 import networkx as nx
+import torch
+
+
+def set_pytorch_seed(seed=42):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0):
     config = load_config(config_path)
+    
+    set_pytorch_seed(seed=config["pytorch_seed"])
+    
     model_type=config['model_type']
     # G = nx.grid_2d_graph(7, 10)
     G = nx.barabasi_albert_graph(70, 3, seed=config['seed'])
@@ -20,8 +32,8 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
     exp.run()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run experiments with different model types.')
     
+    parser = argparse.ArgumentParser(description='Run experiments with different model types.') 
     parser.add_argument('--config', default='./configs/config_kuramoto.yml', help='Path to config file')
     parser.add_argument('--method', default='optuna', help='Optimization method')
     parser.add_argument('--n_trials', type=int, default=10, help='Number of trials')

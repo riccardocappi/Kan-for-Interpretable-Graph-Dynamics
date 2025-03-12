@@ -5,7 +5,6 @@ import os
 from torchdiffeq import odeint_adjoint as odeint
 from models.utils.NetWrapper import NetWrapper
 from utils.utils import save_logs
-import json
 from collections import defaultdict
 from torch.utils.data import DataLoader
 from datasets.SlidingWindowSampler import SlidingWindowSampler
@@ -18,7 +17,8 @@ def call_ODE(model, y0, t):
         t, 
         method='dopri5',
         atol=1e-6,
-        rtol=1e-4  
+        rtol=1e-3,
+        adjoint_options=dict(norm="seminorm")
     )
 
 
@@ -68,7 +68,7 @@ def fit(model:NetWrapper,
     train_loader = DataLoader(training_set, batch_sampler=sampler)
     
     if opt == 'Adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
     elif opt == 'LBFGS':
         optimizer = LBFGS(model.parameters(), lr=lr, history_size=10, line_search_fn="strong_wolfe", tolerance_grad=1e-32, tolerance_change=1e-32)
     else:
@@ -104,7 +104,6 @@ def fit(model:NetWrapper,
         loss = training_loss + lmbd * reg
         running_tot_loss = running_tot_loss + loss.item()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         if opt == 'Adam':
             optimizer.step()
         return loss

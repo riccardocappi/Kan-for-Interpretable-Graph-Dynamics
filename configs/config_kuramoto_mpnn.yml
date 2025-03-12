@@ -8,6 +8,7 @@ log: 10
 t_span: [0,1]
 t_eval_steps: 300
 seed: 42
+pytorch_seed: 43
 noise_strengths: []
 device: 'cuda'
 input_range: [0, 6.28318530718]

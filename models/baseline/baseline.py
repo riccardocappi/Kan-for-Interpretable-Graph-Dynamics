@@ -37,29 +37,7 @@ class MLP(torch.nn.Module):
             self.cache_output = x.detach()
         
         return x
-        
-    
-class GIN(torch.nn.Module, ModelInterface):
-    def __init__(self, input_dim, hidden_dim, output_dim, model_path='./models', epsilon=0.):
-        
-        torch.nn.Module.__init__(self)
-        ModelInterface.__init__(self, model_path=model_path)
-        
-        hidden_dims = [input_dim, hidden_dim, output_dim]
-        self.mlp = MLP(hidden_dims, af=F.relu, model_path=f'{model_path}/mlp')
-        
-        self.conv1 = GINConv(self.mlp, eps=epsilon, train_eps=False)
-        
-
-
-    def forward(self, x, edge_index):            
-        x = self.conv1(x, edge_index)            
-        return x
-    
-    
-    def regularization_loss(self, reg_loss_metrics:dict) -> float:
-        return 0.0
-    
+            
     
     def save_cached_data(self, dummy_x, dummy_edge_index):
         self.mlp.save_black_box = True
@@ -120,52 +98,11 @@ class MPNN(MessagePassing, ModelInterface):
             cache_input=self.h_net.cache_input,
             cache_output=self.h_net.cache_output
         )
+      
+      
+    def reset_params(self):
+        for layer in self.g_net.layers:
+            layer.reset_parameters()
             
-        
-
-class GCN(torch.nn.Module, ModelInterface):
-    def __init__(self, input_dim, hidden_dim, output_dim, model_path='./models', save_black_box=False):
-        
-        torch.nn.Module.__init__(self)
-        ModelInterface.__init__(self, model_path=model_path)
-        
-        self.conv1 = GCNConv(input_dim, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, output_dim)
-        self.save_black_box = save_black_box
-        self.cache_input = None
-        self.cache_output = None
-        
-
-
-    def forward(self, x, edge_index):
-        if self.save_black_box:
-            self.cache_input = x.detach()
-            
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        # x = F.dropout(x, p=0.5, training=self.training)
-        x = self.conv2(x, edge_index)
-        
-        if self.save_black_box:
-            self.cache_output = x.detach()
-            
-        return x
-    
-    
-    def regularization_loss(self, reg_loss_metrics):
-        return 0.0
-    
-    
-    def save_cached_data(self, dummy_x, dummy_edge_index):
-        self.save_black_box = True
-        
-        with torch.no_grad():
-            _ = self.forward(dummy_x, dummy_edge_index)
-            
-        save_black_box_to_file(
-            folder_path=f'{self.model_path}/cached_data',
-            cache_input=self.cache_input,
-            cache_output=self.cache_output
-        )
-            
-        
+        for layer in self.h_net.layers:
+            layer.reset_parameters()
