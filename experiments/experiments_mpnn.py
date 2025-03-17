@@ -42,7 +42,8 @@ class ExperimentsMPNN(Experiments):
         hidden_dims = trial.suggest_int(
             f'hidden_dims_{net_suffix}',
             self.search_space[f'hidden_dims_{net_suffix}'][0],
-            self.search_space[f'hidden_dims_{net_suffix}'][-1]
+            self.search_space[f'hidden_dims_{net_suffix}'][-1],
+            step=8
         )
         
         hidden_layers = [hidden_dims for _ in range(n_hidden_layers)]

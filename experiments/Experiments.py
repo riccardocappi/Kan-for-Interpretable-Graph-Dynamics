@@ -51,7 +51,11 @@ class Experiments(ABC):
         
         self.search_space = config['search_space']
         self.seed = config['seed']
-        self.torch_seed = config["pytorch_seed"]
+        self.torch_seed = config.get("pytorch_seed", 42)
+        self.T = config.get("loss_temp", 1)
+        
+        mse = torch.nn.MSELoss()
+        self.criterion = lambda y_pred, y_true: self.T * mse(y_pred, y_true)
         
         self.study_name = study_name
         
@@ -121,10 +125,10 @@ class Experiments(ABC):
     def objective(self, trial):
         R = 2
         lr_space = self.search_space.get('lr', [0.001])
-        lr = trial.suggest_float('lr', lr_space[0], lr_space[-1])
+        lr = trial.suggest_float('lr', lr_space[0], lr_space[-1], step=0.001)
         
         lamb_space = self.search_space.get('lamb', [0.])
-        lamb = trial.suggest_float('lamb', lamb_space[0], lamb_space[-1])
+        lamb = trial.suggest_float('lamb', lamb_space[0], lamb_space[-1], step=0.0001)
         
         batch_size_space = self.search_space.get('batch_size', [-1])
         batch_size = trial.suggest_categorical('batch_size', batch_size_space)
@@ -146,7 +150,7 @@ class Experiments(ABC):
                 lr = lr,
                 lmbd=lamb,
                 log=self.log,
-                criterion=torch.nn.MSELoss(),
+                criterion=self.criterion,
                 opt=self.opt,
                 save_updates=False,
                 n_iter=self.n_iter,
@@ -183,7 +187,7 @@ class Experiments(ABC):
             lr = lr,
             lmbd=lamb,
             log=self.log,
-            criterion=torch.nn.MSELoss(),
+            criterion=self.criterion,
             opt=self.opt,
             save_updates=True,
             n_iter=self.n_iter,

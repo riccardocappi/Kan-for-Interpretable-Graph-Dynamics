@@ -21,7 +21,6 @@ def call_ODE(model, y0, t):
         adjoint_options=dict(norm="seminorm")
     )
 
-
 def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
     model.eval()
     y_pred = []

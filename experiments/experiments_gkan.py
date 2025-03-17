@@ -69,15 +69,17 @@ class ExperimentsGKAN(Experiments):
         
         lamb_g = trial.suggest_float(f'lamb_{self.g_net_suffix}', 
                                      self.search_space[f'lamb_{self.g_net_suffix}'][0], 
-                                     self.search_space[f'lamb_{self.g_net_suffix}'][-1])
+                                     self.search_space[f'lamb_{self.g_net_suffix}'][-1],
+                                     step = 0.0001)
         
         lamb_h = trial.suggest_float(f'lamb_{self.h_net_suffix}', 
                                      self.search_space[f'lamb_{self.h_net_suffix}'][0], 
-                                     self.search_space[f'lamb_{self.h_net_suffix}'][-1])
+                                     self.search_space[f'lamb_{self.h_net_suffix}'][-1],
+                                     step = 0.0001)
                 
         
-        g_net_config = self._get_kan_trial_config(trial, net_suffix=self.g_net_suffix, use_orig_reg=use_orig_reg)
-        h_net_config = self._get_kan_trial_config(trial, net_suffix=self.h_net_suffix, use_orig_reg=use_orig_reg)
+        g_net_config = self._get_kan_trial_config(trial, net_suffix=self.g_net_suffix, use_orig_reg=(use_orig_reg and lamb_g > 0.))
+        h_net_config = self._get_kan_trial_config(trial, net_suffix=self.h_net_suffix, use_orig_reg=(use_orig_reg and lamb_h > 0.))
         
         g_net = KAN(**g_net_config)
         h_net = KAN(**h_net_config)        

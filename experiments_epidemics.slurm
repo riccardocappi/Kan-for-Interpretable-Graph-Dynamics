@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-kuramoto
+#SBATCH --job-name=GKAN-ODE-epidemics-2
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -22,7 +22,7 @@
 #SBATCH --time=80:00:00
 
 ### GPU request
-#SBATCH --gres=mps:35
+#SBATCH --gres=gpu:1
 #SBATCH --constraint=A5000
 
 
@@ -39,4 +39,4 @@ SHELL=/bin/bash
 
 ### Jobs execution commands
 conda activate my_env
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto-2 --process_id=0
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=30 --study_name=epidemics-large --process_id=1
