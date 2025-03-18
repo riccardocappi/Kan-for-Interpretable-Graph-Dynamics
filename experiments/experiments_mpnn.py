@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from models.baseline.baseline import MLP
 
+# Possible activation functions
 activations = {
     "relu": F.relu,
     "sigmoid": F.sigmoid,
@@ -13,6 +14,9 @@ activations = {
 
 
 class ExperimentsMPNN(Experiments):
+    """
+    Implements the experiment pipeline for Message Passing Neural Network-ODE (MPNN-ODE) model
+    """
     def __init__(
         self, 
         config, 
@@ -29,10 +33,17 @@ class ExperimentsMPNN(Experiments):
         
     
     def pre_processing(self, train_data, valid_data):
-        return train_data, valid_data
+        return train_data, valid_data   # No pre-processing
     
     
     def _get_mlp_config_trial(self, trial, net_suffix):
+        """
+        Returns the configuration of a single MLP
+        
+        Args:
+            - trial : current optuna trial
+            - net_suffix : whether to consider the g_net hyper-params or the h_net ones
+        """
         n_hidden_layers = trial.suggest_int(
             f'n_hidden_layers_{net_suffix}', 
             self.search_space[f'n_hidden_layers_{net_suffix}'][0], 
@@ -47,7 +58,12 @@ class ExperimentsMPNN(Experiments):
         )
         
         hidden_layers = [hidden_dims for _ in range(n_hidden_layers)]
-        hidden_layers = [2*self.config['in_dim']] + hidden_layers + [self.config['in_dim']]
+        
+        message_passing = self.config.get("message_passing", True)
+        
+        in_dims = 2*self.config['in_dim'] if message_passing or (net_suffix == self.g_net_suffix) else self.config["in_dim"] 
+        
+        hidden_layers = [in_dims] + hidden_layers + [self.config['in_dim']]
         
         activation = trial.suggest_categorical(
             f'af_{net_suffix}',
@@ -73,7 +89,9 @@ class ExperimentsMPNN(Experiments):
     
     
     def get_model_opt(self, trial):
-        
+        """
+        Constructs MPNN model
+        """
         g_net_config = self._get_mlp_config_trial(trial=trial, net_suffix=self.g_net_suffix)
         h_net_config = self._get_mlp_config_trial(trial=trial, net_suffix=self.h_net_suffix)
         
@@ -83,7 +101,8 @@ class ExperimentsMPNN(Experiments):
         net = MPNN(
             g_net=g_net,
             h_net=h_net,
-            model_path=self.model_path
+            model_path=self.model_path,
+            message_passing=self.config.get("message_passing", True)
         )
         
         model = NetWrapper(net, self.edge_index)

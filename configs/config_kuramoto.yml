@@ -9,10 +9,10 @@ t_span: [0,1]
 t_eval_steps: 300
 seed: 42
 pytorch_seed: 43
-noise_strengths: []
 device: 'cuda'
 input_range: [0, 6.28318530718]
 in_dim: 1
+message_passing: False
 search_space:
   grid_size_h_net: [5, 10]
   grid_size_g_net: [5, 10]
@@ -24,11 +24,11 @@ search_space:
   hidden_dim_g_net: [1, 3]
   lamb_g_net: [0.0001, 0.01]
   lamb_h_net: [0.0001, 0.01]
-  lr: [0.01, 0.05]
+  lr: [0.001, 0.05]
   use_orig_reg: [True]
   lamb: [1.]
-  batch_size: [20, 40, 80, 120]
-  stride: [10]
+  batch_size: [20, 80, 120]
+  stride: [20]
 n_iter: 2
 integration_kwargs:
   w: 2.

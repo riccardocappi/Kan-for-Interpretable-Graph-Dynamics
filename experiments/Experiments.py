@@ -10,9 +10,14 @@ import logging
 from train_and_eval import fit
 from models.utils.NetWrapper import NetWrapper
 from utils.utils import sample_from_spatio_temporal_graph
+import copy
 
 
 class Experiments(ABC):
+    """
+        Abstract class defining the experiments pipeline. To implement a specific experiment, extend this class and provide
+        implementation for the two abstract methods: pre_processing, and get_model_opt.   
+    """
     def __init__(self, 
                  config, 
                  G, 
@@ -49,13 +54,13 @@ class Experiments(ABC):
         self.process_id = process_id
         self.model_path = f'./saved_models_optuna/{config["model_name"]}/{study_name}/{str(process_id)}'
         
-        self.search_space = config['search_space']
-        self.seed = config['seed']
-        self.torch_seed = config.get("pytorch_seed", 42)
-        self.T = config.get("loss_temp", 1)
+        self.search_space = config['search_space']      # Optuna search space
         
-        mse = torch.nn.MSELoss()
-        self.criterion = lambda y_pred, y_true: self.T * mse(y_pred, y_true)
+        # Seeds for reproducibility
+        self.seed = config['seed']
+        self.torch_seed = config.get("pytorch_seed", 42)    
+        
+        self.criterion = torch.nn.MSELoss()
         
         self.study_name = study_name
         
@@ -64,6 +69,7 @@ class Experiments(ABC):
             os.makedirs(logs_folder)
         logs_file_path = f'{logs_folder}/optuna_logs.txt'
         
+        # Forcing optuna to save logs to file
         logger = logging.getLogger()
 
         logger.setLevel(logging.INFO)  # Setup the root logger.
@@ -72,31 +78,39 @@ class Experiments(ABC):
         logger.addHandler(self.optuna_handler)
         optuna.logging.enable_propagation()
         
-        self.current_model = None
+        self.current_model_state_pool = []  # List of the weights of the models trained in the current trial (every trial has multiple trainings and averages the validation losses) 
+        self.current_model_arch = None      # To save the current model architecture
         
-        self.best_params = {}
-        self.best_model = None
+        self.best_params = {}   
+        self.best_model = None  
         
       
     def run(self):
-        self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)
-        self.optimize()
+        """
+        Run the experiment pipeline. 
+        """
         
+        self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)  # Custom pre_processing
+        self.optimize() # Optuna study optimization 
+        
+        # Disabling optuna logger
         logging.getLogger().removeHandler(self.optuna_handler)
         optuna.logging.disable_propagation()        
         
+        # Saving the best hyper-parameters found by optuna to file
         log_file_name = "best_params.json"
         log_file_path = f"{self.model_path}/{log_file_name}"
         with open(log_file_path, 'w') as f:
             json.dump(self.best_params, f)
         
         if self.best_model is not None:
-            self.eval_model(self.best_model, self.best_params)
-            
-            self.post_processing(self.best_model)
+            self.post_processing(self.best_model)   # Saving best_model checkpoint to file
     
     
     def optimize(self):
+        """
+        Optimize hyper-parameters using optuna.
+        """
         if self.method == 'grid_search':
             sampler = GridSampler(self.search_space)
             n_trials = len(sampler._all_grids)
@@ -116,16 +130,33 @@ class Experiments(ABC):
     
     
     def callback(self, study, trial):
+        """
+        Function called at the end of each trial. It updates the best model found so far in the optuna study
+        
+        Args:
+            - study : optuna study
+            - trial : current optuna trial
+        """
         best_params = study.best_params
         if study.best_trial == trial:
             self.best_params = best_params
-            self.best_model = self.current_model
+            self.best_model = self.current_model_arch
+            assert len(self.current_model_state_pool) > 0
+            best_weights = min(self.current_model_state_pool, key=lambda x: x[0])[1]    # This choice may also be random
+            self.best_model.load_state_dict(best_weights)
     
     
     def objective(self, trial):
-        R = 2
+        """
+        Objective function optimized by optuna.
+        
+        Args:
+            - trial : current optuna trial
+        """
+        R = 2   # Number of internal training run
+        
         lr_space = self.search_space.get('lr', [0.001])
-        lr = trial.suggest_float('lr', lr_space[0], lr_space[-1], step=0.001)
+        lr = trial.suggest_float('lr', lr_space[0], lr_space[-1], log=True)
         
         lamb_space = self.search_space.get('lamb', [0.])
         lamb = trial.suggest_float('lamb', lamb_space[0], lamb_space[-1], step=0.0001)
@@ -138,7 +169,10 @@ class Experiments(ABC):
         
         tot_val_loss = 0.
         
-        model = self.get_model_opt(trial)
+        model = self.get_model_opt(trial)   # get the current model
+        
+        self.current_model_arch = model     # Save current model architecture
+        self.current_model_state_pool.clear()
         
         for _ in range(R):
             results = fit(
@@ -161,60 +195,54 @@ class Experiments(ABC):
             
             best_val_loss = min(results['validation_loss'])
             tot_val_loss += best_val_loss
-            model.model.reset_params()
+            self.current_model_state_pool.append( (best_val_loss, copy.deepcopy(model.state_dict())) )    # Save model weights of each trained model
+            
+            model.model.reset_params()  # random initialization of model weights
                 
         trial.set_user_attr("process_id", self.process_id)
         
-        self.current_model = model
-        
+        # return the average of validation losses over the number of runs        
         return tot_val_loss / R
 
-
-    def eval_model(self, best_model:NetWrapper, best_params):
-        best_model.model.reset_params()
-        
-        lr = best_params.get('lr', 0.001)
-        lamb = best_params.get('lamb', 0.)
-        batch_size = best_params.get('batch_size', -1)
-        stride = best_params.get('stride', 1)
-        
-        results = fit(
-            best_model,
-            self.training_set,
-            self.valid_set,
-            epochs=self.epochs,
-            patience=self.patience,
-            lr = lr,
-            lmbd=lamb,
-            log=self.log,
-            criterion=self.criterion,
-            opt=self.opt,
-            save_updates=True,
-            n_iter=self.n_iter,
-            batch_size=batch_size,
-            t_f_train=self.t_f_train,
-            stride=stride
-        )
-        
-        with open(f"{best_model.model.model_path}/results.json", "w") as outfile: 
-            json.dump(results, outfile)
-          
     
     @abstractmethod
     def pre_processing(self, train_data, valid_data):
+        """
+        Custom pre-processing
+        
+        Args:
+            - train_data : training set
+            - valid_data : validation set
+        """
         raise Exception('Not implemented')
     
     
     @abstractmethod
     def get_model_opt(self, trial) -> NetWrapper:
+        """
+        Every experiment must specify how to construct the model given an optuna trial
+        
+        Args:
+            -trial : current optuna trial
+        """
         raise Exception('Not implemented')
         
     
     def post_processing(self, best_model: NetWrapper, sample_size = -1):
+        """
+        Save the best model checkpoint to file.
         
-        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(self.training_set.data[0], 
-                                                                    self.edge_index, 
-                                                                    sample_size=sample_size)
-        best_model.model.save_cached_data(dummy_x, dummy_edge_index)
+        Args:
+            - best_model : Best model resulting from the model selection procedure
+            - sample_size : number of graph snapshot to sample from the training set (-1 samples the whole set)
+        """
         
+        # Sample from the graph-time-series
+        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
+            self.training_set.data[0], 
+            self.edge_index, 
+            sample_size=sample_size
+        )
         
+        # Save checkpoint
+        best_model.model.save_cached_data(dummy_x, dummy_edge_index)    

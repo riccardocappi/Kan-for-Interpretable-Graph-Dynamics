@@ -8,6 +8,7 @@ from utils.utils import save_logs
 from collections import defaultdict
 from torch.utils.data import DataLoader
 from datasets.SlidingWindowSampler import SlidingWindowSampler
+import copy
 
 
 def call_ODE(model, y0, t):
@@ -143,7 +144,7 @@ def fit(model:NetWrapper,
         if val_loss < best_val_loss:
             best_epoch = epoch
             best_val_loss = val_loss
-            best_model_state = model.state_dict()
+            best_model_state = copy.deepcopy(model.state_dict())
         elif epoch - best_epoch > patience:
             log_message = f"Early stopping at epoch {epoch}"
             save_logs(logs_file_path, log_message, save_updates)

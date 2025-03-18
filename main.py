@@ -14,9 +14,9 @@ def set_pytorch_seed(seed=42):
 
 
 def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0):
-    config = load_config(config_path)
+    config = load_config(config_path)   # Load yml config file 
     
-    set_pytorch_seed(seed=config["pytorch_seed"])
+    set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
     
     model_type=config['model_type']
     # G = nx.grid_2d_graph(7, 10)
@@ -35,8 +35,8 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Run experiments with different model types.') 
     parser.add_argument('--config', default='./configs/config_kuramoto.yml', help='Path to config file')
-    parser.add_argument('--method', default='optuna', help='Optimization method')
-    parser.add_argument('--n_trials', type=int, default=10, help='Number of trials')
+    parser.add_argument('--method', default='optuna', help='Optimization method. can be optuna or grid_search')
+    parser.add_argument('--n_trials', type=int, default=10, help='Number of optuna trials')
     parser.add_argument('--study_name', default='example', help='Name of the optuna study to load/create')
     parser.add_argument('--process_id', type=int, default=0, help='ID for the running process')
     

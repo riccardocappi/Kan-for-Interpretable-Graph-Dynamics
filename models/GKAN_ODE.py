@@ -8,6 +8,9 @@ import os
 
 
 class GKAN_ODE(MessagePassing, ModelInterface):
+    """
+    Implementation of GKAN-ODE model
+    """
     def __init__(self,
                  h_net: KAN,
                  g_net: KAN,
@@ -16,6 +19,7 @@ class GKAN_ODE(MessagePassing, ModelInterface):
                  device='cuda',
                  lmbd_g=0.,
                  lmbd_h=0.,
+                 message_passing=True
                  ):
         
         MessagePassing.__init__(self, aggr='add')
@@ -30,11 +34,15 @@ class GKAN_ODE(MessagePassing, ModelInterface):
         self.norm = norm
         self.lmbd_g = lmbd_g
         self.lmbd_h = lmbd_h
-               
+        self.message_passing = message_passing       
+        
         self.to(self.device)
 
 
     def to(self, device):
+        """
+        Send model to specified device
+        """
         super().to(device)
         self.device = device
         self.h_net.to(device)
@@ -42,21 +50,48 @@ class GKAN_ODE(MessagePassing, ModelInterface):
         
     
     def forward(self, x, edge_index, update_grid=False):
+        """
+        GKAN-ODE forward pass
+        """
         norm = self.get_norm(edge_index, x) if self.norm else torch.ones(edge_index.shape[1], device=x.device)
         
         return self.propagate(edge_index, x=x, norm=norm, update_grid=update_grid)
     
 
     def message(self, x_i, x_j, norm, update_grid):
+        """
+        Message function (implemented by G_Net)
+        
+        Args:
+            -x_i : i-th node
+            -x_j : j-th neighbor of i-th node
+            -norm : normalization of messages (by default is disabled)
+            -update_grid : whether to update KAN layers grids
+        """
         mes = self.g_net(torch.cat([x_j, x_i], dim=-1), update_grid=update_grid)
         return norm.view(-1, 1) * mes
         
     
     def update(self, aggr_out, x, update_grid):
-        return self.h_net(torch.cat([x, aggr_out], dim=-1), update_grid=update_grid)
+        """
+        Update function (implemented by H_Net)
+        
+        Args:
+            -aggr_out : aggregation term
+            -x : Input feature matrix
+        """
+        if self.message_passing:
+            assert self.h_net.hidden_layer[0] == 2 * x.size(1)
+            return self.h_net(torch.cat([x, aggr_out], dim=-1), update_grid=update_grid)
+        else:
+            assert self.h_net.hidden_layer[0] == x.size(1)
+            return self.h_net(x, update_grid=update_grid) + aggr_out
     
     
     def regularization_loss(self, reg_loss_metrics:dict) -> float:
+        """
+        Implementation of ModelInterface method
+        """
         reg_g, l1_g, entropy_g = self.g_net.regularization_loss()
         reg_h, l1_h, entropy_h = self.h_net.regularization_loss()
         
@@ -82,6 +117,9 @@ class GKAN_ODE(MessagePassing, ModelInterface):
     
     
     def save_cached_data(self, dummy_x, dummy_edge_index):
+        """
+        Implementation of ModelInterface method
+        """
         self.g_net.store_act = True
         self.h_net.store_act = True
         
@@ -103,6 +141,9 @@ class GKAN_ODE(MessagePassing, ModelInterface):
         
         
     def reset_params(self):
+        """
+        Implementation of ModelInterface method
+        """
         for layer in self.g_net.layers:
             layer.init_params()
         
