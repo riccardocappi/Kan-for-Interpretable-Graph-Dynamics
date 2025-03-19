@@ -47,11 +47,11 @@ An experiment can be run with different arguments:
 
 - `--method`: The optuna searching method. It can be "optuna" or "grid_search". If "optuna" is selected, the `TPESampler` is used to sample from the hyper-parameters space. Default is "optuna"
 
-- `n_trials`: Number of optuna trials. Note that if grid_search method is specified, this argument will be ignored, and will be executed as many trials as the number of combinations of the hyper-parameter grid.
+- `--n_trials`: Number of optuna trials. Note that if grid_search method is specified, this argument will be ignored, and will be executed as many trials as the number of combinations of the hyper-parameter grid.
 
-`--study_name`: Name of the optuna study
+- `--study_name`: Name of the optuna study
 
-`--process_id`: Id of the current process. Each process id has its own folder in which optuna logs are saved. Each parallel process on the same study should have a unique process_id.
+- `--process_id`: Id of the current process. Each process id has its own folder in which optuna logs are saved. Each parallel process on the same study should have a unique process_id.
 
 Examples:
 ```
@@ -95,7 +95,7 @@ The first set of arguments that must be present in the config file is the follow
 - `input_range`: Input range for node features
 - `in_dim`: Dimensionality of input feature matrix
 - `n_iter`: Number of initial conditions
-- `integration_kwargs`: Any addition argument to pass to the specified dynamics function.
+- `integration_kwargs`: Any additional argument to pass to the specified dynamics function.
 - `R`: Number of training runs for each combination of hyper-parameters.
 
 ### Hyper-parameter search space
