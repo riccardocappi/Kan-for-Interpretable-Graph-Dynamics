@@ -7,7 +7,7 @@ from utils.utils import plot, save_acts
 import os
 
 
-class GKAN_ODE(MessagePassing, ModelInterface):
+class GKAN(MessagePassing, ModelInterface):
     """
     Implementation of GKAN-ODE model
     """

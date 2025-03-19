@@ -12,6 +12,14 @@ import copy
 
 
 def call_ODE(model, y0, t):
+    """
+    Integrates the model using dopri5 numerical integrator
+    
+    Args:
+        -model : model to be integrated
+        -y0 : initial condition
+        -t : time steps in which the ODE is evaluated
+    """
     return odeint(
         model, 
         y0, 
@@ -23,6 +31,17 @@ def call_ODE(model, y0, t):
     )
 
 def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
+    """
+    Integrates the model starting from the very first y0 until the end of the time series, and computes the loss only
+    with respect to validation set.
+    
+    Args:
+        -data : The whole time series
+        -t : Time steps in which the ODE is evaluated
+        -criterion : Loss function
+        -t_f_train : Last index of training set
+        -n_iter : Number of initial conditions
+    """
     model.eval()
     y_pred = []
     with torch.no_grad():
@@ -56,6 +75,26 @@ def fit(model:NetWrapper,
         t_f_train=240,
         stride = 1
         ):
+    """
+    Training process
+    
+    Args:
+        - training_set : Training set (by default is the first 80% of the time series)
+        - valid_set : Validation set (by default is the last 20% of the time series)
+        - epochs : Number of epochs
+        - patience : Patience hyper-parameter for early-stopping
+        - lr : Learning rate
+        - lmbd : Hyper-parameter for regularization loss
+        - log : How often to save logs to file
+        - log_file_name : Name of the logs file
+        - criterion : Loss function
+        - opt : Optimizer
+        - save_updates : Whether to save logs during training or not
+        - n_iter : Number of initial conditions
+        - batch_size : Sliding window size
+        - t_f_train : Last index of training set
+        - stride : Stride of the sliding window Data Loader
+    """
     
     train_size = len(training_set)
     batch_size_train = train_size if batch_size == -1 else batch_size
@@ -117,20 +156,22 @@ def fit(model:NetWrapper,
         reg_loss_metrics.clear()
         for batch_data, batch_times in train_loader:  
             min_values = batch_times.min(dim=0, keepdim=True).values
-            norm_batch_times = batch_times - min_values
+            norm_batch_times = batch_times - min_values # For each window, the integrator must start from time step 0
             if opt == 'Adam':
                 _ = training()
             else:
                 optimizer.step(training)
             count += 1
         
-        val_loss = eval_model(model, 
-                              valid_set.data, 
-                              valid_set.time, 
-                              criterion=criterion, 
-                              n_iter=n_iter,
-                              t_f_train=t_f_train
-                              )
+        val_loss = eval_model(
+            model, 
+            valid_set.data, 
+            valid_set.time, 
+            criterion=criterion, 
+            n_iter=n_iter,
+            t_f_train=t_f_train
+        )
+        
         results['train_loss'].append(running_training_loss / count)
         results['validation_loss'].append(val_loss)
         results['tot_loss'].append(running_tot_loss/ count)
@@ -141,11 +182,11 @@ def fit(model:NetWrapper,
         if epoch % log == 0:
             log_message = f"Epoch: {epoch} \t Training loss: {running_training_loss/count:0.5f} \t Val Loss: {val_loss:0.5f} \t Tot Loss: {running_tot_loss/count:0.5f}"
             save_logs(logs_file_path, log_message, save_updates)
-        if val_loss < best_val_loss:
+        if val_loss < best_val_loss:    # Save best moedel state so far
             best_epoch = epoch
             best_val_loss = val_loss
             best_model_state = copy.deepcopy(model.state_dict())
-        elif epoch - best_epoch > patience:
+        elif epoch - best_epoch > patience: # Early stopping
             log_message = f"Early stopping at epoch {epoch}"
             save_logs(logs_file_path, log_message, save_updates)
             break

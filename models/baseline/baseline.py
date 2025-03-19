@@ -43,16 +43,6 @@ class MLP(torch.nn.Module):
             self.cache_output = x.detach()
         
         return x
-            
-    
-    def save_cached_data(self, dummy_x, dummy_edge_index):
-        self.mlp.save_black_box = True
-        
-        with torch.no_grad():
-            _ = self.forward(dummy_x, dummy_edge_index)
-        
-        folder_path = f'{self.mlp.model_path}/cached_data'
-        save_black_box_to_file(folder_path, self.mlp.cache_input, self.mlp.cache_output)
         
         
 

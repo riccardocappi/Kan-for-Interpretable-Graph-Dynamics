@@ -1,3 +1,8 @@
+"""
+Some static methods
+"""
+
+
 from pysr import PySRRegressor
 import torch
 import yaml
@@ -19,6 +24,14 @@ from datasets.GraphDynamics import GraphDynamics
 
 
 def save_logs(file_name, log_message, save_updates=True):
+    """
+    Save logs to file
+    
+    Args:
+        - file_name : Logs file name
+        - log_message : Message to save
+        - save_updates : Whether to save log message or not
+    """
     if save_updates:
         print(log_message)
         with open(file_name, 'a') as logs:
@@ -27,6 +40,9 @@ def save_logs(file_name, log_message, save_updates=True):
 
 
 def load_config(config_path='config.yml'):
+    """
+    Returns a dictionary of the specified config file
+    """
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
     return config
@@ -35,7 +51,7 @@ def load_config(config_path='config.yml'):
 
 def plot(folder_path, layers, show_plots=False):
     '''
-    Plots the shape of all the activation functions
+    Plots the shape of all the activation functions of the specified KAN layer
     '''
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
@@ -60,12 +76,23 @@ def plot(folder_path, layers, show_plots=False):
                 
 
 def fix_symbolic(layer:KANLayer, i, j, func):
+    """
+    Fix KAN spline to symbolic function
+    """
     layer.symbolic_functions[j][i] = func
     layer.layer_mask.data[j][i] = 0
     layer.symb_mask.data[j][i] = 1
                 
                 
 def automatic_fix_symbolic_kan(layers, symb_functions_file, eq_index=0):
+    """
+    Automatically fix all the KAN splines to the respective symbolic functions
+    
+    Args:
+        - layers : KAN layers
+        - symb_functions_file : Path to the file in which are saved the fitted symbolic functions
+        - eq_index : Index of one of the top-5 equations returned by PySR  
+    """
     with open(symb_functions_file, "r") as f:
         all_functions = json.load(f)
         
@@ -80,6 +107,14 @@ def automatic_fix_symbolic_kan(layers, symb_functions_file, eq_index=0):
 
 
 def integrate(config, graph, rng):
+    """
+    Integrates the specified dynamics over the given graph
+    
+    Args:
+        - config : Dictionary containing the experimental configuration
+        - graph : Initial graph
+        - rng : Random number generator 
+    """
     N = graph.number_of_nodes()
     input_range = config['input_range']
     t_span = config['t_span']
@@ -224,6 +259,10 @@ def get_pysr_model(
             "abs",
             "tan",
             "tanh",
+            "log",
+            "log10",
+            "log2",
+            "log1p",
             "zero(x) = 0*x"
         ]
     
@@ -349,32 +388,40 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None, sample_size=-1):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None, sample_size=-1, message_passing=True):
     # G_net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)    
-    symb_g = fit_kan(pruned_acts,
-                     pruned_preacts,
-                     symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
-                     model_path=f'{model_path}/g_net',
-                     pysr_model=pysr_model,
-                     sample_size=sample_size
-                     )
+    symb_g = fit_kan(
+        pruned_acts,
+        pruned_preacts,
+        symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
+        model_path=f'{model_path}/g_net',
+        pysr_model=pysr_model,
+        sample_size=sample_size
+    )
 
     
     # H_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
-    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(sp.simplify(symb_g[0])) + ')')]
-    symb_h = fit_kan(pruned_acts,
-                     pruned_preacts,
-                     symb_xs=symb_h_in,
-                     model_path=f'{model_path}/h_net',
-                     pysr_model=pysr_model,
-                     sample_size=sample_size
-                     )
+    
+    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(sp.simplify(symb_g[0])) + ')')
+    if message_passing:
+        symb_h_in = [sp.Symbol('x_i'), aggr_term]
+    else:
+        symb_h_in = [sp.Symbol('x_i')]
+    
+    symb_h = fit_kan(
+        pruned_acts,
+        pruned_preacts,
+        symb_xs=symb_h_in,
+        model_path=f'{model_path}/h_net',
+        pysr_model=pysr_model,
+        sample_size=sample_size
+    )
 
-    return symb_h[0]
+    return symb_h[0] if message_passing else symb_h[0] + aggr_term
 
 
 def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
@@ -396,7 +443,7 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
 
 
-def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1):
+def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True):
     # G_Net
     cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
@@ -412,7 +459,13 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1):
     cached_input = torch.load(f'{model_path}/h_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/h_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
 
-    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
+    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')
+    
+    if message_passing:
+        symb_h_in = [sp.Symbol('x_i'), aggr_term]
+    else:
+        symb_h_in = [sp.Symbol('x_i')]    
+    
     symb_h, top_5_eqs_h = fit_black_box(
         cached_input, 
         cached_output, 
@@ -422,10 +475,19 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1):
     )
     top_5_eqs_h.to_csv(f"{model_path}/top_5_equations_h.csv")
 
-    return symb_h
+    return symb_h if message_passing else symb_h + aggr_term
 
 
-def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, device='cpu', theta=0.1, pysr_model = None, sample_size=-1):
+def fit_black_box_from_kan(
+    model_path, 
+    n_g_hidden_layers, 
+    n_h_hidden_layers, 
+    device='cpu', 
+    theta=0.1, 
+    pysr_model = None, 
+    sample_size=-1,
+    message_passing=True
+    ):
     #G_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
@@ -454,7 +516,12 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
     input = pruned_preacts[0]
     output = pruned_acts[-1].sum(dim=2)
 
-    symb_h_in = [sp.Symbol('x_i'), sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')]
+    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')
+    
+    if message_passing:
+        symb_h_in = [sp.Symbol('x_i'), aggr_term]
+    else:
+        symb_h_in = [sp.Symbol('x_i')]
 
     symb_h, top_5_eqs_h = fit_black_box(
         input, 
@@ -465,4 +532,4 @@ def fit_black_box_from_kan(model_path, n_g_hidden_layers, n_h_hidden_layers, dev
     )
     top_5_eqs_h.to_csv(f"{save_path}/top_5_equations_h.csv")
 
-    return symb_h
+    return symb_h if message_passing else symb_h + aggr_term

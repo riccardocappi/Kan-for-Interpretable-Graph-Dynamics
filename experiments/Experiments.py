@@ -81,6 +81,7 @@ class Experiments(ABC):
         self.current_model_state_pool = []  # List of the weights of the models trained in the current trial (every trial has multiple trainings and averages the validation losses) 
         self.current_model_arch = None      # To save the current model architecture
         
+        self.best_results = {}
         self.best_params = {}   
         self.best_model = None  
         
@@ -142,8 +143,9 @@ class Experiments(ABC):
             self.best_params = best_params
             self.best_model = self.current_model_arch
             assert len(self.current_model_state_pool) > 0
-            best_weights = min(self.current_model_state_pool, key=lambda x: x[0])[1]    # This choice may also be random
+            _, best_weights, best_results = min(self.current_model_state_pool, key=lambda x: x[0])    # This choice may also be random
             self.best_model.load_state_dict(best_weights)
+            self.best_results = best_results
     
     
     def objective(self, trial):
@@ -153,7 +155,7 @@ class Experiments(ABC):
         Args:
             - trial : current optuna trial
         """
-        R = 2   # Number of internal training run
+        R = self.config.get("R", 1)   # Number of internal training run
         
         lr_space = self.search_space.get('lr', [0.001])
         lr = trial.suggest_float('lr', lr_space[0], lr_space[-1], log=True)
@@ -195,7 +197,12 @@ class Experiments(ABC):
             
             best_val_loss = min(results['validation_loss'])
             tot_val_loss += best_val_loss
-            self.current_model_state_pool.append( (best_val_loss, copy.deepcopy(model.state_dict())) )    # Save model weights of each trained model
+            self.current_model_state_pool.append(
+                (best_val_loss, 
+                copy.deepcopy(model.state_dict()),
+                copy.deepcopy(results) 
+                )
+            )    # Save model weights of each trained model
             
             model.model.reset_params()  # random initialization of model weights
                 
@@ -236,6 +243,12 @@ class Experiments(ABC):
             - best_model : Best model resulting from the model selection procedure
             - sample_size : number of graph snapshot to sample from the training set (-1 samples the whole set)
         """
+        # Save best results
+        with open(f"{best_model.model.model_path}/results.json", "w") as f:
+            json.dump(self.best_results, f)
+        
+        # Save best state dict
+        torch.save(best_model.state_dict(), f"{best_model.model.model_path}/state_dict.pth")
         
         # Sample from the graph-time-series
         dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
@@ -244,5 +257,5 @@ class Experiments(ABC):
             sample_size=sample_size
         )
         
-        # Save checkpoint
+        # Save model checkpoint
         best_model.model.save_cached_data(dummy_x, dummy_edge_index)    

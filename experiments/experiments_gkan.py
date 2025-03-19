@@ -1,7 +1,7 @@
 from .Experiments import Experiments
 import torch
 from models.utils.NetWrapper import NetWrapper
-from models.GKAN_ODE import GKAN_ODE
+from models.GKAN import GKAN
 from models.kan.KAN import KAN
 
 
@@ -110,7 +110,7 @@ class ExperimentsGKAN(Experiments):
         g_net = KAN(**g_net_config)
         h_net = KAN(**h_net_config)        
         
-        net = GKAN_ODE(
+        net = GKAN(
             h_net=h_net,
             g_net=g_net,
             model_path = f"{self.model_path}/gkan",
