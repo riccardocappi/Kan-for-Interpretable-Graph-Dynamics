@@ -137,7 +137,11 @@ def fit(model:NetWrapper,
             y_pred.append(call_ODE(model, y0, t)[1:])
         
         y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
-        training_loss = criterion(y_pred, batch_data[[1, -1], :, :, :])
+        
+        y_pred_flatten = y_pred.view(-1, 1)
+        y_true_flatten = batch_data[[1, -1], :, :, :].view(-1, 1)
+        
+        training_loss = criterion(y_pred_flatten, y_true_flatten)
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)
         loss = training_loss + lmbd * reg

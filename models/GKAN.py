@@ -68,7 +68,7 @@ class GKAN(MessagePassing, ModelInterface):
             -norm : normalization of messages (by default is disabled)
             -update_grid : whether to update KAN layers grids
         """
-        mes = self.g_net(torch.cat([x_j, x_i], dim=-1), update_grid=update_grid)
+        mes = self.g_net(torch.cat([x_i, x_j], dim=-1), update_grid=update_grid)
         return norm.view(-1, 1) * mes
         
     

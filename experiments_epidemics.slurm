@@ -14,7 +14,7 @@
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2  # Running two tasks in parallel
+#SBATCH --ntasks-per-node=3  # Running three tasks in parallel
 
 ### RAM requirement
 #SBATCH --mem=3G
@@ -41,10 +41,10 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=10 --study_name=epidemics-fixed-2 --process_id=0 &
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=10 --study_name=epidemics-fixed-ic8 --process_id=0 &
 sleep 1m
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=10 --study_name=epidemics-fixed-2 --process_id=1 &
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=10 --study_name=epidemics-fixed-ic8 --process_id=1 &
 sleep 1m
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=10 --study_name=epidemics-fixed-2 --process_id=2 &
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=10 --study_name=epidemics-fixed-ic8 --process_id=2 &
 wait
 echo "Finished job!"
