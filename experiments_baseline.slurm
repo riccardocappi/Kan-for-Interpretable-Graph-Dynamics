@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-base-1
+#SBATCH --job-name=baseline-epidemics
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -11,9 +11,10 @@
 
 ### queue/partition choosed
 #SBATCH --partition=testing
-
-### Number of tasks
-#SBATCH --ntasks=1
+#SBATCH --exclusive
+#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=3  # Running three tasks in parallel
 
 ### RAM requirement
 #SBATCH --mem=3G
@@ -22,8 +23,8 @@
 #SBATCH --time=80:00:00
 
 ### GPU request
-#SBATCH --gres=mps:30
-#SBATCH --constraint=A5000
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=A6000
 
 
 ### Some useful informative commands
@@ -38,5 +39,12 @@ echo
 SHELL=/bin/bash
 
 ### Jobs execution commands
-source .venv/gkanconv-ode/bin/activate
-python main.py --config=./configs/config_kuramoto_mpnn.yml --method=optuna --n_trials=30 --study_name=barabasi-albert-mpnn-ic1 --process_id=1
+cd /home/rcappi/Kan-for-Graph-Dyn
+conda activate my_env
+python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=20 --study_name=epidemics-ic5 --process_id=0 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=20 --study_name=epidemics-ic5 --process_id=1 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=20 --study_name=epidemics-ic5 --process_id=2 --storage=journal &
+wait
+echo "Finished job!"

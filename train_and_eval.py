@@ -11,7 +11,7 @@ from datasets.SlidingWindowSampler import SlidingWindowSampler
 import copy
 
 
-def call_ODE(model, y0, t):
+def call_ODE(model, y0, t, atol=1e-6, rtol=1e-3, method='dopri5'):
     """
     Integrates the model using dopri5 numerical integrator
     
@@ -20,17 +20,24 @@ def call_ODE(model, y0, t):
         -y0 : initial condition
         -t : time steps in which the ODE is evaluated
     """
+    assert method == 'dopri5' or method=='scipy_solver'
+    
+    options = None
+    if method == 'scipy_solver':
+        options = dict(solver = "RK45")
+     
     return odeint(
         model, 
         y0, 
         t, 
-        method='dopri5',
-        atol=1e-6,
-        rtol=1e-3,
-        adjoint_options=dict(norm="seminorm")
+        method=method,
+        atol=atol,
+        rtol=rtol,
+        adjoint_options=dict(norm="seminorm"),
+        options=options
     )
 
-def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
+def eval_model(model, data, t, criterion, t_f_train, n_iter=1, atol=1e-6, rtol=1e-3, method='dopri5'):
     """
     Integrates the model starting from the very first y0 until the end of the time series, and computes the loss only
     with respect to validation set.
@@ -49,10 +56,22 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1):
             y_true_valid = data[k]
             t_valid = t[k]
             y0 = y_true_valid[0]
-            y_pred.append(call_ODE(model, y0, t_valid)[t_f_train:])
+            y_pred.append(call_ODE(
+                model, 
+                y0, 
+                t_valid,
+                atol=atol,
+                rtol=rtol,
+                method=method
+                )[t_f_train:]
+            )
             
         y_pred = torch.stack(y_pred, dim=0)
-        loss = criterion(y_pred, data[:, t_f_train:, :, :])
+        
+        y_pred_flatten = y_pred.view(-1, 1)
+        y_true_flatten = data[:, t_f_train:, :, :].contiguous().view(-1, 1)
+        
+        loss = criterion(y_pred_flatten, y_true_flatten)
     return loss.item()
             
     
@@ -73,7 +92,10 @@ def fit(model:NetWrapper,
         n_iter = 1,
         batch_size=-1,
         t_f_train=240,
-        stride = 1
+        stride = 1,
+        atol=1e-6,
+        rtol=1e-3,
+        method='dopri5'
         ):
     """
     Training process
@@ -107,7 +129,7 @@ def fit(model:NetWrapper,
     train_loader = DataLoader(training_set, batch_sampler=sampler)
     
     if opt == 'Adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     elif opt == 'LBFGS':
         optimizer = LBFGS(model.parameters(), lr=lr, history_size=10, line_search_fn="strong_wolfe", tolerance_grad=1e-32, tolerance_change=1e-32)
     else:
@@ -134,7 +156,7 @@ def fit(model:NetWrapper,
             y0 = batch_data[:, k, :, :][0]
             t_eval = norm_batch_times[:, k]
             t = torch.tensor([t_eval[0], t_eval[1], t_eval[-1]], dtype=y0.dtype).to(torch.device(y0.device))
-            y_pred.append(call_ODE(model, y0, t)[1:])
+            y_pred.append(call_ODE(model, y0, t, atol=atol, rtol=rtol, method=method)[1:])
         
         y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
         
@@ -173,7 +195,10 @@ def fit(model:NetWrapper,
             valid_set.time, 
             criterion=criterion, 
             n_iter=n_iter,
-            t_f_train=t_f_train
+            t_f_train=t_f_train,
+            atol=atol,
+            rtol=rtol,
+            method=method
         )
         
         results['train_loss'].append(running_training_loss / count)

@@ -260,8 +260,6 @@ def get_pysr_model(
             "tan",
             "tanh",
             "log",
-            "log10",
-            "log2",
             "log1p",
             "zero(x) = 0*x"
         ]
@@ -271,10 +269,6 @@ def get_pysr_model(
         unary_operators=unary_operators,
         binary_operators=binary_operators,
         elementwise_loss="loss(prediction, target) = (prediction - target)^2",
-        early_stop_condition=(
-            "stop_if(loss, complexity) = loss < 1e-4 && complexity < 5"
-            # Stop early if we find a good and simple equation
-            ),
         maxsize=7,
         maxdepth=5,
         verbosity=0,

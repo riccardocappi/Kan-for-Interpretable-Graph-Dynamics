@@ -24,9 +24,10 @@ class ExperimentsMPNN(Experiments):
         n_trials, 
         model_selection_method='optuna',
         study_name = 'example',
-        process_id = 0
+        process_id = 0,
+        **kwargs
     ):
-        super().__init__(config, G, n_trials, model_selection_method, study_name=study_name, process_id=process_id)
+        super().__init__(config, G, n_trials, model_selection_method, study_name=study_name, process_id=process_id, **kwargs)
         
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
@@ -75,7 +76,8 @@ class ExperimentsMPNN(Experiments):
         dropout_rate = trial.suggest_float(
             f'drop_p_{net_suffix}',
             self.search_space[f'drop_p_{net_suffix}'][0],
-            self.search_space[f'drop_p_{net_suffix}'][-1]
+            self.search_space[f'drop_p_{net_suffix}'][-1],
+            log=True
         )
         
         mlp_config = {

@@ -41,10 +41,10 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=20 --study_name=epidemics-scipy-ic5 --process_id=0 --storage=journal &
+python main.py --config=./configs/config_epidemics_gkan_mp.yml --method=optuna --n_trials=20 --study_name=epidemics-fixed-mp-ic5 --process_id=0 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=20 --study_name=epidemics-scipy-ic5 --process_id=1 --storage=journal &
+python main.py --config=./configs/config_epidemics_gkan_mp.yml --method=optuna --n_trials=20 --study_name=epidemics-fixed-mp-ic5 --process_id=1 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=20 --study_name=epidemics-scipy-ic5 --process_id=2 --storage=journal &
+python main.py --config=./configs/config_epidemics_gkan_mp.yml --method=optuna --n_trials=20 --study_name=epidemics-fixed-mp-ic5 --process_id=2 --storage=journal &
 wait
 echo "Finished job!"

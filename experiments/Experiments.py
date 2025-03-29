@@ -11,6 +11,8 @@ from train_and_eval import fit
 from models.utils.NetWrapper import NetWrapper
 from utils.utils import sample_from_spatio_temporal_graph
 import copy
+from optuna.storages import JournalStorage
+from optuna.storages.journal import JournalFileBackend
 
 
 class Experiments(ABC):
@@ -24,7 +26,9 @@ class Experiments(ABC):
                  n_trials,
                  model_selection_method='optuna',
                  study_name='example',
-                 process_id=0):
+                 process_id=0,
+                 store_to_sqlite = True
+                 ):
         
         super().__init__()
         
@@ -85,6 +89,10 @@ class Experiments(ABC):
         self.best_params = {}   
         self.best_model = None  
         
+        self.storage = "sqlite:///optuna_study.db" if store_to_sqlite else JournalStorage(JournalFileBackend("optuna_journal_storage.log"))
+        self.method = self.config.get('method', 'dopri5')
+        
+        
       
     def run(self):
         """
@@ -123,7 +131,7 @@ class Experiments(ABC):
             direction='minimize',
             study_name=f'{self.config["model_name"]}-{self.study_name}',
             sampler=sampler,
-            storage="sqlite:///optuna_study.db",
+            storage=self.storage,
             load_if_exists=True
         )
                 
@@ -192,7 +200,8 @@ class Experiments(ABC):
                 n_iter=self.n_iter,
                 batch_size=batch_size,
                 t_f_train=self.t_f_train,
-                stride=stride
+                stride=stride,
+                method=self.method
             )
             
             best_val_loss = min(results['validation_loss'])

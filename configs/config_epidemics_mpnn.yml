@@ -1,0 +1,33 @@
+dynamics: 'Epidemics'
+model_name: 'model-epidemics-mpnn'
+model_type: 'MPNN'
+epochs: 700
+patience: 200
+opt: 'Adam'
+log: 10 
+t_span: [0,1]
+t_eval_steps: 300
+seed: 42
+pytorch_seed: 43
+noise_strengths: []
+device: 'cuda'
+input_range: [0, 1]
+in_dim: 1
+method: 'dopri5'
+message_passing: False
+search_space:
+  n_hidden_layers_g_net: [1]
+  n_hidden_layers_h_net: [1]
+  hidden_dims_g_net: [8, 32]
+  hidden_dims_h_net: [8, 32]
+  af_g_net: ["relu", "sigmoid", "softplus"]
+  af_h_net: ["relu", "sigmoid", "softplus"]
+  drop_p_g_net: [0.0001, 0.5]
+  drop_p_h_net: [0.0001, 0.5]
+  lr: [0.001, 0.05]
+  batch_size: [20, 80, 120]
+  stride: [20]
+n_iter: 5
+integration_kwargs:
+  B: 0.5
+  R: 0.5

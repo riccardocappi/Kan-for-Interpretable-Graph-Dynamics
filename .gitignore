@@ -12,3 +12,4 @@ hall_of_fame*
 pysr
 optuna_study.db
 requirements.txt
+optuna_journal_storage.log

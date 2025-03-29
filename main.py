@@ -13,7 +13,7 @@ def set_pytorch_seed(seed=42):
     torch.backends.cudnn.benchmark = False
 
 
-def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0):
+def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, storage='sqlite'):
     config = load_config(config_path)   # Load yml config file 
     
     set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
@@ -22,10 +22,17 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
     # G = nx.grid_2d_graph(7, 10)
     G = nx.barabasi_albert_graph(70, 3, seed=config['seed'])
     
+    if storage == 'sqlite':
+        store_to_sqlite = True
+    elif storage == 'journal':
+        store_to_sqlite = False
+    else:
+        raise ValueError("Not supported storage backend!")    
+       
     if model_type == 'GKAN':
-        exp = ExperimentsGKAN(config, G, n_trials, method, study_name=study_name, process_id=process_id)
+        exp = ExperimentsGKAN(config, G, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
     elif model_type == 'MPNN':
-        exp = ExperimentsMPNN(config, G, n_trials, method, study_name=study_name, process_id=process_id)
+        exp = ExperimentsMPNN(config, G, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
     else:
         raise ValueError('Unknown model type')
     
@@ -39,11 +46,12 @@ if __name__ == '__main__':
     parser.add_argument('--n_trials', type=int, default=10, help='Number of optuna trials')
     parser.add_argument('--study_name', default='example', help='Name of the optuna study to load/create')
     parser.add_argument('--process_id', type=int, default=0, help='ID for the running process')
+    parser.add_argument('--storage', default="sqlite", help="Storage backend. It can be sqlite or journal")
     
     
     args = parser.parse_args()
     
-    run(args.config, args.n_trials, args.method, args.study_name, args.process_id)
+    run(args.config, args.n_trials, args.method, args.study_name, args.process_id, args.storage)
     
     
     
