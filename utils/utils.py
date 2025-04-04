@@ -14,12 +14,10 @@ import sympy as sp
 import json
 from models.kan.KanLayer import KANLayer
 from collections import defaultdict
-
-
+from datasets.SpatioTemporalGraphData import SpatioTemporalGraphData
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
-from datasets.GraphDynamics import GraphDynamics
 
 
 
@@ -161,9 +159,32 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     
   
     
-def create_datasets(config, graph, t_f_train=100):
-    rng = np.random.default_rng(seed=config['seed'])
+def sample_irregularly_per_ics(data, time, num_samples):
+    ics, n_step, n_nodes, in_dim = data.shape
+    sampled_data = torch.zeros((ics, num_samples, n_nodes, in_dim), dtype=data.dtype, device=data.device)
+    sampled_times = torch.zeros((ics, num_samples), dtype=time.dtype, device=time.device)
+
+    for i in range(ics):
+        indices = torch.randperm(n_step)[:num_samples]  # Random unique indices
+        indices = torch.sort(indices).values  # Optional: Sort indices to maintain order
+        sampled_data[i] = data[i, indices, :, :]  # Sample separately for each ics
+        sampled_times[i] = time[i, indices]
+
+    return sampled_data, sampled_times
+
+
+def create_datasets(config, graph, t_f_train):
+    data_path = os.path.join(config['data_folder'], f'{config['dynamics']}.pth')
     
+    # Check if data are already stored
+    if os.path.exists(data_path):
+        print("Loading existing dataset...")
+        dataset = torch.load(data_path, weights_only=False)
+        return dataset['training_set'], dataset['validation_set']
+    
+    print("Creating dataset")
+    
+    rng = np.random.default_rng(seed=config['seed'])
     data, t = [], []
     for _ in range(config['n_iter']):
         data_k, t_k = integrate(config, graph, rng)
@@ -173,13 +194,18 @@ def create_datasets(config, graph, t_f_train=100):
     data = torch.stack(data, dim=0)
     t = torch.stack(t, dim=0)
 
-    train_data = data[:, :t_f_train, :, :]
-    t_train = t[:, :t_f_train]
+    data_sampled, t_sampled = sample_irregularly_per_ics(data, t, config['num_samples'])
     
-    training_set = GraphDynamics(train_data, t_train)
-    validation_set = GraphDynamics(data, t)
+    train_data = data_sampled[:, :t_f_train, :, :]
+    t_train = t_sampled[:, :t_f_train]
     
-    # return train_data, t_train, data, t
+    training_set = SpatioTemporalGraphData(train_data, t_train)
+    validation_set = SpatioTemporalGraphData(data_sampled, t_sampled)
+    
+    # Saving data for reproducibility
+    os.makedirs(config['data_folder'], exist_ok=True)
+    torch.save({'training_set': training_set, 'validation_set': validation_set}, data_path)
+    
     return training_set, validation_set
     
 

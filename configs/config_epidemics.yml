@@ -6,15 +6,17 @@ patience: 200
 opt: 'Adam'
 log: 10
 t_span: [0,1]
-t_eval_steps: 300
+t_eval_steps: 500
 seed: 42
 pytorch_seed: 0
 device: 'cuda'
 input_range: [0, 1]
 in_dim: 1
-n_iter: 5
+n_iter: 3
+num_samples: 50
+data_folder: './data'
 R: 1
-method: 'scipy_solver'
+method: 'dopri5'
 message_passing: False
 search_space:
   grid_size_h_net: [5, 10]
@@ -34,8 +36,7 @@ search_space:
   lr: [0.001, 0.05]
   use_orig_reg: [False]
   lamb: [0.]
-  batch_size: [20, 80, 120]
-  stride: [20]
+  batch_size: [32,64]
 integration_kwargs:
   B: 0.5
   R: 0.5

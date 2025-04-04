@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-epidemics
+#SBATCH --job-name=GKAN-ODE-epid-2
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -14,13 +14,13 @@
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=3  # Running three tasks in parallel
+#SBATCH --ntasks-per-node=4  # Running three tasks in parallel
 
 ### RAM requirement
-#SBATCH --mem=3G
+#SBATCH --mem=5G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=100:00:00
+#SBATCH --time=168:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
@@ -41,10 +41,16 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=20 --study_name=epidemics-scipy-ic5 --process_id=0 --storage=journal &
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics-new-data --process_id=0 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=20 --study_name=epidemics-scipy-ic5 --process_id=1 --storage=journal &
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics-new-data --process_id=1 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=20 --study_name=epidemics-scipy-ic5 --process_id=2 --storage=journal &
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics-new-data --process_id=2 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=15 --study_name=epidemics-new-data --process_id=0 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=15 --study_name=epidemics-new-data --process_id=1 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=15 --study_name=epidemics-new-data --process_id=2 --storage=journal &
 wait
 echo "Finished job!"

@@ -43,7 +43,7 @@ class Experiments(ABC):
         if self.device == 'cuda':
             assert torch.cuda.is_available()
             
-        self.t_f_train = int(0.8 * config['t_eval_steps'])
+        self.t_f_train = int(0.8 * config['num_samples'])
         self.n_iter = config['n_iter']
         self.training_set, self.valid_set = create_datasets(config, G, t_f_train=self.t_f_train)
         
@@ -124,7 +124,7 @@ class Experiments(ABC):
             sampler = GridSampler(self.search_space)
             n_trials = len(sampler._all_grids)
         else:
-            sampler = optuna.samplers.TPESampler()
+            sampler = optuna.samplers.TPESampler(seed=self.config['seed'])
             n_trials = self.n_trials
         
         study = optuna.create_study(
@@ -135,7 +135,12 @@ class Experiments(ABC):
             load_if_exists=True
         )
                 
-        study.optimize(self.objective, n_trials=n_trials, callbacks=[self.callback], catch=[AssertionError])
+        study.optimize(
+            self.objective, 
+            n_trials=n_trials, 
+            callbacks=[self.callback], 
+            catch=[AssertionError]
+        )
     
     
     def callback(self, study, trial):
@@ -174,8 +179,8 @@ class Experiments(ABC):
         batch_size_space = self.search_space.get('batch_size', [-1])
         batch_size = trial.suggest_categorical('batch_size', batch_size_space)
         
-        stride_space = self.search_space.get('stride', [1])
-        stride = trial.suggest_categorical('stride', stride_space)
+        # stride_space = self.search_space.get('stride', [1])
+        # stride = trial.suggest_categorical('stride', stride_space)
         
         tot_val_loss = 0.
         
@@ -200,7 +205,6 @@ class Experiments(ABC):
                 n_iter=self.n_iter,
                 batch_size=batch_size,
                 t_f_train=self.t_f_train,
-                stride=stride,
                 method=self.method
             )
             

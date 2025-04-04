@@ -1,4 +1,4 @@
-dynamics: 'Epidemics'
+dynamics: "Epidemics"
 model_name: 'model-epidemics-mpnn'
 model_type: 'MPNN'
 epochs: 700
@@ -6,9 +6,9 @@ patience: 200
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
-t_eval_steps: 300
+t_eval_steps: 500
 seed: 42
-pytorch_seed: 43
+pytorch_seed: 0
 noise_strengths: []
 device: 'cuda'
 input_range: [0, 1]
@@ -25,9 +25,10 @@ search_space:
   drop_p_g_net: [0.0001, 0.5]
   drop_p_h_net: [0.0001, 0.5]
   lr: [0.001, 0.05]
-  batch_size: [20, 80, 120]
-  stride: [20]
-n_iter: 5
+  batch_size: [32, 64]
+n_iter: 3
+num_samples: 50
+data_folder: './data'
 integration_kwargs:
   B: 0.5
   R: 0.5

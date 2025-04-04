@@ -7,7 +7,6 @@ from models.utils.NetWrapper import NetWrapper
 from utils.utils import save_logs
 from collections import defaultdict
 from torch.utils.data import DataLoader
-from datasets.SlidingWindowSampler import SlidingWindowSampler
 import copy
 
 
@@ -66,12 +65,8 @@ def eval_model(model, data, t, criterion, t_f_train, n_iter=1, atol=1e-6, rtol=1
                 )[t_f_train:]
             )
             
-        y_pred = torch.stack(y_pred, dim=0)
-        
-        y_pred_flatten = y_pred.view(-1, 1)
-        y_true_flatten = data[:, t_f_train:, :, :].contiguous().view(-1, 1)
-        
-        loss = criterion(y_pred_flatten, y_true_flatten)
+        y_pred = torch.stack(y_pred, dim=0)        
+        loss = criterion(y_pred, data[:, t_f_train:, :, :])
     return loss.item()
             
     
@@ -92,7 +87,6 @@ def fit(model:NetWrapper,
         n_iter = 1,
         batch_size=-1,
         t_f_train=240,
-        stride = 1,
         atol=1e-6,
         rtol=1e-3,
         method='dopri5'
@@ -125,8 +119,7 @@ def fit(model:NetWrapper,
     best_epoch = 0
     best_model_state = None
     
-    sampler = SlidingWindowSampler(training_set, batch_size_train, stride, shuffle=True)
-    train_loader = DataLoader(training_set, batch_sampler=sampler)
+    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=True)
     
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -152,18 +145,28 @@ def fit(model:NetWrapper,
         global running_training_loss, running_tot_loss
         optimizer.zero_grad()
         y_pred = []
-        for k in range(n_iter):
-            y0 = batch_data[:, k, :, :][0]
-            t_eval = norm_batch_times[:, k]
-            t = torch.tensor([t_eval[0], t_eval[1], t_eval[-1]], dtype=y0.dtype).to(torch.device(y0.device))
-            y_pred.append(call_ODE(model, y0, t, atol=atol, rtol=rtol, method=method)[1:])
+        y_true = []
+        for y0, target, t_start, t_target in zip(batch_y0, batch_target, batch_t_start, batch_t_target):
+            t = torch.tensor([t_start, t_target], dtype=t_start.dtype).to(torch.device(t_start.device))
+            y_true.append(target)
+            unfold = call_ODE(
+                model,
+                y0,
+                t,
+                atol=atol,
+                rtol=rtol,
+                method=method
+            )
+            
+            y_pred.append(unfold[1])
         
-        y_pred = torch.stack(y_pred, dim=1) # Shape (2, n_iter, n_nodes, in_dim)
+        y_pred = torch.stack(y_pred, dim=0) # Shape (batch_size, n_nodes, 1)
+        y_true = torch.stack(y_true, dim=0) # Shape (batch_size, n_nodes, 1)
         
-        y_pred_flatten = y_pred.view(-1, 1)
-        y_true_flatten = batch_data[[1, -1], :, :, :].view(-1, 1)
+        # y_pred_flatten = y_pred.contiguous().view(-1, 1)
+        # y_true_flatten = y_true.contiguous().view(-1, 1)
         
-        training_loss = criterion(y_pred_flatten, y_true_flatten)
+        training_loss = criterion(y_pred, y_true)
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)
         loss = training_loss + lmbd * reg
@@ -180,9 +183,7 @@ def fit(model:NetWrapper,
         running_tot_loss = 0.
         count = 0
         reg_loss_metrics.clear()
-        for batch_data, batch_times in train_loader:  
-            min_values = batch_times.min(dim=0, keepdim=True).values
-            norm_batch_times = batch_times - min_values # For each window, the integrator must start from time step 0
+        for batch_y0, batch_target, batch_t_start, batch_t_target in train_loader:  
             if opt == 'Adam':
                 _ = training()
             else:
