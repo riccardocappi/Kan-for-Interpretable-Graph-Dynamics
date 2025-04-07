@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 import torch
-from utils.utils import create_datasets
-from torch_geometric.utils import from_networkx
 import optuna
 from optuna.samplers import GridSampler
 import json
@@ -13,6 +11,7 @@ from utils.utils import sample_from_spatio_temporal_graph
 import copy
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
+from datasets.SpatioTemporalGraphData import SpatioTemporalGraphData
 
 
 class Experiments(ABC):
@@ -22,7 +21,6 @@ class Experiments(ABC):
     """
     def __init__(self, 
                  config, 
-                 G, 
                  n_trials,
                  model_selection_method='optuna',
                  study_name='example',
@@ -43,12 +41,27 @@ class Experiments(ABC):
         if self.device == 'cuda':
             assert torch.cuda.is_available()
             
-        self.t_f_train = int(0.8 * config['num_samples'])
         self.n_iter = config['n_iter']
-        self.training_set, self.valid_set = create_datasets(config, G, t_f_train=self.t_f_train)
         
-        self.edge_index = from_networkx(G).edge_index
-        self.edge_index = self.edge_index.to(torch.device(self.device))
+        dataset = SpatioTemporalGraphData(
+            root=config['data_folder'],
+            dynamics=config['dynamics'],
+            t_span=config['t_span'],
+            t_max=config['t_eval_steps'],
+            num_samples=config['num_samples'],
+            seed=config['seed'],
+            n_ics=config['n_iter'],
+            input_range=config['input_range'],
+            device=config['device'],
+            **config['integration_kwargs']
+        )
+        
+        t_f_train = int(0.8 * len(dataset))
+        
+        self.training_set = dataset[:t_f_train]
+        self.valid_set = dataset[t_f_train:]
+        
+        self.edge_index = self.training_set[0].edge_index
 
         self.epochs = config["epochs"]
         self.patience = config["patience"]
@@ -179,9 +192,6 @@ class Experiments(ABC):
         batch_size_space = self.search_space.get('batch_size', [-1])
         batch_size = trial.suggest_categorical('batch_size', batch_size_space)
         
-        # stride_space = self.search_space.get('stride', [1])
-        # stride = trial.suggest_categorical('stride', stride_space)
-        
         tot_val_loss = 0.
         
         model = self.get_model_opt(trial)   # get the current model
@@ -204,7 +214,6 @@ class Experiments(ABC):
                 save_updates=False,
                 n_iter=self.n_iter,
                 batch_size=batch_size,
-                t_f_train=self.t_f_train,
                 method=self.method
             )
             
@@ -265,7 +274,7 @@ class Experiments(ABC):
         
         # Sample from the graph-time-series
         dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
-            self.training_set.data[0], 
+            self.training_set.raw_data_sampled[0], 
             self.edge_index, 
             sample_size=sample_size
         )

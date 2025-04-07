@@ -18,3 +18,6 @@ pip install optuna
 pip install torchdiffeq
 pip install dill
 pip install pysr
+pip install torch-sparse -f https://data.pyg.org/whl/torch-2.3.0+cu118.html
+pip install torch-scatter -f https://data.pyg.org/whl/torch-2.3.0+cu118.html
+pip install torch-spatiotemporal

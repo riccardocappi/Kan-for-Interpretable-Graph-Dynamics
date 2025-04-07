@@ -111,6 +111,9 @@ class MPNN(MessagePassing, ModelInterface):
         """
         Implementation of ModelInterface method
         """
+        
+        self.eval()
+        
         self.g_net.save_black_box = True
         self.h_net.save_black_box = True
         

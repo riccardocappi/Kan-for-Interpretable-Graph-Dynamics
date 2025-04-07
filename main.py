@@ -19,9 +19,7 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
     set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
     
     model_type=config['model_type']
-    # G = nx.grid_2d_graph(7, 10)
-    G = nx.barabasi_albert_graph(70, 3, seed=config['seed'])
-    
+        
     if storage == 'sqlite':
         store_to_sqlite = True
     elif storage == 'journal':
@@ -30,9 +28,9 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
         raise ValueError("Not supported storage backend!")    
        
     if model_type == 'GKAN':
-        exp = ExperimentsGKAN(config, G, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
+        exp = ExperimentsGKAN(config, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
     elif model_type == 'MPNN':
-        exp = ExperimentsMPNN(config, G, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
+        exp = ExperimentsMPNN(config, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
     else:
         raise ValueError('Unknown model type')
     

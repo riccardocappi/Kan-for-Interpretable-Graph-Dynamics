@@ -8,9 +8,10 @@ from utils.utils import save_logs
 from collections import defaultdict
 from torch.utils.data import DataLoader
 import copy
+from datasets.SpatioTemporalGraphData import SpatioTemporalGraphData
 
 
-def call_ODE(model, y0, t, atol=1e-6, rtol=1e-3, method='dopri5'):
+def integrate_model(model, y0, t, atol=1e-6, rtol=1e-3, method='dopri5'):
     """
     Integrates the model using dopri5 numerical integrator
     
@@ -36,45 +37,47 @@ def call_ODE(model, y0, t, atol=1e-6, rtol=1e-3, method='dopri5'):
         options=options
     )
 
-def eval_model(model, data, t, criterion, t_f_train, n_iter=1, atol=1e-6, rtol=1e-3, method='dopri5'):
+
+def eval_model(model, valid_data, criterion, atol=1e-6, rtol=1e-3, method='dopri5'):
     """
     Integrates the model starting from the very first y0 until the end of the time series, and computes the loss only
     with respect to validation set.
-    
-    Args:
-        -data : The whole time series
-        -t : Time steps in which the ODE is evaluated
-        -criterion : Loss function
-        -t_f_train : Last index of training set
-        -n_iter : Number of initial conditions
     """
     model.eval()
     y_pred = []
+    y_true = []
+    
     with torch.no_grad():
-        for k in range(n_iter):
-            y_true_valid = data[k]
-            t_valid = t[k]
-            y0 = y_true_valid[0]
-            y_pred.append(call_ODE(
-                model, 
-                y0, 
-                t_valid,
+        for snapshot in valid_data:
+            t_start = snapshot.t_start
+            t_target = snapshot.t_target
+            t = torch.tensor([t_start, t_target], dtype=t_start.dtype).to(torch.device(t_start.device))
+            
+            y_true.append(snapshot.y)              
+            unroll = integrate_model(
+                model,
+                snapshot.x,
+                t,
                 atol=atol,
                 rtol=rtol,
                 method=method
-                )[t_f_train:]
             )
             
-        y_pred = torch.stack(y_pred, dim=0)        
-        loss = criterion(y_pred, data[:, t_f_train:, :, :])
+            y_pred.append(unroll[1])
+        
+        y_pred = torch.stack(y_pred, dim=0)
+        y_true = torch.stack(y_true, dim=0)
+        
+        loss = criterion(y_pred, y_true)
+            
     return loss.item()
             
     
     
 
 def fit(model:NetWrapper,
-        training_set,
-        valid_set, 
+        training_set:SpatioTemporalGraphData,
+        valid_set:SpatioTemporalGraphData, 
         epochs=50,
         patience=30,
         lr = 0.001,
@@ -86,7 +89,6 @@ def fit(model:NetWrapper,
         save_updates=True,
         n_iter = 1,
         batch_size=-1,
-        t_f_train=240,
         atol=1e-6,
         rtol=1e-3,
         method='dopri5'
@@ -108,7 +110,6 @@ def fit(model:NetWrapper,
         - save_updates : Whether to save logs during training or not
         - n_iter : Number of initial conditions
         - batch_size : Sliding window size
-        - t_f_train : Last index of training set
         - stride : Stride of the sliding window Data Loader
     """
     
@@ -119,7 +120,8 @@ def fit(model:NetWrapper,
     best_epoch = 0
     best_model_state = None
     
-    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=True)
+    collate_fn = lambda samples_list: samples_list
+    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=False, collate_fn=collate_fn)
     
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -146,25 +148,24 @@ def fit(model:NetWrapper,
         optimizer.zero_grad()
         y_pred = []
         y_true = []
-        for y0, target, t_start, t_target in zip(batch_y0, batch_target, batch_t_start, batch_t_target):
+        for snapshot in batch_data:
+            t_start = snapshot.t_start
+            t_target = snapshot.t_target
             t = torch.tensor([t_start, t_target], dtype=t_start.dtype).to(torch.device(t_start.device))
-            y_true.append(target)
-            unfold = call_ODE(
+            y_true.append(snapshot.y)
+            unroll = integrate_model(
                 model,
-                y0,
+                snapshot.x,
                 t,
                 atol=atol,
                 rtol=rtol,
                 method=method
             )
             
-            y_pred.append(unfold[1])
+            y_pred.append(unroll[1])
         
         y_pred = torch.stack(y_pred, dim=0) # Shape (batch_size, n_nodes, 1)
         y_true = torch.stack(y_true, dim=0) # Shape (batch_size, n_nodes, 1)
-        
-        # y_pred_flatten = y_pred.contiguous().view(-1, 1)
-        # y_true_flatten = y_true.contiguous().view(-1, 1)
         
         training_loss = criterion(y_pred, y_true)
         running_training_loss = running_training_loss + training_loss.item()
@@ -183,7 +184,7 @@ def fit(model:NetWrapper,
         running_tot_loss = 0.
         count = 0
         reg_loss_metrics.clear()
-        for batch_y0, batch_target, batch_t_start, batch_t_target in train_loader:  
+        for batch_data in train_loader:  
             if opt == 'Adam':
                 _ = training()
             else:
@@ -191,12 +192,9 @@ def fit(model:NetWrapper,
             count += 1
         
         val_loss = eval_model(
-            model, 
-            valid_set.data, 
-            valid_set.time, 
-            criterion=criterion, 
-            n_iter=n_iter,
-            t_f_train=t_f_train,
+            model=model,
+            valid_data=valid_set,
+            criterion=criterion,
             atol=atol,
             rtol=rtol,
             method=method

@@ -1,15 +1,15 @@
 dynamics: 'Kuramoto'
 model_name: "model-kuramoto-gkan"
 model_type: 'GKAN'
-epochs: 15
+epochs: 500
 patience: 200
 opt: 'Adam'
 log: 10
 t_span: [0,1]
-t_eval_steps: 500
+t_eval_steps: 300
 seed: 42
 pytorch_seed: 0
-device: 'cpu'
+device: 'cuda'
 input_range: [0, 6.28318530718]
 in_dim: 1
 message_passing: False
@@ -25,15 +25,15 @@ search_space:
   lamb_g_net: [0.0001, 0.01]
   lamb_h_net: [0.0001, 0.01]
   lr: [0.001, 0.05]
-  use_orig_reg: [True]
+  use_orig_reg: [True, False]
   mu_1_g_net: [0.5, 1.0]
   mu_2_g_net: [0.5, 1.0]
   mu_1_h_net: [0.5, 1.0]
   mu_2_h_net: [0.5, 1.0]
   lamb: [1.]
   batch_size: [32]
-n_iter: 1
-num_samples: 50
+n_iter: 3
+num_samples: 30
 data_folder: './data'
 integration_kwargs:
   w: 2.

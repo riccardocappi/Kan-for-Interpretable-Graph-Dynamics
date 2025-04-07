@@ -120,6 +120,8 @@ class GKAN(MessagePassing, ModelInterface):
         """
         Implementation of ModelInterface method
         """
+        self.eval()
+        
         self.g_net.store_act = True
         self.h_net.store_act = True
         

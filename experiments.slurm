@@ -11,19 +11,20 @@
 
 ### queue/partition choosed
 #SBATCH --partition=testing
-
-### Number of tasks
-#SBATCH --ntasks=1
+#SBATCH --exclusive
+#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=3  # Running three tasks in parallel
 
 ### RAM requirement
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=80:00:00
+#SBATCH --time=48:00:00
 
 ### GPU request
-#SBATCH --gres=mps:35
-#SBATCH --constraint=A5000
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=A6000
 
 
 ### Some useful informative commands
@@ -38,5 +39,12 @@ echo
 SHELL=/bin/bash
 
 ### Jobs execution commands
+cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto-2 --process_id=0
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data --process_id=0 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data --process_id=1 --storage=journal &
+sleep 1m
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data --process_id=2 --storage=journal &
+wait
+echo "Finished"
