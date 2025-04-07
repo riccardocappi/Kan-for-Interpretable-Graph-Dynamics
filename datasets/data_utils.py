@@ -6,6 +6,9 @@ import numpy as np
 
 node_mapping = lambda G: {node: idx for idx, node in enumerate(G.nodes)}
 
+dynamics_name = ['Biochemical', 'Epidemics', 'Neuronal', 'Kuramoto']
+
+
 def Model_Biochemical(t, xx, G, F = 1., B = 1., R = 1.):
     """
     m_0 = "F-B*xx[i]"
@@ -73,6 +76,7 @@ def Model_Kuramoto(t, xx, G, w=0., R=1.):
 
 
 def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=100, **kwargs):
+    assert dynamics in dynamics_name
     if dynamics == 'Biochemical':
         model = lambda t, xx: Model_Biochemical(t, xx, G, **kwargs)
     elif dynamics == 'Epidemics':

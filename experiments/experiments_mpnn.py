@@ -30,12 +30,8 @@ class ExperimentsMPNN(Experiments):
         
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
+    
         
-    
-    def pre_processing(self, train_data, valid_data):
-        return train_data, valid_data   # No pre-processing
-    
-    
     def _get_mlp_config_trial(self, trial, net_suffix):
         """
         Returns the configuration of a single MLP

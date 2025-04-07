@@ -1,4 +1,4 @@
-dynamics: "Kuramoto"
+name: "Kuramoto"
 model_name: 'model-kuramoto-mpnn'
 model_type: 'MPNN'
 epochs: 10

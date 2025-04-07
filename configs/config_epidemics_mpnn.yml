@@ -1,4 +1,4 @@
-dynamics: "Epidemics"
+name: "Epidemics"
 model_name: 'model-epidemics-mpnn'
 model_type: 'MPNN'
 epochs: 700

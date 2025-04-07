@@ -11,13 +11,15 @@ from utils.utils import sample_from_spatio_temporal_graph
 import copy
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
-from datasets.SpatioTemporalGraphData import SpatioTemporalGraphData
+from datasets.SyntheticData import SyntheticData
+from datasets.data_utils import dynamics_name
+from datasets.TrafficData import traffic_data_name, TrafficData
 
 
 class Experiments(ABC):
     """
         Abstract class defining the experiments pipeline. To implement a specific experiment, extend this class and provide
-        implementation for the two abstract methods: pre_processing, and get_model_opt.   
+        implementation for the abstract method: get_model_opt.   
     """
     def __init__(self, 
                  config, 
@@ -43,18 +45,30 @@ class Experiments(ABC):
             
         self.n_iter = config['n_iter']
         
-        dataset = SpatioTemporalGraphData(
-            root=config['data_folder'],
-            dynamics=config['dynamics'],
-            t_span=config['t_span'],
-            t_max=config['t_eval_steps'],
-            num_samples=config['num_samples'],
-            seed=config['seed'],
-            n_ics=config['n_iter'],
-            input_range=config['input_range'],
-            device=config['device'],
-            **config['integration_kwargs']
-        )
+        if config['name'] in dynamics_name:
+            dataset = SyntheticData(
+                root=config['data_folder'],
+                dynamics=config['name'],
+                t_span=config['t_span'],
+                t_max=config['t_eval_steps'],
+                num_samples=config['num_samples'],
+                seed=config['seed'],
+                n_ics=config['n_iter'],
+                input_range=config['input_range'],
+                device=config['device'],
+                **config['integration_kwargs']
+            )
+        elif config['name'] in traffic_data_name:
+            dataset = TrafficData(
+                root=config['data_folder'],
+                name=config['name'],
+                num_samples=config['num_samples'],
+                seed = config['seed'],
+                device=config['device'],
+                n_ics=config['n_iter']
+            )
+        else:
+            raise NotImplementedError()
         
         t_f_train = int(0.8 * len(dataset))
         
@@ -111,8 +125,6 @@ class Experiments(ABC):
         """
         Run the experiment pipeline. 
         """
-        
-        self.training_set, self.valid_set = self.pre_processing(self.training_set, self.valid_set)  # Custom pre_processing
         self.optimize() # Optuna study optimization 
         
         # Disabling optuna logger
@@ -232,18 +244,6 @@ class Experiments(ABC):
         
         # return the average of validation losses over the number of runs        
         return tot_val_loss / R
-
-    
-    @abstractmethod
-    def pre_processing(self, train_data, valid_data):
-        """
-        Custom pre-processing
-        
-        Args:
-            - train_data : training set
-            - valid_data : validation set
-        """
-        raise Exception('Not implemented')
     
     
     @abstractmethod

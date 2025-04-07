@@ -23,11 +23,7 @@ class ExperimentsGKAN(Experiments):
 
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
-        
-    
-    def pre_processing(self, training_set, valid_set):
-        return training_set, valid_set  # No pre-processing
-    
+            
     
     def _get_kan_trial_config(self, trial, net_suffix, use_orig_reg):
         

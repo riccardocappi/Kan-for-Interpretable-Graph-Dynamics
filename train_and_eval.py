@@ -8,7 +8,7 @@ from utils.utils import save_logs
 from collections import defaultdict
 from torch.utils.data import DataLoader
 import copy
-from datasets.SpatioTemporalGraphData import SpatioTemporalGraphData
+from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 
 
 def integrate_model(model, y0, t, atol=1e-6, rtol=1e-3, method='dopri5'):
@@ -76,8 +76,8 @@ def eval_model(model, valid_data, criterion, atol=1e-6, rtol=1e-3, method='dopri
     
 
 def fit(model:NetWrapper,
-        training_set:SpatioTemporalGraphData,
-        valid_set:SpatioTemporalGraphData, 
+        training_set:SpatioTemporalGraph,
+        valid_set:SpatioTemporalGraph, 
         epochs=50,
         patience=30,
         lr = 0.001,

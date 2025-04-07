@@ -1,4 +1,4 @@
-dynamics: "Epidemics"
+name: "Epidemics"
 model_name: "model-epidemics-gkan"
 model_type: 'GKAN'
 epochs: 10
