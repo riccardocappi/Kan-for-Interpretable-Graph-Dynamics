@@ -1,15 +1,21 @@
 from .Experiments import Experiments
-from models.baseline.baseline import MPNN
-from models.utils.NetWrapper import NetWrapper
+from models.utils.MPNN import MPNN
+from models.baseline.MPNN_ODE import MPNN_ODE
 import torch
 import torch.nn.functional as F
-from models.baseline.baseline import MLP
+from models.utils.MLP import MLP
+from datasets.TrafficData import traffic_data_name
+from tsl.data.preprocessing.scalers import MinMaxScaler
+from datasets.SpatioTemporalGraph import SpatioTemporalGraph
+
 
 # Possible activation functions
 activations = {
     "relu": F.relu,
     "sigmoid": F.sigmoid,
-    "softplus": F.softplus
+    "softplus": F.softplus,
+    "tanh": F.tanh,
+    "identity": torch.nn.Identity()
 }
 
 
@@ -31,6 +37,21 @@ class ExperimentsMPNN(Experiments):
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
     
+    
+    
+    def pre_processing(self, training_set:SpatioTemporalGraph):
+        scaler = None
+        if self.config['name'] in traffic_data_name:
+            all_train_x = torch.cat([data.x for data in training_set], dim=0)
+            
+            scaler = MinMaxScaler(out_range=(-1, 1))
+            scaler.fit(all_train_x.detach().cpu())
+            
+            scaler.scale = scaler.scale.to(torch.device(self.device))
+            scaler.bias = scaler.bias.to(torch.device(self.device))
+            
+        return scaler
+        
         
     def _get_mlp_config_trial(self, trial, net_suffix):
         """
@@ -78,7 +99,6 @@ class ExperimentsMPNN(Experiments):
         mlp_config = {
             'hidden_layers': hidden_layers,
             'af': af,
-            'model_path': f'{self.model_path}/{net_suffix}',
             'dropout_rate': dropout_rate
         }
         
@@ -98,11 +118,18 @@ class ExperimentsMPNN(Experiments):
         net = MPNN(
             g_net=g_net,
             h_net=h_net,
-            model_path=self.model_path,
-            message_passing=self.config.get("message_passing", True)
+            message_passing=self.config.get("message_passing", True),
+            include_time=self.config.get("include_time", False)
         )
         
-        model = NetWrapper(net, self.edge_index)
+        model = MPNN_ODE(
+            conv = net,
+            model_path=f'{self.model_path}/mpnn',
+            adjoint=self.config.get('adjoint', False),  # Should be read from config
+            integration_method=self.integration_method,
+            atol=self.config.get('atol', 1e-6), 
+            rtol=self.config.get('rtol', 1e-3)
+        )
         model = model.to(torch.device(self.device))
         
         return model

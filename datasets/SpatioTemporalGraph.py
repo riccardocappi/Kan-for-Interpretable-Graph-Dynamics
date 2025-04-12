@@ -42,7 +42,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         edge_index, edge_attr, raw_data, time = self.get_raw_data()
         assert (raw_data.size(0) == time.size(0)) and (raw_data.size(1) == time.size(1))
         
-        data_sampled, t_sampled = sample_irregularly_per_ics(raw_data, time, self.num_samples)
+        data_sampled, t_sampled, indices = sample_irregularly_per_ics(raw_data, time, self.num_samples)
         
         data = []
         ics, n_samples, _, _ = data_sampled.shape
@@ -54,8 +54,14 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
             
             x_in = data_sampled[index_ic, index_sample, : ,:]
             y_target = data_sampled[index_ic, index_sample + 1, :, :]
+            
             t_start = t_sampled[index_ic, index_sample]
             t_target = t_sampled[index_ic, index_sample + 1]
+            
+            t_start_index = indices[index_ic, index_sample]
+            t_end_index = indices[index_ic, index_sample + 1]
+            
+            t_span = time[index_ic, t_start_index:t_end_index+1]
             
             data.append(
                 Data(
@@ -64,7 +70,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                     x = x_in,
                     y = y_target,
                     t_start = t_start,
-                    t_target = t_target
+                    t_target = t_target,
+                    t_span = t_span
                 )
             )
             

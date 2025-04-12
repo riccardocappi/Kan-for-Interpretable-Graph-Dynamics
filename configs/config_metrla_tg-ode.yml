@@ -1,0 +1,27 @@
+name: "metrla"
+model_name: "model-metrla-tg-ode"
+model_type: 'TG-ODE'
+epochs: 300
+patience: 100
+opt: 'Adam'
+log: 10
+seed: 42
+pytorch_seed: 0
+device: 'cuda'
+in_dim: 1
+n_iter: 119
+num_samples: 96
+data_folder: './data'
+R: 1
+method: ''
+criterion: 'MAE'
+search_space:
+  emb_dim: [32, 64]
+  K: [1, 5]
+  af: ["tanh", "relu", "identity"]
+  step_size: [0.001, 1.]
+  normalize: [True]
+  bias: [True, False]
+  lr: [0.0001, 0.01]
+  lamb: [0.]
+  batch_size: [32, 64]

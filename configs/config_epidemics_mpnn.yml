@@ -14,7 +14,10 @@ device: 'cuda'
 input_range: [0, 1]
 in_dim: 1
 method: 'dopri5'
-message_passing: False
+message_passing: True
+atol: 0.000001
+rtol: 0.001
+adjoint: True
 search_space:
   n_hidden_layers_g_net: [1]
   n_hidden_layers_h_net: [1]

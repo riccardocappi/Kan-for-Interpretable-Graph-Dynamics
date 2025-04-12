@@ -1,9 +1,7 @@
 import torch
 from torch.optim import LBFGS
 import os
-# from torchdiffeq import odeint
-from torchdiffeq import odeint_adjoint as odeint
-from models.utils.NetWrapper import NetWrapper
+from models.utils.ODEBlock import ODEBlock
 from utils.utils import save_logs
 from collections import defaultdict
 from torch.utils.data import DataLoader
@@ -11,37 +9,9 @@ import copy
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 
 
-def integrate_model(model, y0, t, atol=1e-6, rtol=1e-3, method='dopri5'):
+def eval_model(model:ODEBlock, valid_data, criterion, scaler = None):
     """
-    Integrates the model using dopri5 numerical integrator
-    
-    Args:
-        -model : model to be integrated
-        -y0 : initial condition
-        -t : time steps in which the ODE is evaluated
-    """
-    assert method == 'dopri5' or method=='scipy_solver'
-    
-    options = None
-    if method == 'scipy_solver':
-        options = dict(solver = "RK45")
-     
-    return odeint(
-        model, 
-        y0, 
-        t, 
-        method=method,
-        atol=atol,
-        rtol=rtol,
-        adjoint_options=dict(norm="seminorm"),
-        options=options
-    )
-
-
-def eval_model(model, valid_data, criterion, atol=1e-6, rtol=1e-3, method='dopri5'):
-    """
-    Integrates the model starting from the very first y0 until the end of the time series, and computes the loss only
-    with respect to validation set.
+    Evaluates the model on validation set
     """
     model.eval()
     y_pred = []
@@ -49,33 +19,26 @@ def eval_model(model, valid_data, criterion, atol=1e-6, rtol=1e-3, method='dopri
     
     with torch.no_grad():
         for snapshot in valid_data:
-            t_start = snapshot.t_start
-            t_target = snapshot.t_target
-            t = torch.tensor([t_start, t_target], dtype=t_start.dtype).to(torch.device(t_start.device))
+            if scaler is not None:
+                snapshot.x = scaler.transform(snapshot.x).squeeze(0)
+                snapshot.y = scaler.transform(snapshot.y).squeeze(0)
             
-            y_true.append(snapshot.y)              
-            unroll = integrate_model(
-                model,
-                snapshot.x,
-                t,
-                atol=atol,
-                rtol=rtol,
-                method=method
-            )
-            
-            y_pred.append(unroll[1])
+            y_true.append(snapshot.y)
+            y_pred.append(model(snapshot=snapshot))
         
         y_pred = torch.stack(y_pred, dim=0)
         y_true = torch.stack(y_true, dim=0)
         
+        if scaler is not None:
+            y_pred = scaler.inverse_transform(y_pred)
+            y_true = scaler.inverse_transform(y_true)
+        
         loss = criterion(y_pred, y_true)
             
     return loss.item()
-            
-    
-    
 
-def fit(model:NetWrapper,
+
+def fit(model:ODEBlock,
         training_set:SpatioTemporalGraph,
         valid_set:SpatioTemporalGraph, 
         epochs=50,
@@ -87,11 +50,8 @@ def fit(model:NetWrapper,
         criterion = torch.nn.MSELoss(),
         opt='Adam',
         save_updates=True,
-        n_iter = 1,
         batch_size=-1,
-        atol=1e-6,
-        rtol=1e-3,
-        method='dopri5'
+        scaler = None
         ):
     """
     Training process
@@ -108,7 +68,6 @@ def fit(model:NetWrapper,
         - criterion : Loss function
         - opt : Optimizer
         - save_updates : Whether to save logs during training or not
-        - n_iter : Number of initial conditions
         - batch_size : Sliding window size
         - stride : Stride of the sliding window Data Loader
     """
@@ -121,7 +80,7 @@ def fit(model:NetWrapper,
     best_model_state = None
     
     collate_fn = lambda samples_list: samples_list
-    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=False, collate_fn=collate_fn)
+    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=True, collate_fn=collate_fn)
     
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -131,7 +90,7 @@ def fit(model:NetWrapper,
         raise Exception('Optimizer not implemented yet!')
     
     if save_updates:
-        logs_folder = f'{model.model.model_path}/logs'
+        logs_folder = f'{model.model_path}/logs'
         if not os.path.exists(logs_folder):
             os.makedirs(logs_folder)
         logs_file_path = f'{logs_folder}/{log_file_name}'
@@ -149,21 +108,13 @@ def fit(model:NetWrapper,
         y_pred = []
         y_true = []
         for snapshot in batch_data:
-            t_start = snapshot.t_start
-            t_target = snapshot.t_target
-            t = torch.tensor([t_start, t_target], dtype=t_start.dtype).to(torch.device(t_start.device))
+            if scaler is not None:
+                snapshot.x = scaler.transform(snapshot.x).squeeze(0)
+                snapshot.y = scaler.transform(snapshot.y).squeeze(0)
+                
             y_true.append(snapshot.y)
-            unroll = integrate_model(
-                model,
-                snapshot.x,
-                t,
-                atol=atol,
-                rtol=rtol,
-                method=method
-            )
+            y_pred.append(model(snapshot=snapshot))
             
-            y_pred.append(unroll[1])
-        
         y_pred = torch.stack(y_pred, dim=0) # Shape (batch_size, n_nodes, 1)
         y_true = torch.stack(y_true, dim=0) # Shape (batch_size, n_nodes, 1)
         
@@ -195,9 +146,7 @@ def fit(model:NetWrapper,
             model=model,
             valid_data=valid_set,
             criterion=criterion,
-            atol=atol,
-            rtol=rtol,
-            method=method
+            scaler=scaler
         )
         
         results['train_loss'].append(running_training_loss / count)

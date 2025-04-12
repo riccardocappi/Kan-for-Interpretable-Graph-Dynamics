@@ -18,6 +18,11 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 
+SCORES = {
+    'MSE': torch.nn.MSELoss(),
+    'MAE': torch.nn.L1Loss()
+}
+
 
 def save_logs(file_name, log_message, save_updates=True):
     """
@@ -158,14 +163,17 @@ def sample_irregularly_per_ics(data, time, num_samples):
     ics, n_step, n_nodes, in_dim = data.shape
     sampled_data = torch.zeros((ics, num_samples, n_nodes, in_dim), dtype=data.dtype, device=data.device)
     sampled_times = torch.zeros((ics, num_samples), dtype=time.dtype, device=time.device)
+    sampled_indices = torch.zeros((ics, num_samples), dtype=torch.int32, device=data.device)
 
     for i in range(ics):
         indices = torch.randperm(n_step)[:num_samples]  # Random unique indices
         indices = torch.sort(indices).values  # Optional: Sort indices to maintain order
+        
         sampled_data[i] = data[i, indices, :, :]  # Sample separately for each ics
         sampled_times[i] = time[i, indices]
+        sampled_indices[i] = indices
 
-    return sampled_data, sampled_times
+    return sampled_data, sampled_times, sampled_indices
 
 
 def save_acts(layers, folder_path):

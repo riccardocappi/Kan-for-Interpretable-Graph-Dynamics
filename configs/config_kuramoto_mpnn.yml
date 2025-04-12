@@ -13,6 +13,10 @@ noise_strengths: []
 device: 'cpu'
 input_range: [0, 6.28318530718]
 in_dim: 1
+atol: 0.000001
+rtol: 0.001
+adjoint: True
+message_passing: True
 search_space:
   n_hidden_layers_g_net: [1]
   n_hidden_layers_h_net: [1]

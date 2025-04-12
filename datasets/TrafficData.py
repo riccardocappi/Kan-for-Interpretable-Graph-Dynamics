@@ -2,9 +2,8 @@ from tsl.datasets import MetrLA, PemsBay
 from .SpatioTemporalGraph import SpatioTemporalGraph
 import torch
 import os
-from tsl.data.preprocessing.scalers import MinMaxScaler
 
-traffic_data_name = ['metrla', 'pemsbay']
+traffic_data_name = ['metrla', 'pemsbay', 'metrla2']
 
 class TrafficData(SpatioTemporalGraph):
     def __init__(
@@ -29,7 +28,7 @@ class TrafficData(SpatioTemporalGraph):
         
 
     def get_raw_data(self):
-        if self.name == 'metrla':
+        if self.name == 'metrla' or self.name == 'metrla2':
             dataset = MetrLA(os.path.join(self.root, self.name), impute_zeros=True)
         elif self.name == 'pemsbay':
             dataset = PemsBay(self.root)
@@ -43,12 +42,8 @@ class TrafficData(SpatioTemporalGraph):
             layout="edge_index"
         )
         
-        df = dataset.dataframe()
-        
-        scaler = MinMaxScaler(out_range=(-1, 1))
-        scaled_data = scaler.fit_transform(df.values)
-        
-        raw_data = torch.from_numpy(scaled_data).unsqueeze(2)
+        df = dataset.dataframe()        
+        raw_data = torch.from_numpy(df.values).unsqueeze(2)
                 
         # Reshaping tensor as (ICs, num_samples, num_modes, 1), where each initial condition is a different day
         time_steps, n_nodes, _ = raw_data.shape

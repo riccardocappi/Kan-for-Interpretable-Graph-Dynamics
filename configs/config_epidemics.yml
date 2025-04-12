@@ -17,7 +17,10 @@ num_samples: 30
 data_folder: './data'
 R: 1
 method: 'dopri5'
-message_passing: False
+message_passing: True
+atol: 0.000001
+rtol: 0.001
+adjoint: True
 search_space:
   grid_size_h_net: [5, 10]
   grid_size_g_net: [5, 10]

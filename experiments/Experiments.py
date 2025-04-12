@@ -6,7 +6,7 @@ import json
 import os
 import logging
 from train_and_eval import fit
-from models.utils.NetWrapper import NetWrapper
+from models.utils.ODEBlock import ODEBlock
 from utils.utils import sample_from_spatio_temporal_graph
 import copy
 from optuna.storages import JournalStorage
@@ -14,6 +14,7 @@ from optuna.storages.journal import JournalFileBackend
 from datasets.SyntheticData import SyntheticData
 from datasets.data_utils import dynamics_name
 from datasets.TrafficData import traffic_data_name, TrafficData
+from utils.utils import SCORES
 
 
 class Experiments(ABC):
@@ -55,7 +56,7 @@ class Experiments(ABC):
                 seed=config['seed'],
                 n_ics=config['n_iter'],
                 input_range=config['input_range'],
-                device=config['device'],
+                device=self.device,
                 **config['integration_kwargs']
             )
         elif config['name'] in traffic_data_name:
@@ -64,8 +65,8 @@ class Experiments(ABC):
                 name=config['name'],
                 num_samples=config['num_samples'],
                 seed = config['seed'],
-                device=config['device'],
-                n_ics=config['n_iter']
+                n_ics=config['n_iter'],
+                device=self.device
             )
         else:
             raise NotImplementedError()
@@ -74,9 +75,7 @@ class Experiments(ABC):
         
         self.training_set = dataset[:t_f_train]
         self.valid_set = dataset[t_f_train:]
-        
-        self.edge_index = self.training_set[0].edge_index
-
+    
         self.epochs = config["epochs"]
         self.patience = config["patience"]
         self.opt = config["opt"]
@@ -91,7 +90,7 @@ class Experiments(ABC):
         self.seed = config['seed']
         self.torch_seed = config.get("pytorch_seed", 42)    
         
-        self.criterion = torch.nn.MSELoss()
+        self.criterion = SCORES[config.get('criterion', 'MSE')]
         
         self.study_name = study_name
         
@@ -117,7 +116,9 @@ class Experiments(ABC):
         self.best_model = None  
         
         self.storage = "sqlite:///optuna_study.db" if store_to_sqlite else JournalStorage(JournalFileBackend("optuna_journal_storage.log"))
-        self.method = self.config.get('method', 'dopri5')
+        self.integration_method = self.config.get('method', 'dopri5')
+        
+        self.scaler = None
         
         
       
@@ -125,6 +126,8 @@ class Experiments(ABC):
         """
         Run the experiment pipeline. 
         """
+        self.scaler = self.pre_processing(self.training_set)
+        
         self.optimize() # Optuna study optimization 
         
         # Disabling optuna logger
@@ -149,7 +152,7 @@ class Experiments(ABC):
             sampler = GridSampler(self.search_space)
             n_trials = len(sampler._all_grids)
         else:
-            sampler = optuna.samplers.TPESampler(seed=self.config['seed'])
+            sampler = optuna.samplers.TPESampler()
             n_trials = self.n_trials
         
         study = optuna.create_study(
@@ -184,6 +187,9 @@ class Experiments(ABC):
             _, best_weights, best_results = min(self.current_model_state_pool, key=lambda x: x[0])    # This choice may also be random
             self.best_model.load_state_dict(best_weights)
             self.best_results = best_results
+            self._save_ckpt(self.best_model)
+            
+            
     
     
     def objective(self, trial):
@@ -224,9 +230,8 @@ class Experiments(ABC):
                 criterion=self.criterion,
                 opt=self.opt,
                 save_updates=False,
-                n_iter=self.n_iter,
                 batch_size=batch_size,
-                method=self.method
+                scaler = self.scaler
             )
             
             best_val_loss = min(results['validation_loss'])
@@ -238,7 +243,7 @@ class Experiments(ABC):
                 )
             )    # Save model weights of each trained model
             
-            model.model.reset_params()  # random initialization of model weights
+            model.reset_params()  # random initialization of model weights
                 
         trial.set_user_attr("process_id", self.process_id)
         
@@ -247,17 +252,22 @@ class Experiments(ABC):
     
     
     @abstractmethod
-    def get_model_opt(self, trial) -> NetWrapper:
+    def pre_processing(self, training_set):
+        raise NotImplementedError()
+    
+    
+    @abstractmethod
+    def get_model_opt(self, trial) -> ODEBlock:
         """
         Every experiment must specify how to construct the model given an optuna trial
         
         Args:
             -trial : current optuna trial
         """
-        raise Exception('Not implemented')
+        raise NotImplementedError()
         
     
-    def post_processing(self, best_model: NetWrapper, sample_size = -1):
+    def post_processing(self, best_model: ODEBlock, sample_size = -1):
         """
         Save the best model checkpoint to file.
         
@@ -266,18 +276,27 @@ class Experiments(ABC):
             - sample_size : number of graph snapshot to sample from the training set (-1 samples the whole set)
         """
         # Save best results
-        with open(f"{best_model.model.model_path}/results.json", "w") as f:
-            json.dump(self.best_results, f)
-        
-        # Save best state dict
-        torch.save(best_model.state_dict(), f"{best_model.model.model_path}/state_dict.pth")
+        self._save_ckpt(best_model)
         
         # Sample from the graph-time-series
+        if self.scaler is not None:
+            raw_data = self.scaler.transform(self.training_set.raw_data_sampled[0])
+        else:
+            raw_data = self.training_set.raw_data_sampled[0]
+        
         dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
-            self.training_set.raw_data_sampled[0], 
-            self.edge_index, 
+            raw_data, 
+            self.training_set[0].edge_index, 
             sample_size=sample_size
         )
         
         # Save model checkpoint
-        best_model.model.save_cached_data(dummy_x, dummy_edge_index)    
+        best_model.save_cached_data(dummy_x, dummy_edge_index)
+        
+    
+    def _save_ckpt(self, best_model:ODEBlock):
+        with open(f"{best_model.model_path}/results.json", "w") as f:
+            json.dump(self.best_results, f)
+        
+        # Save best state dict
+        torch.save(best_model.state_dict(), f"{best_model.model_path}/state_dict.pth")

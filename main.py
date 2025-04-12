@@ -2,6 +2,7 @@ import argparse
 from utils.utils import load_config
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
+from experiments.experiments_tgode import ExperimentsTGODE
 import networkx as nx
 import torch
 
@@ -31,6 +32,8 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
         exp = ExperimentsGKAN(config, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
     elif model_type == 'MPNN':
         exp = ExperimentsMPNN(config, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
+    elif model_type == 'TG-ODE':
+        exp = ExperimentsTGODE(config, n_trials, method, study_name=study_name, process_id=process_id, store_to_sqlite=store_to_sqlite)
     else:
         raise ValueError('Unknown model type')
     

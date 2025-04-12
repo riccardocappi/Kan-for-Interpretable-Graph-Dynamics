@@ -1,8 +1,11 @@
 from .Experiments import Experiments
 import torch
-from models.utils.NetWrapper import NetWrapper
-from models.GKAN import GKAN
+from models.GKAN_ODE import GKAN_ODE
+from models.utils.MPNN import MPNN
 from models.kan.KAN import KAN
+from tsl.data.preprocessing.scalers import MinMaxScaler
+from datasets.TrafficData import traffic_data_name
+from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 
 
 
@@ -23,7 +26,21 @@ class ExperimentsGKAN(Experiments):
 
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
+        
+    
+    def pre_processing(self, training_set:SpatioTemporalGraph):
+        scaler = None
+        if self.config['name'] in traffic_data_name:
+            all_train_x = torch.cat([data.x for data in training_set], dim=0)
             
+            scaler = MinMaxScaler(out_range=(-1, 1))
+            scaler.fit(all_train_x.detach().cpu())
+            
+            scaler.scale = scaler.scale.to(torch.device(self.device))
+            scaler.bias = scaler.bias.to(torch.device(self.device))
+            
+        return scaler
+        
     
     def _get_kan_trial_config(self, trial, net_suffix, use_orig_reg):
         
@@ -58,11 +75,17 @@ class ExperimentsGKAN(Experiments):
         in_dim = self.config['in_dim']
         
         message_passing = self.config.get("message_passing", True)  # Whether to use the message_passing definition or not
+        include_time = self.config.get("include_time", False)
+        time_dim = 1 if include_time else 0
         
-        if message_passing or net_suffix == self.g_net_suffix:
-            hidden_layers = [2*in_dim, hidden_dim, in_dim]
+        if net_suffix == self.g_net_suffix:
+            in_dim_ = 2 * in_dim
+        elif (net_suffix == self.h_net_suffix) and message_passing:
+            in_dim_ = 2 * in_dim + time_dim # Temporal component
         else:
-            hidden_layers = [in_dim, hidden_dim, in_dim]    # If the model is defined as H(x_i) + \sum_{j} G(x_i, x_j), the H net takes as input only x_i feature vector
+            in_dim_ = in_dim + time_dim
+            
+        hidden_layers = [in_dim_, hidden_dim, in_dim]
         
         kan_config = {
             'layers_hidden':hidden_layers,
@@ -86,7 +109,7 @@ class ExperimentsGKAN(Experiments):
         Args:
             -trial : current optuna trial
         """
-        use_orig_reg = trial.suggest_categorical("use_orig_reg", self.search_space['use_orig_reg'])
+        use_orig_reg = trial.suggest_categorical("use_orig_reg", self.search_space["use_orig_reg"])
         
         # regularization parameter for the G net
         lamb_g = trial.suggest_float(
@@ -103,7 +126,6 @@ class ExperimentsGKAN(Experiments):
             self.search_space[f'lamb_{self.h_net_suffix}'][-1],
             log=True
         )
-                
         
         g_net_config = self._get_kan_trial_config(trial, net_suffix=self.g_net_suffix, use_orig_reg=(use_orig_reg and lamb_g > 0.))
         h_net_config = self._get_kan_trial_config(trial, net_suffix=self.h_net_suffix, use_orig_reg=(use_orig_reg and lamb_h > 0.))
@@ -111,17 +133,23 @@ class ExperimentsGKAN(Experiments):
         g_net = KAN(**g_net_config)
         h_net = KAN(**h_net_config)        
         
-        net = GKAN(
+        conv = MPNN(
             h_net=h_net,
             g_net=g_net,
-            model_path = f"{self.model_path}/gkan",
-            device = self.device,
-            lmbd_g=lamb_g,
-            lmbd_h=lamb_h,
-            message_passing=self.config.get("message_passing", True)
+            message_passing=self.config.get("message_passing", True),
+            include_time=self.config.get("include_time", False)
         )
         
-        model = NetWrapper(net, self.edge_index, update_grid=False)
+        model = GKAN_ODE(
+            conv = conv,
+            model_path = f"{self.model_path}/gkan",
+            adjoint=self.config.get('adjoint', False),
+            integration_method=self.integration_method,
+            lmbd_g=lamb_g,
+            lmbd_h=lamb_h,
+            atol=self.config.get('atol', 1e-6), 
+            rtol=self.config.get('rtol', 1e-3)
+        )
         model = model.to(torch.device(self.device))
         
         return model

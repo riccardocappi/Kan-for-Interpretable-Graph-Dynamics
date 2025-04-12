@@ -1,13 +1,13 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-kuramoto
+#SBATCH --job-name=TG-ODE-metrla
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
 
 ### Standard output and standard error for our job
-#SBATCH --error=gkanconv-ode.err
-#SBATCH --output=gkanconv-ode.out
+#SBATCH --error=gkanconv-ode-baseline.err
+#SBATCH --output=gkanconv-ode-baseline.out
 
 ### queue/partition choosed
 #SBATCH --partition=testing
@@ -17,10 +17,10 @@
 #SBATCH --ntasks-per-node=3  # Running three tasks in parallel
 
 ### RAM requirement
-#SBATCH --mem=3G
+#SBATCH --mem=5G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=72:00:00
+#SBATCH --time=168:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
@@ -41,10 +41,10 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data-mp --process_id=0 --storage=journal &
+python main.py --config=./configs/config_metrla_tg-ode.yml --method=optuna --n_trials=10 --study_name=metrla-all --process_id=0 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data-mp --process_id=1 --storage=journal &
+python main.py --config=./configs/config_metrla_tg-ode.yml --method=optuna --n_trials=10 --study_name=metrla-all --process_id=1 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data-mp --process_id=2 --storage=journal &
+python main.py --config=./configs/config_metrla_tg-ode.yml --method=optuna --n_trials=10 --study_name=metrla-all --process_id=2 --storage=journal &
 wait
-echo "Finished"
+echo "Finished job!"
