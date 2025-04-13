@@ -15,6 +15,11 @@ from datasets.SyntheticData import SyntheticData
 from datasets.data_utils import dynamics_name
 from datasets.TrafficData import traffic_data_name, TrafficData
 from utils.utils import SCORES
+import yaml
+from datasets.TrafficData import traffic_data_name
+from tsl.data.preprocessing.scalers import MinMaxScaler
+from datasets.SpatioTemporalGraph import SpatioTemporalGraph
+
 
 
 class Experiments(ABC):
@@ -120,8 +125,12 @@ class Experiments(ABC):
         
         self.scaler = None
         
-        
-      
+        # Save a copy of config file to study's folder
+        copy_config_path = f'./saved_models_optuna/{config["model_name"]}/{study_name}/config.yml'
+        if not os.path.exists(copy_config_path):
+            with open(copy_config_path, 'w') as file:
+                yaml.dump(self.config, file, default_flow_style=False)
+         
     def run(self):
         """
         Run the experiment pipeline. 
@@ -251,9 +260,18 @@ class Experiments(ABC):
         return tot_val_loss / R
     
     
-    @abstractmethod
-    def pre_processing(self, training_set):
-        raise NotImplementedError()
+    def pre_processing(self, training_set:SpatioTemporalGraph):
+        scaler = None
+        if self.config['name'] in traffic_data_name:
+            all_train_x = torch.cat([data.x for data in training_set], dim=0)
+            
+            scaler = MinMaxScaler(out_range=(-1, 1))
+            scaler.fit(all_train_x.detach().cpu())
+            
+            scaler.scale = scaler.scale.to(torch.device(self.device))
+            scaler.bias = scaler.bias.to(torch.device(self.device))
+            
+        return scaler
     
     
     @abstractmethod

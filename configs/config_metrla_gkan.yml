@@ -2,7 +2,7 @@ name: "metrla"
 model_name: "model-metrla-gkan"
 model_type: 'GKAN'
 epochs: 100
-patience: 50
+patience: 30
 opt: 'Adam'
 log: 10
 seed: 42
@@ -14,7 +14,7 @@ num_samples: 96
 data_folder: './data'
 R: 1
 method: 'midpoint'
-message_passing: True
+message_passing: False
 include_time: False
 criterion: 'MAE'
 adjoint: False

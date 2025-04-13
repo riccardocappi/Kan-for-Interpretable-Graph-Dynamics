@@ -34,6 +34,9 @@ class ODEBlock(torch.nn.Module, ABC):
         self.odeint_function = odeint_adjoint if self.adjoint else odeint
         if self.adjoint:
             kwargs['adjoint_options'] = dict(norm="seminorm")
+        if self.integration_method != 'dopri5':
+            kwargs['options'] = dict(interp='linear')
+            
         self.kwargs = kwargs
         
     
@@ -41,7 +44,11 @@ class ODEBlock(torch.nn.Module, ABC):
         edge_index, x, t = snapshot.edge_index, snapshot.x, snapshot.t_span
         
         if hasattr(self.conv, 'edge_index'):
-            self.conv.edge_index = edge_index
+            if self.conv.edge_index is None:
+                self.conv.edge_index = edge_index
+                
+        if self.integration_method == 'dopri5':
+            t = torch.tensor([t[0], t[-1]], dtype=t.dtype, device=t.device)
             
         integration = self.odeint_function(
             self.conv,

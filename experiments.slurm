@@ -6,8 +6,8 @@
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
 
 ### Standard output and standard error for our job
-#SBATCH --error=gkanconv-ode.err
-#SBATCH --output=gkanconv-ode.out
+#SBATCH --error=./slurm_files/gkanconv-ode.err
+#SBATCH --output=./slurm_files/gkanconv-ode.out
 
 ### queue/partition choosed
 #SBATCH --partition=testing
@@ -41,10 +41,10 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data-mp --process_id=0 --storage=journal &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-ic3-last --process_id=0 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data-mp --process_id=1 --storage=journal &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-ic3-last --process_id=1 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-new-data-mp --process_id=2 --storage=journal &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-ic3-last --process_id=2 --storage=journal &
 wait
 echo "Finished"

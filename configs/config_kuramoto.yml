@@ -1,7 +1,7 @@
 name: 'Kuramoto'
 model_name: "model-kuramoto-gkan"
 model_type: 'GKAN'
-epochs: 500
+epochs: 700
 patience: 200
 opt: 'Adam'
 log: 10
@@ -12,11 +12,12 @@ pytorch_seed: 0
 device: 'cuda'
 input_range: [0, 6.28318530718]
 in_dim: 1
-message_passing: True
+message_passing: False
 include_time: False
 atol: 0.000001
 rtol: 0.001
 adjoint: True
+method: 'dopri5'
 search_space:
   grid_size_h_net: [5, 10]
   grid_size_g_net: [5, 10]
@@ -35,8 +36,8 @@ search_space:
   mu_1_h_net: [0.5, 1.0]
   mu_2_h_net: [0.5, 1.0]
   lamb: [1.]
-  batch_size: [32, 64]
-n_iter: 2
+  batch_size: [32]
+n_iter: 3
 num_samples: 30
 data_folder: './data'
 integration_kwargs:

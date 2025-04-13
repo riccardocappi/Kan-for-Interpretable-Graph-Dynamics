@@ -14,7 +14,7 @@ device: 'cuda'
 input_range: [0, 1]
 in_dim: 1
 method: 'dopri5'
-message_passing: True
+message_passing: False
 atol: 0.000001
 rtol: 0.001
 adjoint: True

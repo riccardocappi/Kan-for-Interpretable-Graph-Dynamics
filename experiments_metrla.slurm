@@ -6,15 +6,15 @@
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
 
 ### Standard output and standard error for our job
-#SBATCH --error=gkanconv-ode.err
-#SBATCH --output=gkanconv-ode.out
+#SBATCH --error=./slurm_files/gkanconv-ode-metrla.err
+#SBATCH --output=./slurm_files/gkanconv-ode-metrla.out
 
 ### queue/partition choosed
 #SBATCH --partition=testing
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=3  # Running three tasks in parallel
+#SBATCH --ntasks-per-node=2  # Running three tasks in parallel
 
 ### RAM requirement
 #SBATCH --mem=5G
@@ -41,10 +41,8 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all --process_id=0 --storage=journal &
+python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all-notime --process_id=0 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all --process_id=1 --storage=journal &
-sleep 1m
-python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all --process_id=2 --storage=journal &
+python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all-notime --process_id=1 --storage=journal &
 wait
 echo "Finished job!"

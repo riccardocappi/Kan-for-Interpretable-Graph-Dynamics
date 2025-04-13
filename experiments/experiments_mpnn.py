@@ -4,10 +4,6 @@ from models.baseline.MPNN_ODE import MPNN_ODE
 import torch
 import torch.nn.functional as F
 from models.utils.MLP import MLP
-from datasets.TrafficData import traffic_data_name
-from tsl.data.preprocessing.scalers import MinMaxScaler
-from datasets.SpatioTemporalGraph import SpatioTemporalGraph
-
 
 # Possible activation functions
 activations = {
@@ -36,21 +32,6 @@ class ExperimentsMPNN(Experiments):
         
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
-    
-    
-    
-    def pre_processing(self, training_set:SpatioTemporalGraph):
-        scaler = None
-        if self.config['name'] in traffic_data_name:
-            all_train_x = torch.cat([data.x for data in training_set], dim=0)
-            
-            scaler = MinMaxScaler(out_range=(-1, 1))
-            scaler.fit(all_train_x.detach().cpu())
-            
-            scaler.scale = scaler.scale.to(torch.device(self.device))
-            scaler.bias = scaler.bias.to(torch.device(self.device))
-            
-        return scaler
         
         
     def _get_mlp_config_trial(self, trial, net_suffix):
