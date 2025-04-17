@@ -22,7 +22,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.device = device
         self.n_ics = n_ics
         super().__init__(root)
-        self.data, self.slices, self.raw_data_sampled = torch.load(self.processed_paths[0])
+        self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
         
         
     @property
@@ -76,7 +76,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
             )
             
         data, slices = self.collate(data)
-        torch.save((data, slices, data_sampled), self.processed_paths[0]) 
+        torch.save((data, slices, data_sampled, t_sampled), self.processed_paths[0]) 
         
     
     @abstractmethod

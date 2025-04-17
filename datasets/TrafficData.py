@@ -47,7 +47,7 @@ class TrafficData(SpatioTemporalGraph):
                 
         # Reshaping tensor as (ICs, num_samples, num_modes, 1), where each initial condition is a different day
         time_steps, n_nodes, _ = raw_data.shape
-        sampling_frequency = 288 # one measurement every 5 minutes → 288 samples/day
+        sampling_frequency = 288 # one measurement every 5 minutes -> 288 samples/day
         tot_days = time_steps // sampling_frequency
         raw_data = raw_data.view(tot_days, sampling_frequency, n_nodes, 1)
         raw_data = raw_data[:self.n_ics]    # Consider the first n_ics days

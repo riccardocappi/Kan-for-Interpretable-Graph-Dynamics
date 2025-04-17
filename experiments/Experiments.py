@@ -19,7 +19,7 @@ import yaml
 from datasets.TrafficData import traffic_data_name
 from tsl.data.preprocessing.scalers import MinMaxScaler
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
-
+from train_and_eval import eval_model
 
 
 class Experiments(ABC):
@@ -33,7 +33,8 @@ class Experiments(ABC):
                  model_selection_method='optuna',
                  study_name='example',
                  process_id=0,
-                 store_to_sqlite = True
+                 store_to_sqlite = True,
+                 save_cache_data=True
                  ):
         
         super().__init__()
@@ -76,10 +77,16 @@ class Experiments(ABC):
         else:
             raise NotImplementedError()
         
-        t_f_train = int(0.8 * len(dataset))
-        
-        self.training_set = dataset[:t_f_train]
-        self.valid_set = dataset[t_f_train:]
+        total_len = len(dataset)
+
+        # Compute split sizes
+        train_end = int(0.8 * total_len)
+        valid_end = int(0.9 * total_len)  # 80% + 10%
+
+        # Create splits
+        self.training_set = dataset[:train_end]
+        self.valid_set = dataset[train_end:valid_end]
+        self.test_set = dataset[valid_end:]
     
         self.epochs = config["epochs"]
         self.patience = config["patience"]
@@ -124,6 +131,7 @@ class Experiments(ABC):
         self.integration_method = self.config.get('method', 'dopri5')
         
         self.scaler = None
+        self.save_cache_data = save_cache_data
         
         # Save a copy of config file to study's folder
         copy_config_path = f'./saved_models_optuna/{config["model_name"]}/{study_name}/config.yml'
@@ -293,23 +301,33 @@ class Experiments(ABC):
             - best_model : Best model resulting from the model selection procedure
             - sample_size : number of graph snapshot to sample from the training set (-1 samples the whole set)
         """
+        # Compute test loss
+        test_loss = eval_model(
+            model=best_model,
+            valid_data=self.test_set,
+            criterion=self.criterion,
+            scaler=self.scaler
+        )
+        self.best_results['test_loss'] = test_loss
+        
         # Save best results
         self._save_ckpt(best_model)
         
-        # Sample from the graph-time-series
-        if self.scaler is not None:
-            raw_data = self.scaler.transform(self.training_set.raw_data_sampled[0])
-        else:
-            raw_data = self.training_set.raw_data_sampled[0]
-        
-        dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
-            raw_data, 
-            self.training_set[0].edge_index, 
-            sample_size=sample_size
-        )
-        
-        # Save model checkpoint
-        best_model.save_cached_data(dummy_x, dummy_edge_index)
+        if self.save_cache_data:
+            # Sample from the graph-time-series
+            if self.scaler is not None:
+                raw_data = self.scaler.transform(self.training_set.raw_data_sampled[0])
+            else:
+                raw_data = self.training_set.raw_data_sampled[0]
+            
+            dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
+                raw_data, 
+                self.training_set[0].edge_index, 
+                sample_size=sample_size
+            )
+            
+            # Save model checkpoint
+            best_model.save_cached_data(dummy_x, dummy_edge_index)
         
     
     def _save_ckpt(self, best_model:ODEBlock):

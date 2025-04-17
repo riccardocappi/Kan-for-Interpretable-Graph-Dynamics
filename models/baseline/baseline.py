@@ -3,6 +3,8 @@ from torch_geometric.nn import TAGConv
 import torch
 import torch.nn.functional as F
 
+
+
 class LB_ODE(ODEBlock):
     def __init__(
         self,
@@ -94,5 +96,3 @@ class TG_ODE(ODEBlock):
     
     def save_cached_data(self, dummy_x, dummy_edge_index):
         return
-        
-        
