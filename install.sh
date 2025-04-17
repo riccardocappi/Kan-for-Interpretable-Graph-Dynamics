@@ -1,12 +1,7 @@
-PYTHON_VERSION=python3.9
 PYTORCH_VERSION=2.3.1
 TORCH_GEOMETRIC_VERSION=2.3.1
 
-echo "Creating environment"
-$PYTHON_VERSION -m venv .venv/gkanconv-ode
-source .venv/gkanconv-ode/bin/activate
-
-echo "Environment created and activated"
+echo "Installing dependencies"
 
 pip install --no-cache-dir torch==${PYTORCH_VERSION} --index-url https://download.pytorch.org/whl/cu118
 pip install torch-geometric==${TORCH_GEOMETRIC_VERSION}
