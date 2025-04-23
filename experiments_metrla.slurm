@@ -41,8 +41,8 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all-notime --process_id=0 --storage=journal &
+python main.py --config=./configs/config_metrla_mpnn.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all-time --process_id=0 --storage=journal &
 sleep 1m
-python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all-notime --process_id=1 --storage=journal &
+python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=10 --study_name=metrla-ic-all-time --process_id=0 --storage=journal &
 wait
 echo "Finished job!"

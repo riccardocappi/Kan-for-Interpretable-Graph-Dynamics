@@ -10,10 +10,11 @@ class net_wrapper(torch.nn.Module):
         super().__init__()
         self.model = model
         self.edge_index = None
+        self.edge_attr = None
         
     
     def forward(self, t, x):
-        return self.model(x, self.edge_index, t)
+        return self.model(x, self.edge_index, self.edge_attr, t)
         
         
 class ODEBlock(torch.nn.Module, ABC):
@@ -41,15 +42,16 @@ class ODEBlock(torch.nn.Module, ABC):
         
     
     def forward(self, snapshot):
-        edge_index, x, t = snapshot.edge_index, snapshot.x, snapshot.t_span
+        edge_index, edge_attr, x, t = snapshot.edge_index, snapshot.edge_attr, snapshot.x, snapshot.t_span
         
         if hasattr(self.conv, 'edge_index'):
             if self.conv.edge_index is None:
                 self.conv.edge_index = edge_index
-                
-        if self.integration_method == 'dopri5':
-            t = torch.tensor([t[0], t[-1]], dtype=t.dtype, device=t.device)
-            
+        
+        if hasattr(self.conv, 'edge_attr'):
+            if self.conv.edge_attr is None:
+                self.conv.edge_attr = edge_attr
+         
         integration = self.odeint_function(
             self.conv,
             x,
@@ -58,7 +60,7 @@ class ODEBlock(torch.nn.Module, ABC):
             **self.kwargs
         )
         
-        return integration[-1]
+        return integration[1:]
     
     
     def wrap_conv(self, conv):

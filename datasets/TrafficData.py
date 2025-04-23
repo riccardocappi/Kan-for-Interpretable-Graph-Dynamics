@@ -13,7 +13,8 @@ class TrafficData(SpatioTemporalGraph):
         num_samples,
         seed,
         device='cpu',
-        n_ics = 3
+        n_ics = 3,
+        horizon = 1
     ):       
         
         assert name in traffic_data_name        
@@ -23,7 +24,8 @@ class TrafficData(SpatioTemporalGraph):
             n_ics=n_ics,
             n_samples=num_samples,
             seed=seed,
-            device=device
+            device=device,
+            horizon=horizon
         )
         
 
@@ -44,7 +46,7 @@ class TrafficData(SpatioTemporalGraph):
         
         df = dataset.dataframe()        
         raw_data = torch.from_numpy(df.values).unsqueeze(2)
-                
+        
         # Reshaping tensor as (ICs, num_samples, num_modes, 1), where each initial condition is a different day
         time_steps, n_nodes, _ = raw_data.shape
         sampling_frequency = 288 # one measurement every 5 minutes -> 288 samples/day
@@ -57,5 +59,4 @@ class TrafficData(SpatioTemporalGraph):
         edge_index = torch.from_numpy(edge_index).to(torch.device(self.device))
         edge_attr = torch.from_numpy(edge_attr).to(torch.device(self.device))
         
-        return edge_index, edge_attr, raw_data, time 
-        
+        return edge_index, edge_attr, raw_data, time

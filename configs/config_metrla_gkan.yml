@@ -13,11 +13,14 @@ n_iter: 119
 num_samples: 96
 data_folder: './data'
 R: 1
-method: 'midpoint'
-message_passing: False
-include_time: False
+method: 'dopri5'
+message_passing: True
+include_time: True
 criterion: 'MAE'
-adjoint: False
+adjoint: True
+horizon: 36
+atol: 0.0001
+rtol: 0.001
 search_space:
   grid_size_h_net: [5, 10]
   grid_size_g_net: [5, 10]

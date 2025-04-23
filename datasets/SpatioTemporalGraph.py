@@ -10,16 +10,19 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self, 
         root,
         name,
-        n_ics,
         n_samples,
         seed,
-        device='cpu'
+        device='cpu',
+        horizon = 1,
+        n_ics = 3
     ):
         self.name = name
         self.num_samples = n_samples
         self.rng = np.random.default_rng(seed=seed)
         self.seed = seed
         self.device = device
+        assert horizon > 0
+        self.horizon = horizon
         self.n_ics = n_ics
         super().__init__(root)
         self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
@@ -45,36 +48,27 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         data_sampled, t_sampled, indices = sample_irregularly_per_ics(raw_data, time, self.num_samples)
         
         data = []
-        ics, n_samples, _, _ = data_sampled.shape
-        len_data = ics * (n_samples - 1)
         
-        for i in range(len_data):
-            index_ic = i // (data_sampled.size(1) - 1)
-            index_sample = i % (data_sampled.size(1) - 1)
-            
-            x_in = data_sampled[index_ic, index_sample, : ,:]
-            y_target = data_sampled[index_ic, index_sample + 1, :, :]
-            
-            t_start = t_sampled[index_ic, index_sample]
-            t_target = t_sampled[index_ic, index_sample + 1]
-            
-            t_start_index = indices[index_ic, index_sample]
-            t_end_index = indices[index_ic, index_sample + 1]
-            
-            t_span = time[index_ic, t_start_index:t_end_index+1]
-            
-            data.append(
-                Data(
-                    edge_index=edge_index,
-                    edge_attr=edge_attr,
-                    x = x_in,
-                    y = y_target,
-                    t_start = t_start,
-                    t_target = t_target,
-                    t_span = t_span
+        for ic in range(indices.size(0)):
+            for i, ts in enumerate(indices[ic, :-self.horizon]):
+                x = raw_data[ic, ts, :, :]
+                idx =  indices[ic, i:i + self.horizon + 1]
+                if len(idx[1:]) > 3:
+                    selected = torch.tensor([0, 1, idx.size(0) // 2, -1], device=idx.device)
+                    idx = idx[selected]
+                
+                t_span = time[ic, idx]
+                y = raw_data[ic, idx[1:]]
+                data.append(
+                    Data(
+                        edge_index=edge_index,
+                        edge_attr=edge_attr,
+                        x = x,
+                        y = y,
+                        t_span = t_span
+                    )
                 )
-            )
-            
+                
         data, slices = self.collate(data)
         torch.save((data, slices, data_sampled, t_sampled), self.processed_paths[0]) 
         

@@ -61,7 +61,7 @@ class ExperimentsGKAN(Experiments):
         time_dim = 1 if include_time else 0
         
         if net_suffix == self.g_net_suffix:
-            in_dim_ = 2 * in_dim
+            in_dim_ = in_dim
         elif (net_suffix == self.h_net_suffix) and message_passing:
             in_dim_ = 2 * in_dim + time_dim # Temporal component
         else:

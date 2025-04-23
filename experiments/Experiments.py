@@ -34,7 +34,7 @@ class Experiments(ABC):
                  study_name='example',
                  process_id=0,
                  store_to_sqlite = True,
-                 save_cache_data=True
+                 save_cache_data=False
                  ):
         
         super().__init__()
@@ -51,6 +51,7 @@ class Experiments(ABC):
             assert torch.cuda.is_available()
             
         self.n_iter = config['n_iter']
+        self.horizon = config.get('horizon', 1)
         
         if config['name'] in dynamics_name:
             dataset = SyntheticData(
@@ -63,6 +64,7 @@ class Experiments(ABC):
                 n_ics=config['n_iter'],
                 input_range=config['input_range'],
                 device=self.device,
+                horizon = self.horizon,
                 **config['integration_kwargs']
             )
         elif config['name'] in traffic_data_name:
@@ -72,6 +74,7 @@ class Experiments(ABC):
                 num_samples=config['num_samples'],
                 seed = config['seed'],
                 n_ics=config['n_iter'],
+                horizon = self.horizon,
                 device=self.device
             )
         else:
@@ -239,6 +242,7 @@ class Experiments(ABC):
                 model,
                 self.training_set,
                 self.valid_set,
+                test_set=self.test_set,
                 epochs=self.epochs,
                 patience=self.patience,
                 lr = lr,
@@ -301,15 +305,6 @@ class Experiments(ABC):
             - best_model : Best model resulting from the model selection procedure
             - sample_size : number of graph snapshot to sample from the training set (-1 samples the whole set)
         """
-        # Compute test loss
-        test_loss = eval_model(
-            model=best_model,
-            valid_data=self.test_set,
-            criterion=self.criterion,
-            scaler=self.scaler
-        )
-        self.best_results['test_loss'] = test_loss
-        
         # Save best results
         self._save_ckpt(best_model)
         

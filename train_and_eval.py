@@ -9,9 +9,9 @@ import copy
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 
 
-def eval_model(model:ODEBlock, valid_data, criterion, scaler = None):
+def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_scale = True):
     """
-    Evaluates the model on validation set
+    Evaluates the model
     """
     model.eval()
     y_pred = []
@@ -29,7 +29,7 @@ def eval_model(model:ODEBlock, valid_data, criterion, scaler = None):
         y_pred = torch.stack(y_pred, dim=0)
         y_true = torch.stack(y_true, dim=0)
         
-        if scaler is not None:
+        if scaler is not None and inverse_scale:
             y_pred = scaler.inverse_transform(y_pred)
             y_true = scaler.inverse_transform(y_true)
         
@@ -41,6 +41,7 @@ def eval_model(model:ODEBlock, valid_data, criterion, scaler = None):
 def fit(model:ODEBlock,
         training_set:SpatioTemporalGraph,
         valid_set:SpatioTemporalGraph, 
+        test_set:SpatioTemporalGraph,
         epochs=50,
         patience=30,
         lr = 0.001,
@@ -146,7 +147,8 @@ def fit(model:ODEBlock,
             model=model,
             valid_data=valid_set,
             criterion=criterion,
-            scaler=scaler
+            scaler=scaler, 
+            inverse_scale=False
         )
         
         results['train_loss'].append(running_training_loss / count)
@@ -170,6 +172,18 @@ def fit(model:ODEBlock,
         
     log_message = f"\nLoading best model found at epoch {best_epoch} with val loss {best_val_loss}" 
     save_logs(logs_file_path, log_message, save_updates)
-    model.load_state_dict(best_model_state)        
-        
+    model.load_state_dict(best_model_state)
+    
+    # Compute test loss
+    test_loss = eval_model(
+        model=model,
+        valid_data=test_set,
+        criterion=criterion,
+        scaler=scaler,
+        inverse_scale=True
+    )
+    log_message = f"Test loss: {test_loss}"
+    save_logs(logs_file_path, log_message, save_updates)
+    results['test_loss'] = test_loss     
+    
     return results 

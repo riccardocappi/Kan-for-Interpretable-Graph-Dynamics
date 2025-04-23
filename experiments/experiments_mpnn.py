@@ -58,10 +58,17 @@ class ExperimentsMPNN(Experiments):
         hidden_layers = [hidden_dims for _ in range(n_hidden_layers)]
         
         message_passing = self.config.get("message_passing", True)
+        include_time = self.config.get("include_time", False)
+        time_dim = 1 if include_time else 0
         
-        in_dims = 2*self.config['in_dim'] if message_passing or (net_suffix == self.g_net_suffix) else self.config["in_dim"] 
+        if net_suffix == self.g_net_suffix:
+            in_dim_ = self.config['in_dim']
+        elif (net_suffix == self.h_net_suffix) and message_passing:
+            in_dim_ = 2 * self.config['in_dim'] + time_dim # Temporal component
+        else:
+            in_dim_ = self.config['in_dim'] + time_dim
         
-        hidden_layers = [in_dims] + hidden_layers + [self.config['in_dim']]
+        hidden_layers = [in_dim_] + hidden_layers + [self.config['in_dim']]
         
         activation = trial.suggest_categorical(
             f'af_{net_suffix}',
