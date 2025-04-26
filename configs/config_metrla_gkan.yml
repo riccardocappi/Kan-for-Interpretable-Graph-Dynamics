@@ -1,10 +1,10 @@
 name: "metrla"
 model_name: "model-metrla-gkan"
 model_type: 'GKAN'
-epochs: 100
-patience: 30
+epochs: 50
+patience: 25
 opt: 'Adam'
-log: 10
+log: 1
 seed: 42
 pytorch_seed: 0
 device: 'cuda'
@@ -18,8 +18,8 @@ message_passing: True
 include_time: True
 criterion: 'MAE'
 adjoint: True
-horizon: 36
-atol: 0.0001
+horizon: 18
+atol: 0.00001
 rtol: 0.001
 search_space:
   grid_size_h_net: [5, 10]
@@ -37,6 +37,6 @@ search_space:
   mu_1_h_net: [0.5, 1.0]
   mu_2_h_net: [0.5, 1.0]
   lr: [0.0001, 0.05]
-  use_orig_reg: [False, True]
+  use_orig_reg: [False]
   lamb: [0.]
   batch_size: [32, 64]

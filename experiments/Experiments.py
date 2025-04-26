@@ -250,7 +250,7 @@ class Experiments(ABC):
                 log=self.log,
                 criterion=self.criterion,
                 opt=self.opt,
-                save_updates=False,
+                save_updates=True,
                 batch_size=batch_size,
                 scaler = self.scaler
             )
