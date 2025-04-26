@@ -22,12 +22,12 @@ horizon: 18
 atol: 0.00001
 rtol: 0.001
 search_space:
-  grid_size_h_net: [5, 10]
-  grid_size_g_net: [5, 10]
+  grid_size_h_net: [7, 10]
+  grid_size_g_net: [7, 10]
   spline_order_h_net: [1, 3]
   spline_order_g_net: [1, 3]
-  range_limit_h_net: [1, 3]
-  range_limit_g_net: [1, 3]
+  range_limit_h_net: [1, 2]
+  range_limit_g_net: [1, 2]
   hidden_dim_h_net: [1, 5]
   hidden_dim_g_net: [1, 5]
   lamb_g_net: [0.000001, 0.01]

@@ -119,7 +119,7 @@ class ExperimentsGKAN(Experiments):
             h_net=h_net,
             g_net=g_net,
             message_passing=self.config.get("message_passing", True),
-            include_time=self.config.get("include_time", False)
+            include_time=self.config.get("include_time", True)
         )
         
         model = GKAN_ODE(

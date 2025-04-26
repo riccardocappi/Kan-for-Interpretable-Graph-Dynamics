@@ -13,7 +13,7 @@ class MPNN(MessagePassing):
         h_net: Union[KAN, MLP, Callable],
         aggr = "add",
         message_passing=True,
-        include_time = False
+        include_time = True
         ):
         super().__init__(aggr=aggr)
         self.g_net = g_net
