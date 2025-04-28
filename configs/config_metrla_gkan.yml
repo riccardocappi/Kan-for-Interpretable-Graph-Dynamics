@@ -1,7 +1,7 @@
-name: "metrla"
+name: "metrla2"
 model_name: "model-metrla-gkan"
 model_type: 'GKAN'
-epochs: 50
+epochs: 15
 patience: 25
 opt: 'Adam'
 log: 1
@@ -9,8 +9,8 @@ seed: 42
 pytorch_seed: 0
 device: 'cuda'
 in_dim: 1
-n_iter: 119
-num_samples: 96
+n_iter: 2
+num_samples: -1
 data_folder: './data'
 R: 1
 method: 'dopri5'

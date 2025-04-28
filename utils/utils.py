@@ -161,6 +161,7 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
 
 def sample_irregularly_per_ics(data, time, num_samples):
     ics, n_step, n_nodes, in_dim = data.shape
+    num_samples = num_samples if num_samples > 0 else n_step
     sampled_data = torch.zeros((ics, num_samples, n_nodes, in_dim), dtype=data.dtype, device=data.device)
     sampled_times = torch.zeros((ics, num_samples), dtype=time.dtype, device=time.device)
     sampled_indices = torch.zeros((ics, num_samples), dtype=torch.int32, device=data.device)

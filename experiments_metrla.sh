@@ -1,2 +1,2 @@
 conda activate myenv
-nohup python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=1 --study_name=metrla-ic-all-time-h18-ep50 --process_id=0 --storage=journal > ./outputs/gkanconv-ode-metrla-hor18.out &
+nohup python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=1 --study_name=metrla-ic-all-time-h18-ep50-week-all-step --process_id=0 --storage=journal > ./outputs/gkanconv-ode-metrla-hor18-week-all-step.out &

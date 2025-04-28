@@ -59,13 +59,18 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                 
                 t_span = time[ic, idx]
                 y = raw_data[ic, idx[1:]]
+                x_mask = (x != 0).unsqueeze(0)
+                y_mask = (y != 0)
+                mask = x_mask & y_mask
+                
                 data.append(
                     Data(
                         edge_index=edge_index,
                         edge_attr=edge_attr,
                         x = x,
                         y = y,
-                        t_span = t_span
+                        t_span = t_span,
+                        mask = mask
                     )
                 )
                 

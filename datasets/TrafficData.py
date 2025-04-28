@@ -31,7 +31,7 @@ class TrafficData(SpatioTemporalGraph):
 
     def get_raw_data(self):
         if self.name == 'metrla' or self.name == 'metrla2':
-            dataset = MetrLA(os.path.join(self.root, self.name), impute_zeros=True)
+            dataset = MetrLA(os.path.join(self.root, self.name), impute_zeros=False)
         else:
             raise NotImplementedError()
         
@@ -45,20 +45,17 @@ class TrafficData(SpatioTemporalGraph):
         df = dataset.dataframe()        
         raw_data = torch.from_numpy(df.values).unsqueeze(2)
         
-        # Reshaping tensor as (ICs, num_samples, num_modes, 1), where each initial condition is a different day
         time_steps, n_nodes, _ = raw_data.shape
-        sampling_frequency = 288 # one measurement every 5 minutes -> 288 samples/day
-        tot_days = time_steps // sampling_frequency
-        raw_data = raw_data.view(tot_days, sampling_frequency, n_nodes, 1)
-        to_keep = self.n_ics if self.n_ics != -1 else tot_days
-        raw_data = raw_data[:to_keep]    # Consider the first n_ics days
-        
+        samples_per_day = 288
+        samples_per_week = 7 * samples_per_day
+        tot_weeks = time_steps // samples_per_week
+        raw_data = raw_data[:tot_weeks * samples_per_week]  # Trim to full weeks
+        raw_data = raw_data.view(tot_weeks, samples_per_week, n_nodes, 1)
+        to_keep = self.n_ics if self.n_ics > 0 else tot_weeks
+        raw_data = raw_data[:to_keep]  # First n_ics weeks
+
         raw_data = raw_data.to(torch.device(self.device))
-        samples_per_week = sampling_frequency * 7
-        
-        time = torch.linspace(0,1,samples_per_week).repeat(time_steps // samples_per_week).to(torch.device(self.device))
-        time = time[:to_keep * sampling_frequency].view(to_keep, sampling_frequency)
-                
+        time = torch.linspace(0, 1, raw_data.size(1)).repeat(raw_data.size(0), 1).to(torch.device(self.device))
         edge_index = torch.from_numpy(edge_index).to(torch.device(self.device))
         edge_attr = torch.from_numpy(edge_attr).to(torch.device(self.device))
         
