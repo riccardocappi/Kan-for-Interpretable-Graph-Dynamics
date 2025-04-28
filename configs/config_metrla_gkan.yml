@@ -1,4 +1,4 @@
-name: "metrla2"
+name: "metrla"
 model_name: "model-metrla-gkan"
 model_type: 'GKAN'
 epochs: 15
