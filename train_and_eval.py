@@ -19,6 +19,9 @@ def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_sca
     
     with torch.no_grad():
         for snapshot in valid_data:
+            if not torch.any(snapshot.mask):
+                continue 
+            
             if scaler is not None:
                 snapshot.x = scaler.transform(snapshot.x).squeeze(0)
                 snapshot.y = scaler.transform(snapshot.y).squeeze(0)
@@ -26,8 +29,12 @@ def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_sca
             y_true.append(snapshot.y[snapshot.mask])
             y_pred.append(model(snapshot=snapshot))
         
+        if len(y_pred) == 0 and len(y_true) == 0:
+            return 0.0
+        
         y_pred = torch.cat(y_pred, dim=0)
         y_true = torch.cat(y_true, dim=0)
+        
         
         if scaler is not None and inverse_scale:
             y_pred = scaler.inverse_transform(y_pred)
@@ -109,15 +116,21 @@ def fit(model:ODEBlock,
         y_pred = []
         y_true = []
         for snapshot in batch_data:
+            if not torch.any(snapshot.mask):
+                continue 
+            
             if scaler is not None:
                 snapshot.x = scaler.transform(snapshot.x).squeeze(0)
                 snapshot.y = scaler.transform(snapshot.y).squeeze(0)
-                
+            
             y_true.append(snapshot.y[snapshot.mask])
             y_pred.append(model(snapshot=snapshot))
+        
+        if len(y_pred) == 0 and len(y_true) == 0:
+            return 0.0
             
         y_pred = torch.cat(y_pred, dim=0) 
-        y_true = torch.cat(y_true, dim=0) 
+        y_true = torch.cat(y_true, dim=0)
         
         training_loss = criterion(y_pred, y_true)
         running_training_loss = running_training_loss + training_loss.item()

@@ -45,14 +45,17 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         edge_index, edge_attr, raw_data, time = self.get_raw_data()
         assert (raw_data.size(0) == time.size(0)) and (raw_data.size(1) == time.size(1))
         
-        data_sampled, t_sampled, indices = sample_irregularly_per_ics(raw_data, time, self.num_samples)
+        # data_sampled, t_sampled, indices = sample_irregularly_per_ics(raw_data, time, self.num_samples)
+        all_indices = torch.arange(0, raw_data.size(1)).repeat(raw_data.size(0), 1)
+        stride = 24
+        iter_indices = torch.arange(0, raw_data.size(1) - self.horizon + 1, stride).repeat(raw_data.size(0), 1)
         
         data = []
         
-        for ic in range(indices.size(0)):
-            for i, ts in enumerate(indices[ic, :-self.horizon]):
+        for ic in range(all_indices.size(0)):
+            for ts in iter_indices[ic]:
                 x = raw_data[ic, ts, :, :]
-                idx =  indices[ic, i:i + self.horizon + 1]
+                idx =  all_indices[ic, ts:ts + self.horizon + 1]
                 if len(idx) > 1:
                     # Select 10% of idx, but always include the first index (i.e., x's timestamp)
                     n_select = max(2, int(len(idx) * 0.1))  # at least 2 to ensure x and y exist
@@ -80,7 +83,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                 )
                 
         data, slices = self.collate(data)
-        torch.save((data, slices, data_sampled, t_sampled), self.processed_paths[0]) 
+        torch.save((data, slices, raw_data, time), self.processed_paths[0]) 
         
     
     @abstractmethod
