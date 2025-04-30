@@ -46,14 +46,11 @@ class TrafficData(SpatioTemporalGraph):
         raw_data = torch.from_numpy(df.values).unsqueeze(2)
         
         time_steps, n_nodes, _ = raw_data.shape
-        samples_per_day = 288
-        samples_per_week = 7 * samples_per_day
-        tot_weeks = time_steps // samples_per_week
-        raw_data = raw_data[:tot_weeks * samples_per_week]  # Trim to full weeks
-        raw_data = raw_data.view(tot_weeks, samples_per_week, n_nodes, 1)
-        to_keep = self.n_ics if self.n_ics > 0 else tot_weeks
-        raw_data = raw_data[:to_keep]  # First n_ics weeks
-
+        sampling_frequency = 288 # one measurement every 5 minutes -> 288 samples/day
+        tot_days = time_steps // sampling_frequency
+        raw_data = raw_data.view(tot_days, sampling_frequency, n_nodes, 1)
+        raw_data = raw_data[:self.n_ics]    # Consider the first n_ics days
+        
         raw_data = raw_data.to(torch.device(self.device))
         time = torch.linspace(0, 1, raw_data.size(1)).repeat(raw_data.size(0), 1).to(torch.device(self.device))
         edge_index = torch.from_numpy(edge_index).to(torch.device(self.device))

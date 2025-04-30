@@ -9,7 +9,7 @@ seed: 42
 pytorch_seed: 0
 device: 'cuda'
 in_dim: 1
-n_iter: 2
+n_iter: 14
 num_samples: -1
 data_folder: './data'
 R: 1
@@ -18,7 +18,7 @@ message_passing: True
 include_time: True
 criterion: 'MAE'
 adjoint: True
-horizon: 288
+horizon: 287
 atol: 0.00001
 rtol: 0.001
 search_space:
