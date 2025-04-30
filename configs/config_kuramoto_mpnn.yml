@@ -6,22 +6,23 @@ patience: 200
 opt: 'Adam'
 log: 10 
 t_span: [0,1]
-t_eval_steps: 500
+t_eval_steps: 300
 seed: 42
 pytorch_seed: 0
 noise_strengths: []
 device: 'cpu'
 input_range: [0, 6.28318530718]
 in_dim: 1
-atol: 0.000001
+atol: 0.00001
 rtol: 0.001
 adjoint: True
 message_passing: True
+include_time: False
 search_space:
-  n_hidden_layers_g_net: [1]
-  n_hidden_layers_h_net: [1]
-  hidden_dims_g_net: [8, 32]
-  hidden_dims_h_net: [8, 32]
+  n_hidden_layers_g_net: [1, 2]
+  n_hidden_layers_h_net: [1, 2]
+  hidden_dims_g_net: [16, 64]
+  hidden_dims_h_net: [16, 64]
   af_g_net: ["relu", "sigmoid", "softplus"]
   af_h_net: ["relu", "sigmoid", "softplus"]
   drop_p_g_net: [0.0001, 0.5]
@@ -29,7 +30,7 @@ search_space:
   lr: [0.001, 0.05]
   batch_size: [32, 64]
 n_iter: 1
-num_samples: 50
+num_samples: -1
 data_folder: './data'
 integration_kwargs:
   w: 2.

@@ -60,7 +60,7 @@ class ODEBlock(torch.nn.Module, ABC):
             **self.kwargs
         )
         
-        return integration[1:]
+        return integration[1:][snapshot.mask]
     
     
     def wrap_conv(self, conv):

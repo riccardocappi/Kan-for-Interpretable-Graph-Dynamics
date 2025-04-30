@@ -53,9 +53,14 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
             for i, ts in enumerate(indices[ic, :-self.horizon]):
                 x = raw_data[ic, ts, :, :]
                 idx =  indices[ic, i:i + self.horizon + 1]
-                if len(idx[1:]) > 3:
-                    selected = torch.tensor([0, 1, idx.size(0) // 2, -1], device=idx.device)
-                    idx = idx[selected]
+                if len(idx) > 1:
+                    # Select 10% of idx, but always include the first index (i.e., x's timestamp)
+                    n_select = max(2, int(len(idx) * 0.1))  # at least 2 to ensure x and y exist
+                    selected_indices = torch.randperm(len(idx), device=idx.device)[:n_select]
+                    selected_indices = torch.cat([torch.tensor([0], device=idx.device), selected_indices])
+                    selected_indices = torch.unique(selected_indices)  # remove duplicates if 0 already selected
+                    selected_indices = selected_indices[torch.argsort(selected_indices)]  # keep order
+                    idx = idx[selected_indices]
                 
                 t_span = time[ic, idx]
                 y = raw_data[ic, idx[1:]]
