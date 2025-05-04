@@ -20,7 +20,7 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=168:00:00
+#SBATCH --time=50:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
@@ -41,6 +41,6 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_metrla_gkan.yml --method=optuna --n_trials=1 --study_name=metrla-ic-all-ep50-week --process_id=0 --storage=journal &
+python main.py --config=./configs/config_metrla_mpnn.yml --method=optuna --n_trials=5 --study_name=metrla-sliding-window --process_id=0 --storage=journal &
 wait
 echo "Finished job!"

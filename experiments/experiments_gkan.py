@@ -54,7 +54,7 @@ class ExperimentsGKAN(Experiments):
         hidden_dim = trial.suggest_int(f'hidden_dim_{net_suffix}', self.search_space[f'hidden_dim_{net_suffix}'][0], 
                                        self.search_space[f'hidden_dim_{net_suffix}'][-1])
         
-        in_dim = self.config['in_dim']
+        in_dim = self.config['horizon']
         
         message_passing = self.config.get("message_passing", True)  # Whether to use the message_passing definition or not
         include_time = self.config.get("include_time", False)

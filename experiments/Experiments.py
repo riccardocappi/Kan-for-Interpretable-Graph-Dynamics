@@ -275,7 +275,7 @@ class Experiments(ABC):
     def pre_processing(self, training_set:SpatioTemporalGraph):
         scaler = None
         if self.config['name'] in traffic_data_name:
-            all_train_x = torch.cat([data.x for data in training_set], dim=0)
+            all_train_x = torch.cat([data.x.view(-1) for data in training_set], dim=0)
             
             scaler = MinMaxScaler(out_range=(-1, 1))
             scaler.fit(all_train_x.detach().cpu())

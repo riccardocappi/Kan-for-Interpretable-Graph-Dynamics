@@ -14,7 +14,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         seed,
         device='cpu',
         horizon = 1,
-        n_ics = 3
+        n_ics = 3,
+        stride=24
     ):
         self.name = name
         self.num_samples = n_samples
@@ -24,6 +25,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         assert horizon > 0
         self.horizon = horizon
         self.n_ics = n_ics
+        self.stride = stride
         super().__init__(root)
         self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
         
@@ -40,34 +42,30 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
 
 
     def process(self):
-        print('Builing the dataset...')
-        
+        print('Building the dataset...')
+
         edge_index, edge_attr, raw_data, time = self.get_raw_data()
         assert (raw_data.size(0) == time.size(0)) and (raw_data.size(1) == time.size(1))
         
-        # data_sampled, t_sampled, indices = sample_irregularly_per_ics(raw_data, time, self.num_samples)
-        all_indices = torch.arange(0, raw_data.size(1)).repeat(raw_data.size(0), 1)
-        stride = 24
-        iter_indices = torch.arange(0, raw_data.size(1) - self.horizon + 1, stride).repeat(raw_data.size(0), 1)
+        input_length = self.horizon
+        target_length = self.horizon
+        total_seq_len = input_length + target_length
         
         data = []
         
-        for ic in range(all_indices.size(0)):
-            for ts in iter_indices[ic]:
-                x = raw_data[ic, ts, :, :]
-                idx =  all_indices[ic, ts:ts + self.horizon + 1]
-                if len(idx) > 1:
-                    # Select 10% of idx, but always include the first index (i.e., x's timestamp)
-                    n_select = max(2, int(len(idx) * 0.1))  # at least 2 to ensure x and y exist
-                    selected_indices = torch.randperm(len(idx), device=idx.device)[:n_select]
-                    selected_indices = torch.cat([torch.tensor([0], device=idx.device), selected_indices])
-                    selected_indices = torch.unique(selected_indices)  # remove duplicates if 0 already selected
-                    selected_indices = selected_indices[torch.argsort(selected_indices)]  # keep order
-                    idx = idx[selected_indices]
+        for ic in range(raw_data.size(0)):
+            for ts in range(0, raw_data.size(1) - total_seq_len + 1, self.stride):
+                idx_input = slice(ts, ts + input_length)
+                idx_target = slice(ts + input_length, ts + total_seq_len)
                 
-                t_span = time[ic, idx]
-                y = raw_data[ic, idx[1:]]
-                x_mask = (x != 0).unsqueeze(0)
+                x = raw_data[ic, idx_input, :, :]  # Shape: (12, num_nodes, 1)
+                y = raw_data[ic, idx_target, :, :]  # Shape: (12, num_nodes, 1)
+                
+                x = x.permute(1, 0, 2).squeeze(-1)  # (num_nodes, input_length)
+                y = y.permute(1, 0, 2).squeeze(-1)  # (num_nodes, target_length)
+                
+                t_span = time[ic, torch.tensor([ts,ts + total_seq_len - 1], device=x.device)]  # Shape: (2,)
+                x_mask = (x != 0)
                 y_mask = (y != 0)
                 mask = x_mask & y_mask
                 
@@ -75,15 +73,15 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                     Data(
                         edge_index=edge_index,
                         edge_attr=edge_attr,
-                        x = x,
-                        y = y,
-                        t_span = t_span,
-                        mask = mask
+                        x=x,  
+                        y=y,
+                        t_span=t_span,
+                        mask=mask
                     )
                 )
-                
+        
         data, slices = self.collate(data)
-        torch.save((data, slices, raw_data, time), self.processed_paths[0]) 
+        torch.save((data, slices, raw_data, time), self.processed_paths[0])
         
     
     @abstractmethod
