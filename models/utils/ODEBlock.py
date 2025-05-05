@@ -66,9 +66,9 @@ class ODEBlock(torch.nn.Module, ABC):
             t,
             method=self.integration_method,
             **self.kwargs
-        )   # shape (horizon, num_nodes, 1)
+        )   # shape (horizon+1, num_nodes, 1)
         
-        return integration[snapshot.mask]
+        return integration[1:][snapshot.mask]
     
     
     def get_mean_var(self, x, x_mask):

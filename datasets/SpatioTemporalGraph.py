@@ -61,7 +61,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                 x = raw_data[ic, idx_input, :, :]  # Shape: (input_length, num_nodes, 1)
                 y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
                 
-                t_span = time[ic, idx_target]
+                t_span = time[ic, ts + input_length-1: ts + total_seq_len]
                 x_mask = (x != 0)
                 y_mask = (x[-1] != 0) & (y != 0)
                 

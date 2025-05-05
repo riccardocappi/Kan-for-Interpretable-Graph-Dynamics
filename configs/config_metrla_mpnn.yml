@@ -8,13 +8,14 @@ log: 1
 seed: 42
 pytorch_seed: 0
 device: 'cuda'
-n_iter: -1
+n_iter: 2
+in_dim: 1
 num_samples: -1
 data_folder: './data'
 R: 1
 method: 'dopri5'
-message_passing: True
-include_time: True
+message_passing: False
+include_time: False
 criterion: 'MAE'
 adjoint: True
 horizon: 12
