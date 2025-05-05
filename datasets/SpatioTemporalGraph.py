@@ -58,16 +58,12 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                 idx_input = slice(ts, ts + input_length)
                 idx_target = slice(ts + input_length, ts + total_seq_len)
                 
-                x = raw_data[ic, idx_input, :, :]  # Shape: (12, num_nodes, 1)
-                y = raw_data[ic, idx_target, :, :]  # Shape: (12, num_nodes, 1)
+                x = raw_data[ic, idx_input, :, :]  # Shape: (input_length, num_nodes, 1)
+                y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
                 
-                x = x.permute(1, 0, 2).squeeze(-1)  # (num_nodes, input_length)
-                y = y.permute(1, 0, 2).squeeze(-1)  # (num_nodes, target_length)
-                
-                t_span = time[ic, torch.tensor([ts,ts + total_seq_len - 1], device=x.device)]  # Shape: (2,)
+                t_span = time[ic, idx_target]
                 x_mask = (x != 0)
-                y_mask = (y != 0)
-                mask = x_mask & y_mask
+                y_mask = (x[-1] != 0) & (y != 0)
                 
                 data.append(
                     Data(
@@ -76,7 +72,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                         x=x,  
                         y=y,
                         t_span=t_span,
-                        mask=mask
+                        x_mask = x_mask,
+                        mask=y_mask
                     )
                 )
         

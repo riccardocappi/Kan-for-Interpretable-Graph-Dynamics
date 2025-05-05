@@ -60,16 +60,18 @@ class ExperimentsMPNN(Experiments):
         message_passing = self.config.get("message_passing", True)
         include_time = self.config.get("include_time", False)
         time_dim = 1 if include_time else 0
-        horizon = self.config.get("horizon", 12)
+        augmented_input_dim = 2 # mean and variance dimensions
+        
+        in_dim = self.config.get('in_dim', 1)
         
         if net_suffix == self.g_net_suffix:
-            in_dim_ = 2 * horizon
+            in_dim_ = in_dim
         elif (net_suffix == self.h_net_suffix) and message_passing:
-            in_dim_ = 2 * horizon + time_dim # Temporal component
+            in_dim_ = 2 * in_dim + time_dim # Temporal component
         else:
-            in_dim_ = horizon + time_dim
+            in_dim_ = in_dim + time_dim
         
-        hidden_layers = [in_dim_] + hidden_layers + [horizon]
+        hidden_layers = [in_dim_ + augmented_input_dim] + hidden_layers + [in_dim]
         
         activation = trial.suggest_categorical(
             f'af_{net_suffix}',

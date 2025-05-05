@@ -11,10 +11,19 @@ class net_wrapper(torch.nn.Module):
         self.model = model
         self.edge_index = None
         self.edge_attr = None
-        
+        self.x_mean = None
+        self.x_var = None
+
+    
+    def set_augmented_inputs(self, edge_index, edge_attr, x_mean, x_var):
+        self.edge_index = edge_index
+        self.edge_attr = edge_attr
+        self.x_mean = x_mean
+        self.x_var = x_var
+    
     
     def forward(self, t, x):
-        return self.model(x, self.edge_index, self.edge_attr, t)
+        return self.model(x, self.edge_index, self.edge_attr, t, x_var=self.x_var, x_mean=self.x_mean)
         
         
 class ODEBlock(torch.nn.Module, ABC):
@@ -44,23 +53,36 @@ class ODEBlock(torch.nn.Module, ABC):
     def forward(self, snapshot):
         edge_index, edge_attr, x, t = snapshot.edge_index, snapshot.edge_attr, snapshot.x, snapshot.t_span
         
-        if hasattr(self.conv, 'edge_index'):
-            if self.conv.edge_index is None:
-                self.conv.edge_index = edge_index
+        # x shape (history, num_nodes, 1)
         
-        if hasattr(self.conv, 'edge_attr'):
-            if self.conv.edge_attr is None:
-                self.conv.edge_attr = edge_attr
-         
+        x_mean, x_var = self.get_mean_var(x, snapshot.x_mask)
+        
+        self.conv.set_augmented_inputs(edge_index, edge_attr, x_mean, x_var)
+        
+        x = x[-1]   # Starting integration from the last timestamp of the input window.        
         integration = self.odeint_function(
             self.conv,
             x,
             t,
             method=self.integration_method,
             **self.kwargs
-        )
+        )   # shape (horizon, num_nodes, 1)
         
-        return integration[-1][snapshot.mask]
+        return integration[snapshot.mask]
+    
+    
+    def get_mean_var(self, x, x_mask):
+        x_masked = x * x_mask  # zero out invalid values
+        sum_valid = x_masked.sum(dim=0)  # (N, 1)
+        count_valid = x_mask.sum(dim=0)  # (N, 1)
+        mean = sum_valid / count_valid.clamp(min=1)  # (N, 1)
+        
+        # Compute masked variance
+        squared_diff = ((x - mean)**2) * x_mask
+        sum_squared_diff = squared_diff.sum(dim=0)
+        variance = sum_squared_diff / count_valid.clamp(min=1)
+        
+        return mean, variance
     
     
     def wrap_conv(self, conv):

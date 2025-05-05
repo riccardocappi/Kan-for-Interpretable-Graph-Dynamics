@@ -1,2 +1,2 @@
 conda activate myenv
-nohup python main.py --config=./configs/config_metrla_mpnn.yml --method=optuna --n_trials=1 --study_name=metrla-mpnn-1 --process_id=0 --storage=journal > ./outputs/gkanconv-ode-metrla-mpnn.out &
+nohup python main.py --config=./configs/config_metrla_mpnn.yml --method=optuna --n_trials=5 --study_name=metrla-sliding-window --process_id=0 --storage=journal > ./outputs/gkanconv-ode-metrla-sliding-window.out &

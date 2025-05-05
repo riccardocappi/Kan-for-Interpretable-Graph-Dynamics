@@ -54,20 +54,21 @@ class ExperimentsGKAN(Experiments):
         hidden_dim = trial.suggest_int(f'hidden_dim_{net_suffix}', self.search_space[f'hidden_dim_{net_suffix}'][0], 
                                        self.search_space[f'hidden_dim_{net_suffix}'][-1])
         
-        in_dim = self.config['horizon']
+        in_dim = self.config.get('in_dim', 1)
         
         message_passing = self.config.get("message_passing", True)  # Whether to use the message_passing definition or not
         include_time = self.config.get("include_time", False)
         time_dim = 1 if include_time else 0
+        augmented_input_dim = 2 # mean and variance dimensions
         
         if net_suffix == self.g_net_suffix:
-            in_dim_ = in_dim
+            in_dim_ = in_dim     
         elif (net_suffix == self.h_net_suffix) and message_passing:
             in_dim_ = 2 * in_dim + time_dim # Temporal component
         else:
             in_dim_ = in_dim + time_dim
             
-        hidden_layers = [in_dim_, hidden_dim, in_dim]
+        hidden_layers = [in_dim_ + augmented_input_dim, hidden_dim, in_dim]
         
         kan_config = {
             'layers_hidden':hidden_layers,
