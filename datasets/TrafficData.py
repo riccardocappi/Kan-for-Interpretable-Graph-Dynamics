@@ -1,9 +1,9 @@
-from tsl.datasets import MetrLA, PemsBay
+from tsl.datasets import MetrLA, PemsBay, PeMS03, PeMS08
 from .SpatioTemporalGraph import SpatioTemporalGraph
 import torch
 import os
 
-traffic_data_name = ['metrla', 'pemsbay', 'metrla2']
+traffic_data_name = ['metrla', 'pemsbay', 'metrla2', "pems03", "pems08"]
 
 class TrafficData(SpatioTemporalGraph):
     def __init__(
@@ -14,7 +14,8 @@ class TrafficData(SpatioTemporalGraph):
         seed,
         device='cpu',
         n_ics = 3,
-        horizon = 1
+        horizon = 1,
+        stride=24
     ):       
         
         assert name in traffic_data_name        
@@ -25,13 +26,18 @@ class TrafficData(SpatioTemporalGraph):
             n_samples=num_samples,
             seed=seed,
             device=device,
-            horizon=horizon
+            horizon=horizon,
+            stride=stride
         )
         
 
     def get_raw_data(self):
         if self.name == 'metrla' or self.name == 'metrla2':
             dataset = MetrLA(os.path.join(self.root, self.name), impute_zeros=False)
+        elif self.name == 'pems03':
+            dataset = PeMS03(os.path.join(self.root, self.name))
+        elif self.name == 'pems08':
+            dataset = PeMS08(os.path.join(self.root, self.name), impute_zeros=False)
         else:
             raise NotImplementedError()
         

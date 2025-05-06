@@ -11,19 +11,17 @@ class net_wrapper(torch.nn.Module):
         self.model = model
         self.edge_index = None
         self.edge_attr = None
-        self.x_mean = None
-        self.x_var = None
+        self.augmented_x = None
 
     
-    def set_augmented_inputs(self, edge_index, edge_attr, x_mean, x_var):
+    def set_augmented_inputs(self, edge_index, edge_attr, augmented_x):
         self.edge_index = edge_index
         self.edge_attr = edge_attr
-        self.x_mean = x_mean
-        self.x_var = x_var
+        self.augmented_x = augmented_x
     
     
     def forward(self, t, x):
-        return self.model(x, self.edge_index, self.edge_attr, t, x_var=self.x_var, x_mean=self.x_mean)
+        return self.model(x, self.edge_index, self.edge_attr, t, augmented_x=self.augmented_x)
         
         
 class ODEBlock(torch.nn.Module, ABC):
@@ -55,9 +53,9 @@ class ODEBlock(torch.nn.Module, ABC):
         
         # x shape (history, num_nodes, 1)
         
-        x_mean, x_var = self.get_mean_var(x, snapshot.x_mask)
+        augmented_x = self.compute_node_features(x, snapshot.x_mask)  # shape (history, num_nodes, T*D + 2*D)
         
-        self.conv.set_augmented_inputs(edge_index, edge_attr, x_mean, x_var)
+        self.conv.set_augmented_inputs(edge_index, edge_attr, augmented_x)
         
         x = x[-1]   # Starting integration from the last timestamp of the input window.        
         integration = self.odeint_function(
@@ -71,18 +69,26 @@ class ODEBlock(torch.nn.Module, ABC):
         return integration[1:][snapshot.mask]
     
     
-    def get_mean_var(self, x, x_mask):
-        x_masked = x * x_mask  # zero out invalid values
-        sum_valid = x_masked.sum(dim=0)  # (N, 1)
-        count_valid = x_mask.sum(dim=0)  # (N, 1)
-        mean = sum_valid / count_valid.clamp(min=1)  # (N, 1)
+    def compute_node_features(self, x: torch.Tensor, x_mask: torch.Tensor):
+        dx_dt = x[1:] - x[:-1]                      # (T-1, N, D)
+        dx_mask = x_mask[1:] * x_mask[:-1]  # mask only where both time steps are valid
+        dx_dt = dx_dt * dx_mask
         
-        # Compute masked variance
-        squared_diff = ((x - mean)**2) * x_mask
-        sum_squared_diff = squared_diff.sum(dim=0)
-        variance = sum_squared_diff / count_valid.clamp(min=1)
+        # Reshape gradients: (N, (T-1)*D)
+        dx_dt_flat = dx_dt.permute(1, 0, 2).reshape(x.shape[1], -1)
         
-        return mean, variance
+        # Compute mean and variance
+        x_masked = x * x_mask
+        sum_valid = x_masked.sum(dim=0)                      # (N, D)
+        count_valid = x_mask.sum(dim=0).clamp(min=1)         # (N, D)
+        mean = sum_valid / count_valid                       # (N, D)
+        
+        squared_diff = (torch.square(x - mean)) * x_mask
+        variance = squared_diff.sum(dim=0) / count_valid     # (N, D)
+        
+        # Concatenate everything: (N, (T-1)*D + 2*D)
+        features = torch.cat([dx_dt_flat, mean, variance], dim=1)
+        return features
     
     
     def wrap_conv(self, conv):

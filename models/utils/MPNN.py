@@ -22,12 +22,11 @@ class MPNN(MessagePassing):
         self.include_time = include_time
         
     
-    def forward(self, x, edge_index, edge_attr, t, x_var, x_mean):
+    def forward(self, x, edge_index, edge_attr, t, augmented_x):
         # x shape (num_nodes, 1)
-        # x_var shape = x_mean shape = (num_nodes, 1)
-        x_augmented = torch.cat([x, x_var, x_mean], dim=-1) # shape (num_nodes, 3)
+        x_augmented = torch.cat([x, augmented_x], dim=-1)
 
-        aggr = self.propagate(edge_index, x=x_augmented, edge_attr=edge_attr)   # shape (num_nodes, 3)        
+        aggr = self.propagate(edge_index, x=x_augmented, edge_attr=edge_attr)       
         t_expanded = t.expand(x.size(0), 1) if self.include_time else torch.tensor([], device=t.device) # shape (num_nodes, 1)
         
         if self.message_passing:

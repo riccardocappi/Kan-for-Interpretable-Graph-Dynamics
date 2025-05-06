@@ -65,6 +65,7 @@ class Experiments(ABC):
                 input_range=config['input_range'],
                 device=self.device,
                 horizon = self.horizon,
+                stride=config.get('stride', 24),
                 **config['integration_kwargs']
             )
         elif config['name'] in traffic_data_name:
@@ -75,6 +76,7 @@ class Experiments(ABC):
                 seed = config['seed'],
                 n_ics=config['n_iter'],
                 horizon = self.horizon,
+                stride=config.get('stride', 24),
                 device=self.device
             )
         else:

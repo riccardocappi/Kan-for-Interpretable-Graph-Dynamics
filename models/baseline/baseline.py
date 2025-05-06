@@ -15,8 +15,8 @@ class LB_ODE(ODEBlock):
     
     
     def forward(self, snapshot):
-        x = snapshot.x
-        return x[snapshot.mask]
+        x = snapshot.x[-1]
+        return x.unsqueeze(0).repeat(snapshot.y.size(0), 1, 1)[snapshot.mask]
     
     
     def wrap_conv(self, conv):
