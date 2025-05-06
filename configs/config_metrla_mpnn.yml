@@ -1,7 +1,7 @@
 name: "metrla"
 model_name: "model-metrla-mpnn"
 model_type: 'MPNN'
-epochs: 100
+epochs: 50
 patience: 25
 opt: 'Adam'
 log: 1
@@ -21,6 +21,7 @@ adjoint: True
 horizon: 12
 atol: 0.00001
 rtol: 0.001
+stride: 24
 search_space:
   n_hidden_layers_g_net: [1, 2]
   n_hidden_layers_h_net: [1, 2]
