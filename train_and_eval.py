@@ -7,6 +7,7 @@ from collections import defaultdict
 from torch.utils.data import DataLoader
 import copy
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
+import torch.nn.functional as F
 
 
 def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_scale = True):
@@ -123,6 +124,9 @@ def fit(model:ODEBlock,
                 snapshot.x = scaler.transform(snapshot.x).squeeze(0)
                 snapshot.y = scaler.transform(snapshot.y).squeeze(0)
             
+            snapshot.x = moving_average(snapshot.x, window_size=3)
+            snapshot.y = moving_average(snapshot.y, window_size=3)
+            
             y_true.append(snapshot.y[snapshot.mask])
             y_pred.append(model(snapshot=snapshot))
         
@@ -200,3 +204,24 @@ def fit(model:ODEBlock,
     results['test_loss'] = test_loss     
     
     return results 
+
+
+def moving_average(tensor, window_size):
+    # Reshape to (1, N, T) so we can use 1D convolution
+    tensor = tensor.permute(1, 2, 0)  # (N, 1, T)
+
+    # Define the convolution kernel
+    kernel = torch.ones(1, 1, window_size, device=tensor.device) / window_size
+
+    # Apply 1D convolution with padding to keep size (T)
+    padding = window_size // 2
+    averaged = F.conv1d(tensor, kernel, padding=padding, groups=1)
+
+    # Handle even window size (to keep shape aligned)
+    if window_size % 2 == 0:
+        averaged = averaged[:, :, :-1]
+
+    # Restore shape to (T, N, 1)
+    averaged = averaged.permute(2, 0, 1)  # (T, N, 1)
+
+    return averaged
