@@ -124,8 +124,8 @@ def fit(model:ODEBlock,
                 snapshot.x = scaler.transform(snapshot.x).squeeze(0)
                 snapshot.y = scaler.transform(snapshot.y).squeeze(0)
             
-            snapshot.x = moving_average(snapshot.x, window_size=3)
-            snapshot.y = moving_average(snapshot.y, window_size=3)
+            # snapshot.x = moving_average(snapshot.x, window_size=3)
+            # snapshot.y = moving_average(snapshot.y, window_size=3)
             
             y_true.append(snapshot.y[snapshot.mask])
             y_pred.append(model(snapshot=snapshot))
