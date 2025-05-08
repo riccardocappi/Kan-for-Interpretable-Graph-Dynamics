@@ -68,30 +68,7 @@ class ODEBlock(torch.nn.Module, ABC):
         
         return integration[1:][snapshot.mask]
     
-    
-    def teacher_forcing(self, x, y, t, teacher_forcing_ratio=1.0):
-        predictions = []
-        current_state = x
-        for i in range(t.size(0)-1):
-            t_span = t[i:i+2]   # (2,)
-            pred = self.odeint_function(
-                self.conv,
-                current_state,
-                t_span,
-                method=self.integration_method,
-                **self.kwargs
-            )  # (2, N, 1)
-            
-            next_state = pred[-1]
-            predictions.append(next_state)
-            
-            if torch.rand(1).item() < teacher_forcing_ratio:
-                current_state = y[i]  # Use ground truth
-            else:
-                current_state = next_state  # Use model prediction
         
-    
-    
     def compute_node_features(self, x: torch.Tensor, x_mask: torch.Tensor):
         dx_dt = x[1:] - x[:-1]                      # (T-1, N, D)
         dx_mask = x_mask[1:] * x_mask[:-1]  # mask only where both time steps are valid
