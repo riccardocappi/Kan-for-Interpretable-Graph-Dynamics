@@ -1,2 +1,0 @@
-conda activate myenv
-nohup python main.py --config=./configs/config_epidemics_mpnn.yml --method=optuna --n_trials=1 --study_name=metrla-epidemics-1 --process_id=0 --storage=journal > ./outputs/gkanconv-ode-epidemics-mpnn.out &

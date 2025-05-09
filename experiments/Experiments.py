@@ -13,10 +13,8 @@ from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
 from datasets.SyntheticData import SyntheticData
 from datasets.data_utils import dynamics_name
-from datasets.TrafficData import traffic_data_name, TrafficData
 from utils.utils import SCORES
 import yaml
-from datasets.TrafficData import traffic_data_name
 from tsl.data.preprocessing.scalers import MinMaxScaler
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 from train_and_eval import eval_model
@@ -32,10 +30,7 @@ class Experiments(ABC):
                  n_trials,
                  model_selection_method='optuna',
                  study_name='example',
-                 process_id=0,
-                 store_to_sqlite = True,
-                 save_cache_data=False
-                 ):
+                 process_id=0):
         
         super().__init__()
         
@@ -52,6 +47,8 @@ class Experiments(ABC):
             
         self.n_iter = config['n_iter']
         self.horizon = config.get('horizon', 1)
+        self.history = config.get('history', 1) 
+        self.preprocess_data = config.get('preprocess_data', False)
         
         if config['name'] in dynamics_name:
             dataset = SyntheticData(
@@ -65,19 +62,9 @@ class Experiments(ABC):
                 input_range=config['input_range'],
                 device=self.device,
                 horizon = self.horizon,
+                history = self.history,
                 stride=config.get('stride', 24),
                 **config['integration_kwargs']
-            )
-        elif config['name'] in traffic_data_name:
-            dataset = TrafficData(
-                root=config['data_folder'],
-                name=config['name'],
-                num_samples=config['num_samples'],
-                seed = config['seed'],
-                n_ics=config['n_iter'],
-                horizon = self.horizon,
-                stride=config.get('stride', 24),
-                device=self.device
             )
         else:
             raise NotImplementedError()
@@ -130,13 +117,22 @@ class Experiments(ABC):
         
         self.best_results = {}
         self.best_params = {}   
-        self.best_model = None  
+        self.best_model = None 
+
+        storage = self.config.get('storage', 'journal')
+        
+        if storage == 'sqlite':
+            store_to_sqlite = True
+        elif storage == 'journal':
+            store_to_sqlite = False
+        else:
+            raise ValueError("Not supported storage backend!") 
         
         self.storage = "sqlite:///optuna_study.db" if store_to_sqlite else JournalStorage(JournalFileBackend("optuna_journal_storage.log"))
         self.integration_method = self.config.get('method', 'dopri5')
         
         self.scaler = None
-        self.save_cache_data = save_cache_data
+        self.save_cache_data = self.config.get('save_cache_data', True)
         
         # Save a copy of config file to study's folder
         copy_config_path = f'./saved_models_optuna/{config["model_name"]}/{study_name}/config.yml'
@@ -148,7 +144,7 @@ class Experiments(ABC):
         """
         Run the experiment pipeline. 
         """
-        self.scaler = self.pre_processing(self.training_set)
+        self.scaler = self.pre_processing(self.training_set) if self.preprocess_data else None
         
         self.optimize() # Optuna study optimization 
         
@@ -211,9 +207,7 @@ class Experiments(ABC):
             self.best_results = best_results
             self._save_ckpt(self.best_model)
             
-            
-    
-    
+
     def objective(self, trial):
         """
         Objective function optimized by optuna.
@@ -252,7 +246,7 @@ class Experiments(ABC):
                 log=self.log,
                 criterion=self.criterion,
                 opt=self.opt,
-                save_updates=True,
+                save_updates=False,
                 batch_size=batch_size,
                 scaler = self.scaler
             )
@@ -275,16 +269,13 @@ class Experiments(ABC):
     
     
     def pre_processing(self, training_set:SpatioTemporalGraph):
-        scaler = None
-        if self.config['name'] in traffic_data_name:
-            all_train_x = torch.cat([data.x.view(-1) for data in training_set], dim=0)
-            
-            scaler = MinMaxScaler(out_range=(-1, 1))
-            scaler.fit(all_train_x.detach().cpu())
-            
-            scaler.scale = scaler.scale.to(torch.device(self.device))
-            scaler.bias = scaler.bias.to(torch.device(self.device))
-            
+        all_train_x = torch.cat([data.x.view(-1) for data in training_set], dim=0)  
+        scaler = MinMaxScaler(out_range=(-1, 1))
+        scaler.fit(all_train_x.detach().cpu())
+        
+        scaler.scale = scaler.scale.to(torch.device(self.device))
+        scaler.bias = scaler.bias.to(torch.device(self.device))
+        
         return scaler
     
     

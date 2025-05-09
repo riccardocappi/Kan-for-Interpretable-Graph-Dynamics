@@ -54,7 +54,7 @@ class GKAN_ODE(ODEBlock):
         t = torch.tensor([], device=dummy_x.device) # Fake t for now
         
         with torch.no_grad():
-            _ = self.conv.model.forward(dummy_x, dummy_edge_index, t=t)
+            _ = self.conv.model.forward(dummy_x, dummy_edge_index, edge_attr=None, t=t)
         
         
         g_net_model_path = f"{self.model_path}/g_net"

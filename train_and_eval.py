@@ -7,7 +7,6 @@ from collections import defaultdict
 from torch.utils.data import DataLoader
 import copy
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
-import torch.nn.functional as F
 
 
 def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_scale = True):
@@ -20,22 +19,16 @@ def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_sca
     
     with torch.no_grad():
         for snapshot in valid_data:
-            if not torch.any(snapshot.mask):
-                continue 
-            
+                        
             if scaler is not None:
-                snapshot.x = scaler.transform(snapshot.x).squeeze(0)
-                snapshot.y = scaler.transform(snapshot.y).squeeze(0)
+                snapshot.x = scaler.transform(snapshot.x)
+                snapshot.y = scaler.transform(snapshot.y)
             
-            y_true.append(snapshot.y[snapshot.mask])
+            y_true.append(snapshot.y)
             y_pred.append(model(snapshot=snapshot))
-        
-        if len(y_pred) == 0 and len(y_true) == 0:
-            return 0.0
-        
+                
         y_pred = torch.cat(y_pred, dim=0)
         y_true = torch.cat(y_true, dim=0)
-        
         
         if scaler is not None and inverse_scale:
             y_pred = scaler.inverse_transform(y_pred)
@@ -116,23 +109,15 @@ def fit(model:ODEBlock,
         optimizer.zero_grad()
         y_pred = []
         y_true = []
-        for snapshot in batch_data:
-            if not torch.any(snapshot.mask):
-                continue 
-            
+        for snapshot in batch_data: 
+                       
             if scaler is not None:
-                snapshot.x = scaler.transform(snapshot.x).squeeze(0)
-                snapshot.y = scaler.transform(snapshot.y).squeeze(0)
-            
-            snapshot.x = moving_average(snapshot.x, window_size=3)
-            snapshot.y = moving_average(snapshot.y, window_size=3)
-            
-            y_true.append(snapshot.y[snapshot.mask])
+                snapshot.x = scaler.transform(snapshot.x)
+                snapshot.y = scaler.transform(snapshot.y)
+                        
+            y_true.append(snapshot.y[snapshot.backprop_idx])
             y_pred.append(model(snapshot=snapshot))
-        
-        if len(y_pred) == 0 and len(y_true) == 0:
-            return 0.0
-            
+
         y_pred = torch.cat(y_pred, dim=0) 
         y_true = torch.cat(y_true, dim=0)
         
@@ -203,25 +188,4 @@ def fit(model:ODEBlock,
     save_logs(logs_file_path, log_message, save_updates)
     results['test_loss'] = test_loss     
     
-    return results 
-
-
-def moving_average(tensor, window_size):
-    # Reshape to (1, N, T) so we can use 1D convolution
-    tensor = tensor.permute(1, 2, 0)  # (N, 1, T)
-
-    # Define the convolution kernel
-    kernel = torch.ones(1, 1, window_size, device=tensor.device) / window_size
-
-    # Apply 1D convolution with padding to keep size (T)
-    padding = window_size // 2
-    averaged = F.conv1d(tensor, kernel, padding=padding, groups=1)
-
-    # Handle even window size (to keep shape aligned)
-    if window_size % 2 == 0:
-        averaged = averaged[:, :, :-1]
-
-    # Restore shape to (T, N, 1)
-    averaged = averaged.permute(2, 0, 1)  # (T, N, 1)
-
-    return averaged
+    return results

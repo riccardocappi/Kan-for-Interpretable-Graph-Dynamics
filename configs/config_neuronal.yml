@@ -1,5 +1,5 @@
-name: 'Kuramoto'
-model_name: "model-kuramoto-gkan"
+name: "Neuronal"
+model_name: 'model-neuronal-gkan'
 model_type: 'GKAN'
 epochs: 500
 patience: 100
@@ -10,7 +10,7 @@ t_eval_steps: 300
 seed: 42
 pytorch_seed: 0
 device: 'cuda'
-input_range: [0, 6.28318530718]
+input_range: [0, 1]
 in_dim: 1
 atol: 0.00001
 rtol: 0.001
@@ -29,15 +29,16 @@ data_folder: './data'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
-  w: 2.
-  R: 0.5
+  B: 0.5
+  C: 0.8
+  R: 0.3
 search_space:
   grid_size_h_net: [5, 10]
   grid_size_g_net: [5, 10]
   spline_order_h_net: [1, 3]
   spline_order_g_net: [1, 3]
-  range_limit_h_net: [5, 10]
-  range_limit_g_net: [5, 10]
+  range_limit_h_net: [1, 3]
+  range_limit_g_net: [1, 3]
   hidden_dim_h_net: [1, 3]
   hidden_dim_g_net: [1, 3]
   lamb_g_net: [0.000001, 0.01]

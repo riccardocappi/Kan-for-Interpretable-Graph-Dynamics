@@ -13,6 +13,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         n_samples,
         seed,
         device='cpu',
+        history = 1,
         horizon = 1,
         n_ics = 3,
         stride=24
@@ -22,8 +23,9 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.rng = np.random.default_rng(seed=seed)
         self.seed = seed
         self.device = device
-        assert horizon > 0
+        assert horizon >= 3
         self.horizon = horizon
+        self.history = history
         self.n_ics = n_ics
         self.stride = stride
         super().__init__(root)
@@ -47,7 +49,10 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         edge_index, edge_attr, raw_data, time = self.get_raw_data()
         assert (raw_data.size(0) == time.size(0)) and (raw_data.size(1) == time.size(1))
         
-        input_length = self.horizon
+        if self.num_samples > 0:
+            raw_data, time = sample_irregularly_per_ics(raw_data, time, self.num_samples)
+        
+        input_length = self.history
         target_length = self.horizon
         total_seq_len = input_length + target_length
         
@@ -62,8 +67,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                 y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
                 
                 t_span = time[ic, ts + input_length-1: ts + total_seq_len]
-                x_mask = (x != 0)
-                y_mask = (x[-1] != 0) & (y != 0)
+                
+                backprop_idx = torch.tensor([0, self.horizon//2, -1], device=self.device)
                 
                 data.append(
                     Data(
@@ -72,8 +77,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                         x=x,  
                         y=y,
                         t_span=t_span,
-                        x_mask = x_mask,
-                        mask=y_mask
+                        backprop_idx=backprop_idx
                     )
                 )
         

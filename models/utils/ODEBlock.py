@@ -11,17 +11,15 @@ class net_wrapper(torch.nn.Module):
         self.model = model
         self.edge_index = None
         self.edge_attr = None
-        self.augmented_x = None
 
     
-    def set_augmented_inputs(self, edge_index, edge_attr, augmented_x):
+    def set_graph_attrs(self, edge_index, edge_attr):
         self.edge_index = edge_index
         self.edge_attr = edge_attr
-        self.augmented_x = augmented_x
-    
+        
     
     def forward(self, t, x):
-        return self.model(x, self.edge_index, self.edge_attr, t, augmented_x=self.augmented_x)
+        return self.model(x, self.edge_index, self.edge_attr, t)
         
         
 class ODEBlock(torch.nn.Module, ABC):
@@ -51,11 +49,10 @@ class ODEBlock(torch.nn.Module, ABC):
     def forward(self, snapshot):
         edge_index, edge_attr, x, t = snapshot.edge_index, snapshot.edge_attr, snapshot.x, snapshot.t_span
         
-        # x shape (history, num_nodes, 1)
-        
-        augmented_x = self.compute_node_features(x, snapshot.x_mask)  # shape (history, num_nodes, T*D + 2*D)
-        
-        self.conv.set_augmented_inputs(edge_index, edge_attr, augmented_x)
+        if self.training:
+            t = torch.cat([t[0].unsqueeze(0), t[1:][snapshot.backprop_idx]])
+        # x shape (history, num_nodes, 1)        
+        self.conv.set_graph_attrs(edge_index, edge_attr)
         
         x = x[-1]   # Starting integration from the last timestamp of the input window.        
         integration = self.odeint_function(
@@ -66,30 +63,8 @@ class ODEBlock(torch.nn.Module, ABC):
             **self.kwargs
         )   # shape (horizon+1, num_nodes, 1)
         
-        return integration[1:][snapshot.mask]
-    
-        
-    def compute_node_features(self, x: torch.Tensor, x_mask: torch.Tensor):
-        dx_dt = x[1:] - x[:-1]                      # (T-1, N, D)
-        dx_mask = x_mask[1:] * x_mask[:-1]  # mask only where both time steps are valid
-        dx_dt = dx_dt * dx_mask
-        
-        # Reshape gradients: (N, (T-1)*D)
-        dx_dt_flat = dx_dt.permute(1, 0, 2).reshape(x.shape[1], -1)
-        
-        # Compute mean and variance
-        x_masked = x * x_mask
-        sum_valid = x_masked.sum(dim=0)                      # (N, D)
-        count_valid = x_mask.sum(dim=0).clamp(min=1)         # (N, D)
-        mean = sum_valid / count_valid                       # (N, D)
-        
-        squared_diff = (torch.square(x - mean)) * x_mask
-        variance = squared_diff.sum(dim=0) / count_valid     # (N, D)
-        
-        # Concatenate everything: (N, (T-1)*D + 2*D)
-        features = torch.cat([dx_dt_flat, mean, variance], dim=1)
-        return features
-    
+        return integration[1:]
+     
     
     def wrap_conv(self, conv):
         return net_wrapper(conv)

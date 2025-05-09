@@ -17,6 +17,7 @@ class SyntheticData(SpatioTemporalGraph):
         input_range = [0,1],
         device='cpu',
         horizon = 1,
+        history= 1,
         stride=24,
         **integration_kwargs
     ):  
@@ -34,6 +35,7 @@ class SyntheticData(SpatioTemporalGraph):
             seed=seed,
             device=device,
             horizon=horizon,
+            history=history,
             stride=stride
         )
     

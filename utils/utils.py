@@ -174,7 +174,7 @@ def sample_irregularly_per_ics(data, time, num_samples):
         sampled_times[i] = time[i, indices]
         sampled_indices[i] = indices
 
-    return sampled_data, sampled_times, sampled_indices
+    return sampled_data, sampled_times
 
 
 def save_acts(layers, folder_path):

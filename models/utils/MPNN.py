@@ -22,20 +22,20 @@ class MPNN(MessagePassing):
         self.include_time = include_time
         
     
-    def forward(self, x, edge_index, edge_attr, t, augmented_x):
-        # x shape (num_nodes, 1)
-        x_augmented = torch.cat([x, augmented_x], dim=-1)
+    def forward(self, x, edge_index, edge_attr, t):     
+        return self.propagate(edge_index, x=x, t=t, edge_attr=edge_attr)
+    
+    
+    def message(self, x_i, x_j, edge_attr):
+        inp = torch.cat([x_i, x_j], dim=-1)
+        mes = self.g_net(inp)
+        return mes if edge_attr is None else edge_attr.view(-1, 1) * mes
 
-        aggr = self.propagate(edge_index, x=x_augmented, edge_attr=edge_attr)       
-        t_expanded = t.expand(x.size(0), 1) if self.include_time else torch.tensor([], device=t.device) # shape (num_nodes, 1)
+
+    def update(self, aggr_out, x, t):
+        t_expanded = t.expand(x.size(0), 1) if self.include_time else torch.tensor([], device=t.device) 
         
         if self.message_passing:
-            out = self.h_net(torch.cat([x_augmented, t_expanded, self.g_net(aggr)], dim=-1))
+            return self.h_net(torch.cat([x, aggr_out, t_expanded], dim=-1))     
         else:
-            out = self.h_net(torch.cat([x_augmented, t_expanded], dim=-1)) + self.g_net(aggr)     
-            
-        return out
-        
-    
-    def message(self, x_j, edge_attr):
-        return x_j if edge_attr is None else edge_attr.view(-1, 1) * x_j
+            return self.h_net(torch.cat([x, t_expanded], dim=-1)) + aggr_out
