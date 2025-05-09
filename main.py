@@ -12,7 +12,7 @@ def set_pytorch_seed(seed=42):
     torch.backends.cudnn.benchmark = False
 
 
-def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, storage='sqlite'):
+def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0):
     config = load_config(config_path)   # Load yml config file 
     
     set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    run(args.config, args.n_trials, args.method, args.study_name, args.process_id, args.storage)
+    run(args.config, args.n_trials, args.method, args.study_name, args.process_id)
     
     
     
