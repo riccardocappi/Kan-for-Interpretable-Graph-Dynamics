@@ -112,10 +112,13 @@ def fit(model:ODEBlock,
         for snapshot in batch_data: 
                        
             if scaler is not None:
-                snapshot.x = scaler.transform(snapshot.x)
-                snapshot.y = scaler.transform(snapshot.y)
-                        
-            y_true.append(snapshot.y[snapshot.backprop_idx])
+                snapshot.x = scaler.transform(snapshot.x).squeeze(0)
+                snapshot.y = scaler.transform(snapshot.y).squeeze(0)
+            
+            snapshot.x = moving_average(snapshot.x, window_size=3)
+            snapshot.y = moving_average(snapshot.y, window_size=3)
+            
+            y_true.append(snapshot.y[snapshot.mask])
             y_pred.append(model(snapshot=snapshot))
 
         y_pred = torch.cat(y_pred, dim=0) 
