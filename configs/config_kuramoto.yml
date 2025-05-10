@@ -20,7 +20,7 @@ include_time: False
 horizon: 15
 history: 1
 preprocess_data: False
-stride: 10
+stride: 15
 storage: "journal"
 save_cache_data: True
 n_iter: 3

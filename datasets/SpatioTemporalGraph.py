@@ -16,7 +16,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         history = 1,
         horizon = 1,
         n_ics = 3,
-        stride=24
+        stride=24,
+        noise_scale=0.0
     ):
         self.name = name
         self.num_samples = n_samples
@@ -28,6 +29,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.history = history
         self.n_ics = n_ics
         self.stride = stride
+        self.nosie_scale = noise_scale
         super().__init__(root)
         self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
         
@@ -55,17 +57,24 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         input_length = self.history
         target_length = self.horizon
         total_seq_len = input_length + target_length
-        
+                
         data = []
         
         for ic in range(raw_data.size(0)):
+            
+            mean_value = raw_data[ic].mean().item()
+            noise_strength = self.nosie_scale * mean_value
+            nosie = self.rng.normal(0, noise_strength, size=raw_data[ic].shape)
+            noise = torch.from_numpy(nosie).float().to(self.device)
+            raw_data[ic] += noise
+            
             for ts in range(0, raw_data.size(1) - total_seq_len + 1, self.stride):
                 idx_input = slice(ts, ts + input_length)
                 idx_target = slice(ts + input_length, ts + total_seq_len)
                 
                 x = raw_data[ic, idx_input, :, :]  # Shape: (input_length, num_nodes, 1)
                 y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
-                
+                   
                 t_span = time[ic, ts + input_length-1: ts + total_seq_len]
                 
                 backprop_idx = torch.tensor([0, self.horizon//2, -1], device=self.device)

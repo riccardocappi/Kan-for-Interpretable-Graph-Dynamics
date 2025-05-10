@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.integrate import solve_ivp
+from torchdiffeq import odeint
+import torch
 
 import numpy as np
 # import networkx as nx
@@ -15,7 +17,7 @@ def Model_Biochemical(t, xx, G, F = 1., B = 1., R = 1.):
     m_1 = "xx[i]"
     m_2 = "R*xx[j]"
     """
-    dxdt = np.zeros_like(xx)
+    dxdt = torch.zeros_like(xx)
     node_to_index = node_mapping(G)
 
     for node in G.nodes():
@@ -31,7 +33,7 @@ def Model_Biochemical(t, xx, G, F = 1., B = 1., R = 1.):
 
 def Model_Epidemics(t, xx, G, B = 1., R = 1.):
     
-    dxdt = np.zeros_like(xx)
+    dxdt = torch.zeros_like(xx)
     node_to_index = node_mapping(G)
     
     for node in G.nodes():
@@ -45,8 +47,8 @@ def Model_Epidemics(t, xx, G, B = 1., R = 1.):
 
 
 def Model_Neuronal(t, xx, G, B = 1., C = 1., R = 1.):
-    tan_xx = np.tanh(xx)
-    dxdt = np.zeros_like(xx)
+    tan_xx = torch.tanh(xx)
+    dxdt = torch.zeros_like(xx)
     node_to_index = node_mapping(G)
         
     for node in G.nodes():
@@ -60,14 +62,14 @@ def Model_Neuronal(t, xx, G, B = 1., C = 1., R = 1.):
 
 
 def Model_Kuramoto(t, xx, G, w=0., R=1.):
-    dxdt = np.zeros_like(xx)
+    dxdt = torch.zeros_like(xx)
     node_to_index = node_mapping(G)
     
     for node in G.nodes():
         i = node_to_index[node]
         degree_i = len(list(G.neighbors(node)))
         interaction_sum = sum(
-            [np.sin(xx[node_to_index[neighbor]] - xx[i]) for neighbor in G.neighbors(node)]
+            [torch.sin(xx[node_to_index[neighbor]] - xx[i]) for neighbor in G.neighbors(node)]
         )
         dxdt[i] = w + R * interaction_sum
         
@@ -88,7 +90,8 @@ def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=10
     else:
         raise Exception('Not supported dynamics!')
 
-    result = solve_ivp(model, time_span, initial_state, method='RK45', t_eval=np.linspace(time_span[0], time_span[1], t_eval_steps))
-
-    return result.y, result.t
+    t_eval = torch.linspace(time_span[0], time_span[1], t_eval_steps, device=initial_state.device)
+    ys = odeint(model, initial_state, t_eval, method='dopri5')
+    
+    return ys, t_eval
     

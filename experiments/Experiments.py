@@ -64,6 +64,7 @@ class Experiments(ABC):
                 horizon = self.horizon,
                 history = self.history,
                 stride=config.get('stride', 24),
+                noise_scale=config.get('noise_scale', 0.0),
                 **config['integration_kwargs']
             )
         else:
@@ -246,7 +247,7 @@ class Experiments(ABC):
                 log=self.log,
                 criterion=self.criterion,
                 opt=self.opt,
-                save_updates=False,
+                save_updates=True,
                 batch_size=batch_size,
                 scaler = self.scaler
             )

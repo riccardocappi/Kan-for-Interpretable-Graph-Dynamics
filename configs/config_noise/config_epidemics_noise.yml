@@ -1,5 +1,5 @@
-name: "Neuronal"
-model_name: 'model-neuronal-gkan'
+name: "Epidemics"
+model_name: "model-epidemics-gkan"
 model_type: 'GKAN'
 epochs: 500
 patience: 100
@@ -25,13 +25,13 @@ storage: "journal"
 save_cache_data: True
 n_iter: 3
 num_samples: -1
-data_folder: './data'
+data_folder: './data_noise'
 criterion: "MAE"
 method: "dopri5"
+noise_scale: 0.01
 integration_kwargs:
   B: 0.5
-  C: 0.8
-  R: 0.3
+  R: 0.5
 search_space:
   grid_size_h_net: [5, 10]
   grid_size_g_net: [5, 10]

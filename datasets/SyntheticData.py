@@ -19,6 +19,7 @@ class SyntheticData(SpatioTemporalGraph):
         horizon = 1,
         history= 1,
         stride=24,
+        noise_scale=0.0,
         **integration_kwargs
     ):  
         
@@ -36,7 +37,8 @@ class SyntheticData(SpatioTemporalGraph):
             device=device,
             horizon=horizon,
             history=history,
-            stride=stride
+            stride=stride,
+            noise_scale=noise_scale
         )
     
     

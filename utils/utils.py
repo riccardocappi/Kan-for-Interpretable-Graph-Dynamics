@@ -122,6 +122,7 @@ def integrate(
     """
     N = graph.number_of_nodes()
     y0 = rng.uniform(input_range[0], input_range[1], N)
+    y0 = torch.from_numpy(y0).unsqueeze(-1).float().to(device)
     xs, t = numerical_integration(
         G=graph,
         dynamics=dynamics,
@@ -130,10 +131,7 @@ def integrate(
         t_eval_steps=t_eval_steps,
         **integration_kwargs
     )
-    xs = np.transpose(xs)
-    
-    return torch.from_numpy(xs).float().unsqueeze(2).to(device), torch.from_numpy(t).float().to(device)
-
+    return xs, t
 
 
 def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):

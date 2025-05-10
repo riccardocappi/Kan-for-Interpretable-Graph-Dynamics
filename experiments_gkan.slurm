@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-kuramoto
+#SBATCH --job-name=GKAN-ODE
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it
@@ -20,7 +20,7 @@
 #SBATCH --mem=3G
 
 ### Time limit for our job (ten minutes here: HH:MM:SS)
-#SBATCH --time=72:00:00
+#SBATCH --time=175:00:00
 
 ### GPU request
 #SBATCH --gres=gpu:1
@@ -41,10 +41,29 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-ic3-last --process_id=0 --storage=journal &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_2 --process_id=0 &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-ic3-last --process_id=1 --storage=journal &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_2 --process_id=1 &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-ic3-last --process_id=2 --storage=journal &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_2 --process_id=2 &
 wait
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics_gkan_ --process_id=0 &
+sleep 1m
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics_gkan_ --process_id=1 &
+sleep 1m
+python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics_gkan_ --process_id=2 &
+wait
+python main.py --config=./configs/config_neuronal.yml --method=optuna --n_trials=15 --study_name=neuronal_gkan_ --process_id=0 &
+sleep 1m
+python main.py --config=./configs/config_neuronal.yml --method=optuna --n_trials=15 --study_name=neuronal_gkan_ --process_id=1 &
+sleep 1m
+python main.py --config=./configs/config_neuronal.yml --method=optuna --n_trials=15 --study_name=neuronal_gkan_ --process_id=2 &
+wait
+python main.py --config=./configs/config_biochemical.yml --method=optuna --n_trials=15 --study_name=biochemical_gkan_ --process_id=0 &
+sleep 1m
+python main.py --config=./configs/config_biochemical.yml --method=optuna --n_trials=15 --study_name=biochemical_gkan_ --process_id=1 &
+sleep 1m
+python main.py --config=./configs/config_biochemical.yml --method=optuna --n_trials=15 --study_name=biochemical_gkan_ --process_id=2 &
+wait
+
 echo "Finished"

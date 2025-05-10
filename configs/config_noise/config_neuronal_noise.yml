@@ -25,9 +25,10 @@ storage: "journal"
 save_cache_data: True
 n_iter: 3
 num_samples: -1
-data_folder: './data'
+data_folder: './data_noise'
 criterion: "MAE"
 method: "dopri5"
+noise_scale: 0.01
 integration_kwargs:
   B: 0.5
   C: 0.8
