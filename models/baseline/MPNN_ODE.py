@@ -29,16 +29,14 @@ class MPNN_ODE(ODEBlock):
         return 0.0
             
     
-    def save_cached_data(self, dummy_x, dummy_edge_index):
+    def save_cached_data(self, dummy_x, dummy_edge_index, dummy_t):
         self.eval()
         
         self.conv.model.g_net.save_black_box = True
         self.conv.model.h_net.save_black_box = True
-        
-        t = torch.tensor([], device=dummy_x.device) # Fake t for now
-        
+                
         with torch.no_grad():
-            _ = self.conv.model.forward(dummy_x, dummy_edge_index, edge_attr=None, t=t)
+            _ = self.conv.model.forward(dummy_x, dummy_edge_index, edge_attr=None, t=dummy_t)
         
         
         g_net_model_path = f"{self.model_path}/g_net"

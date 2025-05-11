@@ -1,6 +1,6 @@
 #!/bin/bash -l
 ### job name
-#SBATCH --job-name=GKAN-ODE-noise
+#SBATCH --job-name=GKAN-ODE-in-noise
 
 ### 
 #SBATCH --mail-user=riccardo.cappi@studenti.unipd.it

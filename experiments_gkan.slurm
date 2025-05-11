@@ -41,11 +41,11 @@ SHELL=/bin/bash
 ### Jobs execution commands
 cd /home/rcappi/Kan-for-Graph-Dyn
 conda activate my_env
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_2 --process_id=0 &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_3 --process_id=0 &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_2 --process_id=1 &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_3 --process_id=1 &
 sleep 1m
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_2 --process_id=2 &
+python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=15 --study_name=kuramoto-gkan_3 --process_id=2 &
 wait
 python main.py --config=./configs/config_epidemics.yml --method=optuna --n_trials=15 --study_name=epidemics_gkan_ --process_id=0 &
 sleep 1m

@@ -134,15 +134,18 @@ def integrate(
     return xs, t
 
 
-def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
+def sample_from_spatio_temporal_graph(dataset, edge_index, t=None, sample_size=32):
     device = dataset.device
     
     sample_size = sample_size if sample_size != -1 else len(dataset)
     interval = len(dataset) // sample_size
     sampled_indices = torch.tensor([i * interval for i in range(sample_size)])
     samples = dataset[sampled_indices]
+    t_sampled = t[sampled_indices] if t is not None else torch.tensor([], device=device)
     concatenated_x = torch.reshape(samples, (-1, samples.size(2)))
     concatenated_x = concatenated_x.to(device)
+    
+    concatenated_t = t_sampled.unsqueeze(0).repeat(dataset.size(1), 1).reshape(-1, 1)
     
     all_edges = []
     num_nodes = dataset.size(1)
@@ -154,7 +157,7 @@ def sample_from_spatio_temporal_graph(dataset, edge_index, sample_size=32):
     concatenated_edge_index = torch.cat(all_edges, dim=1)
     concatenated_edge_index = concatenated_edge_index.to(device)
     
-    return concatenated_x, concatenated_edge_index
+    return concatenated_x, concatenated_edge_index, concatenated_t
     
 
 def sample_irregularly_per_ics(data, time, num_samples):

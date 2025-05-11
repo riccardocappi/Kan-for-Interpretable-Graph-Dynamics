@@ -16,3 +16,6 @@ optuna_journal_storage.log
 data
 README.md
 outputs
+data_noise
+data_input_noise
+post_processing.ipynb

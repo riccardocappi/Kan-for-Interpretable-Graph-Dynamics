@@ -247,7 +247,7 @@ class Experiments(ABC):
                 log=self.log,
                 criterion=self.criterion,
                 opt=self.opt,
-                save_updates=True,
+                save_updates=False,
                 batch_size=batch_size,
                 scaler = self.scaler
             )
@@ -309,14 +309,17 @@ class Experiments(ABC):
             else:
                 raw_data = self.training_set.raw_data_sampled[0]
             
-            dummy_x, dummy_edge_index = sample_from_spatio_temporal_graph(
+            t = self.training_set.t_sampled[0] if self.config.get("include_time", False) else None
+            
+            dummy_x, dummy_edge_index, dummy_t = sample_from_spatio_temporal_graph(
                 raw_data, 
                 self.training_set[0].edge_index, 
+                t=t,
                 sample_size=sample_size
             )
             
             # Save model checkpoint
-            best_model.save_cached_data(dummy_x, dummy_edge_index)
+            best_model.save_cached_data(dummy_x, dummy_edge_index, dummy_t=dummy_t)
         
     
     def _save_ckpt(self, best_model:ODEBlock):
