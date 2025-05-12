@@ -16,7 +16,7 @@ class SyntheticData(SpatioTemporalGraph):
         n_ics = 3,
         input_range = [0,1],
         device='cpu',
-        horizon = 1,
+        horizon = 15,
         history= 1,
         stride=24,
         noise_scale=0.0,
