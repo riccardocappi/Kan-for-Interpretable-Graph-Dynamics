@@ -18,6 +18,7 @@ import yaml
 from tsl.data.preprocessing.scalers import MinMaxScaler
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 from train_and_eval import eval_model
+from datasets.RealEpidemics import RealEpidemics
 
 
 class Experiments(ABC):
@@ -66,6 +67,19 @@ class Experiments(ABC):
                 stride=config.get('stride', 24),
                 noise_scale=config.get('noise_scale', 0.0),
                 **config['integration_kwargs']
+            )
+        elif config['name'] == "Real-Epidemics":
+            dataset = RealEpidemics(
+                root = config['data_folder'],
+                name = config['name'],
+                n_samples=config['num_samples'],
+                seed=config['seed'],
+                device=self.device,
+                history=self.history,
+                horizon=self.horizon,
+                n_ics=-1,
+                stride=config.get('stride', 5),
+                noise_scale=0.0
             )
         else:
             raise NotImplementedError()
