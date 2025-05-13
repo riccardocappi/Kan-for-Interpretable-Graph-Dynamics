@@ -8,7 +8,7 @@ import numpy as np
 
 node_mapping = lambda G: {node: idx for idx, node in enumerate(G.nodes)}
 
-dynamics_name = ['Biochemical', 'Epidemics', 'Neuronal', 'Kuramoto']
+dynamics_name = ['Biochemical', 'Epidemics', 'Neuronal', 'Kuramoto', 'Population']
 
 
 def Model_Biochemical(t, xx, G, F = 1., B = 1., R = 1.):
@@ -67,13 +67,36 @@ def Model_Kuramoto(t, xx, G, w=0., R=1.):
     
     for node in G.nodes():
         i = node_to_index[node]
-        degree_i = len(list(G.neighbors(node)))
+        # degree_i = len(list(G.neighbors(node)))
         interaction_sum = sum(
             [torch.sin(xx[node_to_index[neighbor]] - xx[i]) for neighbor in G.neighbors(node)]
         )
         dxdt[i] = w + R * interaction_sum
         
-    return dxdt  
+    return dxdt
+
+
+def Model_Population(t, xx, G, B=1., R=1., b=2, a=2):
+    """
+    m_0 = "-B * xx[i]**b"
+    m_1 = "R"
+    m_2 = "xx[j]**a"
+    """
+    xx_powa = torch.pow(xx, a)
+    xx_powb = torch.pow(xx, b)
+    
+    dxdt = torch.zeros_like(xx)
+    node_to_index = node_mapping(G)
+    
+    for node in G.nodes():
+        i = node_to_index[node]
+        m_0 = -B * xx_powb[i]
+        m_1 = R
+        m_2 = sum([xx_powa[node_to_index[neighbor]] for neighbor in G.neighbors(node)])
+        
+        dxdt[i] = m_0 + m_1 * m_2
+        
+    return dxdt
 
 
 
@@ -87,6 +110,8 @@ def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=10
         model = lambda t, xx: Model_Neuronal(t, xx, G, **kwargs)
     elif dynamics == 'Kuramoto':
         model = lambda t, xx: Model_Kuramoto(t, xx, G, **kwargs)
+    elif dynamics == 'Population':
+        model = lambda t, xx: Model_Population(t, xx, G, **kwargs)
     else:
         raise Exception('Not supported dynamics!')
 

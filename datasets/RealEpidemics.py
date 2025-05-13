@@ -18,7 +18,7 @@ class RealEpidemics(SpatioTemporalGraph):
         history=1, 
         horizon=1, 
         n_ics=-1, 
-        stride=5, 
+        stride=1, 
         noise_scale=0.0
     ):
         super().__init__(
