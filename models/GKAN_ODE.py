@@ -45,14 +45,14 @@ class GKAN_ODE(ODEBlock):
         return (self.lamb_h * reg_h)+(self.lamb_g * reg_g)
     
     
-    def save_cached_data(self, dummy_x, dummy_edge_index, dummy_t):
+    def save_cached_data(self, dummy_x, dummy_edge_index, dummy_t, dummy_edge_attr):
         self.eval()
         
         self.conv.model.g_net.store_act = True
         self.conv.model.h_net.store_act = True
         
         with torch.no_grad():
-            _ = self.conv.model.forward(dummy_x, dummy_edge_index, edge_attr=None, t=dummy_t)
+            _ = self.conv.model.forward(dummy_x, dummy_edge_index, edge_attr=dummy_edge_attr, t=dummy_t)
         
         
         g_net_model_path = f"{self.model_path}/g_net"

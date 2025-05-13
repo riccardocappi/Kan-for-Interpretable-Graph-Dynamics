@@ -134,30 +134,39 @@ def integrate(
     return xs, t
 
 
-def sample_from_spatio_temporal_graph(dataset, edge_index, t=None, sample_size=32):
+def sample_from_spatio_temporal_graph(dataset, edge_index, edge_attr, t=None, sample_size=32):
     device = dataset.device
     
     sample_size = sample_size if sample_size != -1 else len(dataset)
     interval = len(dataset) // sample_size
-    sampled_indices = torch.tensor([i * interval for i in range(sample_size)])
+    sampled_indices = torch.tensor([i * interval for i in range(sample_size)], device=device)
+    
     samples = dataset[sampled_indices]
     t_sampled = t[sampled_indices] if t is not None else torch.tensor([], device=device)
-    concatenated_x = torch.reshape(samples, (-1, samples.size(2)))
-    concatenated_x = concatenated_x.to(device)
+    concatenated_x = torch.reshape(samples, (-1, samples.size(2))).to(device)
     
     concatenated_t = t_sampled.unsqueeze(0).repeat(dataset.size(1), 1).reshape(-1, 1)
     
     all_edges = []
+    all_edge_attrs = []
     num_nodes = dataset.size(1)
-    for i in range(len(samples)):
+    
+    for i in range(sample_size):
         offset = i * num_nodes
         upd_edge_index = edge_index + offset
-        all_edges.append(upd_edge_index) 
+        all_edges.append(upd_edge_index)
         
-    concatenated_edge_index = torch.cat(all_edges, dim=1)
-    concatenated_edge_index = concatenated_edge_index.to(device)
+        if edge_attr is not None:
+            all_edge_attrs.append(edge_attr.clone())  # Clone in case attributes are mutable
     
-    return concatenated_x, concatenated_edge_index, concatenated_t
+    concatenated_edge_index = torch.cat(all_edges, dim=1).to(device)
+    
+    if edge_attr is not None:
+        concatenated_edge_attr = torch.cat(all_edge_attrs, dim=0).to(device)
+    else:
+        concatenated_edge_attr = None
+
+    return concatenated_x, concatenated_edge_index, concatenated_t, concatenated_edge_attr
     
 
 def sample_irregularly_per_ics(data, time, num_samples):
@@ -377,7 +386,7 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None, sample_size=-1, message_passing=True):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_model = None, sample_size=-1, message_passing=True, include_time=False):
     # G_net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)    
@@ -400,6 +409,9 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, pysr_
         symb_h_in = [sp.Symbol('x_i'), aggr_term]
     else:
         symb_h_in = [sp.Symbol('x_i')]
+        
+    if include_time:
+        symb_h_in += [sp.Symbol('t')]
     
     symb_h = fit_kan(
         pruned_acts,
@@ -432,7 +444,7 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
 
 
-def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True):
+def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False):
     # G_Net
     cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
@@ -453,7 +465,10 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
     if message_passing:
         symb_h_in = [sp.Symbol('x_i'), aggr_term]
     else:
-        symb_h_in = [sp.Symbol('x_i')]    
+        symb_h_in = [sp.Symbol('x_i')]
+        
+    if include_time:
+        symb_h_in += [sp.Symbol('t')]
     
     symb_h, top_5_eqs_h = fit_black_box(
         cached_input, 
@@ -475,7 +490,8 @@ def fit_black_box_from_kan(
     theta=0.1, 
     pysr_model = None, 
     sample_size=-1,
-    message_passing=True
+    message_passing=True,
+    include_time=False
     ):
     #G_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
@@ -511,6 +527,9 @@ def fit_black_box_from_kan(
         symb_h_in = [sp.Symbol('x_i'), aggr_term]
     else:
         symb_h_in = [sp.Symbol('x_i')]
+    
+    if include_time:
+        symb_h_in += [sp.Symbol('t')]
 
     symb_h, top_5_eqs_h = fit_black_box(
         input, 

@@ -325,15 +325,16 @@ class Experiments(ABC):
             
             t = self.training_set.t_sampled[0] if self.config.get("include_time", False) else None
             
-            dummy_x, dummy_edge_index, dummy_t = sample_from_spatio_temporal_graph(
+            dummy_x, dummy_edge_index, dummy_t, dummy_edge_attrs = sample_from_spatio_temporal_graph(
                 raw_data, 
-                self.training_set[0].edge_index, 
+                self.training_set[0].edge_index,
+                edge_attr=self.training_set[0].edge_attr,
                 t=t,
                 sample_size=sample_size
             )
             
             # Save model checkpoint
-            best_model.save_cached_data(dummy_x, dummy_edge_index, dummy_t=dummy_t)
+            best_model.save_cached_data(dummy_x, dummy_edge_index, dummy_t=dummy_t, dummy_edge_attr = dummy_edge_attrs)
         
     
     def _save_ckpt(self, best_model:ODEBlock):

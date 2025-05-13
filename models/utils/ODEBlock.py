@@ -83,7 +83,7 @@ class ODEBlock(torch.nn.Module, ABC):
     
     
     @abstractmethod
-    def save_cached_data(self, dummy_x, dummy_edge_index, dummy_t):
+    def save_cached_data(self, dummy_x, dummy_edge_index, dummy_t, dummy_edge_attr):
         """
         This function is called in the post_processing step of Experiments, when saving model checkpoint. 
         Here you should save to file model's outputs and inputs that can be used later for symbolic regression.
