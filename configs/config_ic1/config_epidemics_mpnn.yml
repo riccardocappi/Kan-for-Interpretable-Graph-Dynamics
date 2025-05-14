@@ -1,10 +1,10 @@
-name: "Biochemical"
-model_name: 'model-biochemical-mpnn'
+name: "Epidemics"
+model_name: 'model-epidemics-mpnn'
 model_type: 'MPNN'
 epochs: 500
 patience: 100
 opt: 'Adam'
-log: 10
+log: 1
 t_span: [0,1]
 t_eval_steps: 300
 seed: 42
@@ -29,7 +29,6 @@ data_folder: './data_ic1'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
-  F: 1.0
   B: 0.5
   R: 0.5
 search_space:

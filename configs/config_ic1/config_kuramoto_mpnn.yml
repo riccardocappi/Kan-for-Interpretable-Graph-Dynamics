@@ -1,16 +1,16 @@
-name: "Biochemical"
-model_name: 'model-biochemical-mpnn'
+name: "Kuramoto"
+model_name: 'model-kuramoto-mpnn'
 model_type: 'MPNN'
 epochs: 500
 patience: 100
 opt: 'Adam'
-log: 10
+log: 1
 t_span: [0,1]
 t_eval_steps: 300
 seed: 42
 pytorch_seed: 0
 device: 'cuda'
-input_range: [0, 1]
+input_range: [0, 6.28318530718]
 in_dim: 1
 atol: 0.00001
 rtol: 0.001
@@ -29,8 +29,7 @@ data_folder: './data_ic1'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
-  F: 1.0
-  B: 0.5
+  w: 2.
   R: 0.5
 search_space:
   n_hidden_layers_g_net: [1, 2]

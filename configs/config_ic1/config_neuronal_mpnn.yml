@@ -1,10 +1,10 @@
-name: "Biochemical"
-model_name: 'model-biochemical-mpnn'
+name: "Neuronal"
+model_name: 'model-neuronal-mpnn'
 model_type: 'MPNN'
 epochs: 500
 patience: 100
 opt: 'Adam'
-log: 10
+log: 1
 t_span: [0,1]
 t_eval_steps: 300
 seed: 42
@@ -29,9 +29,9 @@ data_folder: './data_ic1'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
-  F: 1.0
   B: 0.5
-  R: 0.5
+  C: 0.8
+  R: 0.3
 search_space:
   n_hidden_layers_g_net: [1, 2]
   n_hidden_layers_h_net: [1, 2]

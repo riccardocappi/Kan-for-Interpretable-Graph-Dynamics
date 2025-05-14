@@ -23,9 +23,9 @@ preprocess_data: False
 stride: 15
 storage: "journal"
 save_cache_data: True
-n_iter: 3
+n_iter: 5
 num_samples: -1
-data_folder: './data'
+data_folder: './data_ic5'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
