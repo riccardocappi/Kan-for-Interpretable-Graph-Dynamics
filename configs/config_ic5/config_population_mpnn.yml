@@ -1,5 +1,5 @@
-name: "Neuronal"
-model_name: 'model-neuronal-mpnn'
+name: "Population"
+model_name: 'model-population-mpnn'
 model_type: 'MPNN'
 epochs: 500
 patience: 100
@@ -9,7 +9,7 @@ t_span: [0,1]
 t_eval_steps: 300
 seed: 42
 pytorch_seed: 0
-device: 'cuda:2'
+device: 'cuda:0'
 input_range: [0, 1]
 in_dim: 1
 atol: 0.00001
@@ -23,15 +23,16 @@ preprocess_data: False
 stride: 2
 storage: "journal"
 save_cache_data: True
-n_iter: 1
+n_iter: 5
 num_samples: -1
-data_folder: './data_ic1'
+data_folder: './data_ic5'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
-  B: 0.5
-  C: 0.8
-  R: 0.3
+  B: 0.5 
+  R: 0.2
+  b: 2 
+  a: 2
 search_space:
   n_hidden_layers_g_net: [1, 2]
   n_hidden_layers_h_net: [1, 2]

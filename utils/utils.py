@@ -112,8 +112,8 @@ def integrate(
     t_span,
     t_eval_steps,
     dynamics,
-    device, 
-    graph, 
+    device,   
+    graph,
     rng,
     **integration_kwargs
 ):
@@ -121,8 +121,8 @@ def integrate(
     Integrates the specified dynamics over the given graph
     """
     N = graph.number_of_nodes()
-    y0 = rng.uniform(input_range[0], input_range[1], N)
-    y0 = torch.from_numpy(y0).unsqueeze(-1).float().to(device)
+    y0 = rng.uniform(input_range[0], input_range[1], N).astype(np.float64)
+
     xs, t = numerical_integration(
         G=graph,
         dynamics=dynamics,
@@ -131,7 +131,7 @@ def integrate(
         t_eval_steps=t_eval_steps,
         **integration_kwargs
     )
-    return xs, t
+    return torch.from_numpy(xs).float().unsqueeze(2).to(device), torch.from_numpy(t).float().to(device)
 
 
 def sample_from_spatio_temporal_graph(dataset, edge_index, edge_attr, t=None, sample_size=32):
