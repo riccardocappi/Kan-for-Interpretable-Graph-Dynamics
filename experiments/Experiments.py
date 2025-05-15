@@ -245,6 +245,9 @@ class Experiments(ABC):
         
         model = self.get_model_opt(trial)   # get the current model
         
+        total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"Trial {trial.number}: num params: {total_params}")
+        
         self.current_model_arch = model     # Save current model architecture
         self.current_model_state_pool.clear()
         
