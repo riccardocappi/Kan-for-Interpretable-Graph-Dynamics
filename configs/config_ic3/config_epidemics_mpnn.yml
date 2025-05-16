@@ -34,8 +34,8 @@ integration_kwargs:
 search_space:
   n_hidden_layers_g_net: [1, 2]
   n_hidden_layers_h_net: [1, 2]
-  hidden_dims_g_net: [16, 64]
-  hidden_dims_h_net: [16, 64]
+  hidden_dims_g_net: [8, 64]
+  hidden_dims_h_net: [8, 64]
   af_g_net: ["relu", "softplus", "tanh"]
   af_h_net: ["relu", "softplus", "tanh"]
   drop_p_g_net: [0.0001, 0.5]
