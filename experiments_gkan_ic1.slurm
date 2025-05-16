@@ -49,7 +49,7 @@ python main.py --config=./configs/config_ic1/config_biochemical.yml --method=opt
 wait
 python main.py --config=./configs/config_ic1/config_population.yml --method=optuna --n_trials=15 --study_name=population_gkan_ic1_s5 --process_id=0 &
 sleep 1m
-python main.py --config=./configs/config_ic1/config_population.yml --method=optuna --n_trials=15 --study_name=population_gkan_ic1_s5--process_id=1 &
+python main.py --config=./configs/config_ic1/config_population.yml --method=optuna --n_trials=15 --study_name=population_gkan_ic1_s5 --process_id=1 &
 sleep 1m
 python main.py --config=./configs/config_ic1/config_population.yml --method=optuna --n_trials=15 --study_name=population_gkan_ic1_s5 --process_id=2 &
 wait

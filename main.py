@@ -18,6 +18,7 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
     set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
     
     model_type=config['model_type']
+    n_trials = 10
            
     if model_type == 'GKAN':
         exp = ExperimentsGKAN(config, n_trials, method, study_name=study_name, process_id=process_id)
