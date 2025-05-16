@@ -14,7 +14,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         seed,
         device='cpu',
         history = 1,
-        horizon = 1,
+        horizon = 15,
         n_ics = 3,
         stride=24,
         noise_scale=0.0

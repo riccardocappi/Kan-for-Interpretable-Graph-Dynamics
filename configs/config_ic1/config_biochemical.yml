@@ -27,7 +27,7 @@ n_iter: 1
 num_samples: -1
 data_folder: './data_ic1'
 criterion: "MAE"
-method: "dopri5"
+method: "scipy_solver"
 integration_kwargs:
   F: 1.0
   B: 0.5

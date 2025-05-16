@@ -27,7 +27,7 @@ n_iter: 3
 num_samples: -1
 data_folder: './data'
 criterion: "MAE"
-method: "dopri5"
+method: "scipy_solver"
 integration_kwargs:
   B: 0.5 
   R: 0.2
