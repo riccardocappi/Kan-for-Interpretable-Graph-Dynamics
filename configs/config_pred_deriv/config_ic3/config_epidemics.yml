@@ -1,0 +1,53 @@
+name: "Epidemics"
+model_name: "model-epidemics-gkan"
+model_type: 'GKAN'
+epochs: 500
+patience: 100
+opt: 'Adam'
+log: 1
+t_span: [0,1]
+t_eval_steps: 300
+seed: 42
+pytorch_seed: 0
+device: 'cuda'
+input_range: [0, 1]
+in_dim: 1
+atol: 0.00001
+rtol: 0.001
+adjoint: True
+message_passing: False
+include_time: False
+horizon: 15
+history: 1
+preprocess_data: False
+stride: 5
+storage: "journal"
+save_cache_data: True
+n_iter: 3
+num_samples: -1
+predict_deriv: True
+data_folder: './data_deriv'
+criterion: "MAE"
+method: "dopri5"
+integration_kwargs:
+  B: 0.5
+  R: 0.5
+search_space:
+  grid_size_h_net: [5, 10]
+  grid_size_g_net: [5, 10]
+  spline_order_h_net: [1, 3]
+  spline_order_g_net: [1, 3]
+  range_limit_h_net: [1, 3]
+  range_limit_g_net: [1, 3]
+  hidden_dim_h_net: [1, 3]
+  hidden_dim_g_net: [1, 3]
+  lamb_g_net: [0.000001, 0.01]
+  lamb_h_net: [0.000001, 0.01]
+  lr: [0.0005, 0.05]
+  use_orig_reg: [True, False]
+  mu_1_g_net: [0.5, 1.0]
+  mu_2_g_net: [0.5, 1.0]
+  mu_1_h_net: [0.5, 1.0]
+  mu_2_h_net: [0.5, 1.0]
+  lamb: [1.]
+  batch_size: [16, 32]

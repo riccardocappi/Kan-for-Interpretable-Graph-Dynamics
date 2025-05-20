@@ -17,19 +17,20 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         horizon = 15,
         n_ics = 3,
         stride=24,
-        noise_scale=0.0
+        noise_scale=0.0,
+        predict_deriv=False
     ):
         self.name = name
         self.num_samples = n_samples
         self.rng = np.random.default_rng(seed=seed)
         self.seed = seed
         self.device = device
-        assert horizon >= 3
-        self.horizon = horizon
-        self.history = history
+        self.horizon = horizon if not predict_deriv else 1
+        self.history = history if not predict_deriv else 1
         self.n_ics = n_ics
         self.stride = stride
         self.nosie_scale = noise_scale
+        self.predict_deriv = predict_deriv
         super().__init__(root)
         self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
         
@@ -57,7 +58,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         input_length = self.history
         target_length = self.horizon
         total_seq_len = input_length + target_length
-                
+        
         data = []
         
         for ic in range(raw_data.size(0)):
@@ -67,17 +68,22 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
             nosie = self.rng.normal(0, noise_strength, size=raw_data[ic].shape)
             noise = torch.from_numpy(nosie).float().to(self.device)
             raw_data[ic] += noise
+            first_derivatives = self.compute_five_point_fd(raw_data[ic], time)
             
             for ts in range(0, raw_data.size(1) - total_seq_len + 1, self.stride):
                 idx_input = slice(ts, ts + input_length)
                 idx_target = slice(ts + input_length, ts + total_seq_len)
                 
                 x = raw_data[ic, idx_input, :, :]  # Shape: (input_length, num_nodes, 1)
-                y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
-                   
-                t_span = time[ic, ts + input_length-1: ts + total_seq_len]
                 
-                backprop_idx = torch.tensor([0, self.horizon//2, -1], device=self.device)
+                if self.predict_deriv:
+                    y = first_derivatives[ts, :, :].unsqueeze(0)
+                    backprop_idx = torch.tensor(0, device=torch.device(self.device))
+                else: 
+                    y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
+                    backprop_idx = torch.tensor([0, self.horizon//2, -1], device=self.device)
+                
+                t_span = time[ic, ts + input_length-1: ts + total_seq_len]
                 
                 data.append(
                     Data(
@@ -86,7 +92,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                         x=x,  
                         y=y,
                         t_span=t_span,
-                        backprop_idx=backprop_idx
+                        backprop_idx=backprop_idx,
                     )
                 )
         
@@ -97,3 +103,25 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
     @abstractmethod
     def get_raw_data(self):
         raise NotImplementedError()
+    
+    
+    def compute_five_point_fd(self, raw_data, time):
+        delta_t = time[0, 1] - time[0, 0]
+        delta_t = delta_t.item()
+
+        T, _, _ = raw_data.shape
+        derivative = torch.zeros_like(raw_data)
+
+        # Apply the five-point stencil to the interior points
+        for t in range(2, T - 2):
+            derivative[t] = (
+                -raw_data[t - 2] + 8 * raw_data[t - 1] - 8 * raw_data[t + 1] + raw_data[t + 2]
+            ) / (12 * delta_t)
+
+        # Handle boundary values with lower-order differences (e.g., forward/backward)
+        derivative[0] = (raw_data[1] - raw_data[0]) / delta_t
+        derivative[1] = (raw_data[2] - raw_data[0]) / (2 * delta_t)
+        derivative[-2] = (raw_data[-1] - raw_data[-3]) / (2 * delta_t)
+        derivative[-1] = (raw_data[-1] - raw_data[-2]) / delta_t
+
+        return derivative

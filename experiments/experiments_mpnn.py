@@ -117,7 +117,8 @@ class ExperimentsMPNN(Experiments):
             adjoint=self.config.get('adjoint', False),  # Should be read from config
             integration_method=self.integration_method,
             atol=self.config.get('atol', 1e-6), 
-            rtol=self.config.get('rtol', 1e-3)
+            rtol=self.config.get('rtol', 1e-3),
+            predict_deriv=self.predict_deriv
         )
         model = model.to(torch.device(self.device))
         

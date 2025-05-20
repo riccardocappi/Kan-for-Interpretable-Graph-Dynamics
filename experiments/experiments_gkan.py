@@ -131,7 +131,8 @@ class ExperimentsGKAN(Experiments):
             lmbd_g=lamb_g,
             lmbd_h=lamb_h,
             atol=self.config.get('atol', 1e-6), 
-            rtol=self.config.get('rtol', 1e-3)
+            rtol=self.config.get('rtol', 1e-3),
+            predict_deriv=self.predict_deriv
         )
         model = model.to(torch.device(self.device))
         

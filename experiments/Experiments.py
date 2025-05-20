@@ -50,6 +50,7 @@ class Experiments(ABC):
         self.horizon = config.get('horizon', 1)
         self.history = config.get('history', 1) 
         self.preprocess_data = config.get('preprocess_data', False)
+        self.predict_deriv = config.get("predict_deriv", False)
         
         if config['name'] in dynamics_name:
             dataset = SyntheticData(
@@ -64,8 +65,9 @@ class Experiments(ABC):
                 device=self.device,
                 horizon = self.horizon,
                 history = self.history,
-                stride=config.get('stride', 24),
+                stride=config.get('stride', 5),
                 noise_scale=config.get('noise_scale', 0.0),
+                predict_deriv=self.predict_deriv,
                 **config['integration_kwargs']
             )
         elif config['name'] == "Real-Epidemics":
