@@ -20,7 +20,7 @@ include_time: False
 horizon: 15
 history: 1
 preprocess_data: False
-stride: 5
+stride: 1
 storage: "journal"
 save_cache_data: True
 n_iter: 3
@@ -34,14 +34,14 @@ integration_kwargs:
   B: 0.5
   R: 0.5
 search_space:
-  grid_size_h_net: [5, 10]
-  grid_size_g_net: [5, 10]
+  grid_size_h_net: [5, 15]
+  grid_size_g_net: [5, 15]
   spline_order_h_net: [1, 3]
   spline_order_g_net: [1, 3]
   range_limit_h_net: [1, 5]
   range_limit_g_net: [1, 5]
-  hidden_dim_h_net: [1, 3]
-  hidden_dim_g_net: [1, 3]
+  hidden_dim_h_net: [1, 5]
+  hidden_dim_g_net: [1, 5]
   lamb_g_net: [0.000001, 0.01]
   lamb_h_net: [0.000001, 0.01]
   lr: [0.0005, 0.05]
