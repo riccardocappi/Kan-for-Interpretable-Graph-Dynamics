@@ -17,6 +17,7 @@ from collections import defaultdict
 from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
 import warnings
+import sympy
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 
@@ -337,13 +338,14 @@ def fit_acts_pysr(x, y, pysr_model = None, sample_size = -1):
     return top_5_eq 
 
 
-def fit_params_scipy(x, y, func, device='cuda'):
+def fit_params_scipy(x, y, func, device='cuda'):    
     func_optim = lambda x, a, b, c, d: c * func(a*x + b) + d
     try:
         params, _ = curve_fit(func_optim, x, y, p0=[1., 0., 1., 0.], nan_policy='omit')
     except RuntimeError:
         return 1e-8, torch.tensor(np.array([1.,0.,1.,0.]), device=device, dtype=torch.float32)
     post_fun = params[2] * func(params[0]*x + params[1]) + params[3]
+        
     r2 = r2_score(y, post_fun)
     return r2, torch.tensor(params, device=device, dtype=torch.float32)
 
@@ -442,12 +444,12 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         sample_size=sample_size,
         device=device
     )
-    
+    symb_g = quantise(symb_g[0], 0.01)  # Univariate functions
     # H_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
     
-    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(sp.simplify(symb_g[0])) + ')')
+    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(sp.simplify(symb_g)) + ')')
     if message_passing:
         symb_h_in = [sp.Symbol('x_i'), aggr_term]
     else:
@@ -463,8 +465,9 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         sample_size=sample_size,
         device=device
     )
-
-    return symb_h[0] if message_passing else symb_h[0] + aggr_term  # Univariate functions
+    
+    symb_h = quantise(symb_h[0], 0.01)
+    return symb_h if message_passing else symb_h + aggr_term  # Univariate functions
 
 
 def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
@@ -482,7 +485,7 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
     symb_func = symb_func.subs(subs_dict)
 
-    return symb_func, top_5_eq[["complexity", "loss", "score", "sympy_format"]]
+    return quantise(symb_func, 0.01), top_5_eq[["complexity", "loss", "score", "sympy_format"]]
 
 
 
@@ -583,3 +586,12 @@ def fit_black_box_from_kan(
     top_5_eqs_h.to_csv(f"{save_path}/top_5_equations_h.csv")
 
     return symb_h if message_passing else symb_h + aggr_term
+
+
+def quantise(expr, quantise_to):
+    if isinstance(expr, sympy.Float):
+        return expr.func(round(float(expr) / quantise_to) * quantise_to)
+    elif isinstance(expr, (sympy.Symbol, sympy.Integer)):
+        return expr
+    else:
+        return expr.func(*[quantise(arg, quantise_to) for arg in expr.args])
