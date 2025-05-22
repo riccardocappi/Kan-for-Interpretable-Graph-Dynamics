@@ -13,6 +13,7 @@ from datasets.data_utils import numerical_integration
 import sympy as sp
 import json
 from models.kan.KanLayer import KANLayer
+from models.kan.KAN import KAN
 from collections import defaultdict
 from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
@@ -117,25 +118,41 @@ def fix_symbolic(layer:KANLayer, i, j, func):
     layer.symb_mask.data[j][i] = 1
                 
                 
-def automatic_fix_symbolic_kan(layers, symb_functions_file, eq_index=0):
+def automatic_fix_symbolic_kan(symb_functions_file, in_dim=1, device='cuda'):
     """
     Automatically fix all the KAN splines to the respective symbolic functions
     
     Args:
         - layers : KAN layers
         - symb_functions_file : Path to the file in which are saved the fitted symbolic functions
-        - eq_index : Index of one of the top-5 equations returned by PySR  
     """
     with open(symb_functions_file, "r") as f:
         all_functions = json.load(f)
-        
-    for l, layer in enumerate(layers):
+    
+    hidden_layers = [in_dim]
+    # Loop over layers
+    layer_keys = sorted(all_functions.keys(), key=int)
+    for layer_key in layer_keys:
+        layer = all_functions[layer_key]
+        num_nodes = len(layer)
+        hidden_layers.append(num_nodes)
+    
+    kan_placeholder = KAN(
+        layers_hidden=hidden_layers,
+        store_act=True,
+        compute_symbolic=True,
+        device=device
+    )
+    
+    
+    for l, layer in enumerate(kan_placeholder.layers):
         symb_layer = all_functions[f"{l}"]
         for j in range(layer.out_features):
             for i in range(layer.in_features):
-                str_func =  symb_layer[f"{j}"][f"{i}"][eq_index]
+                str_func =  symb_layer[f"{j}"][f"{i}"]
                 symb_func = sp.lambdify(sp.Symbol('x0'), sp.sympify(str_func))
                 fix_symbolic(layer, i, j, symb_func)
+    return kan_placeholder
                 
 
 
@@ -379,6 +396,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1)
     symb_layer_acts = []
     in_dim = cached_act.shape[2]
     out_dim = cached_act.shape[1]
+    symbolic_functions = defaultdict(dict)
 
     for j in range(out_dim):
         symb_out = 0
@@ -387,28 +405,38 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1)
             y = cached_act[:, j, i].reshape(-1)
             
             symb_func = fit_acts_scipy(x, y, sample_size=sample_size, device=device)
+            symbolic_functions[j][i] = str(symb_func)
+            
             symb_func = symb_func.subs(sp.Symbol('x0'), symb_xs[i])
             symb_out += symb_func
 
         symb_layer_acts.append(symb_out)
 
-    return symb_layer_acts
+    return symb_layer_acts, symbolic_functions
 
 
-def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda'):
+def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model_path='./models'):
     n_layers = len(kan_acts)
+    all_functions = {}
     
     for l in range(n_layers):
         acts = kan_acts[l].cpu().detach().numpy()
         preacts = kan_preacts[l].cpu().detach().numpy()
 
-        symb_xs = fit_layer(
+        symb_xs, symb_functions = fit_layer(
             cached_act=acts,
             cached_preact=preacts,
             symb_xs=symb_xs,
             device=device,
             sample_size=sample_size
         )
+        
+        all_functions[l] = symb_functions
+        
+        save_path = f"{model_path}/symb_functions.json"
+        with open(save_path, "w") as f:
+            json.dump(all_functions, f)
+            
     return symb_xs
                 
         
@@ -442,7 +470,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         pruned_preacts,
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
         sample_size=sample_size,
-        device=device
+        device=device,
+        model_path=f"{model_path}/g_net"
     )
     symb_g = quantise(symb_g[0])  # Univariate functions
     # H_Net
@@ -463,7 +492,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         pruned_preacts,
         symb_xs=symb_h_in,
         sample_size=sample_size,
-        device=device
+        device=device,
+        model_path=f"{model_path}/h_net"
     )
     
     symb_h = quantise(symb_h[0])
