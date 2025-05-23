@@ -310,7 +310,7 @@ class Experiments(ABC):
         raise NotImplementedError()
         
     
-    def post_processing(self, best_model: ODEBlock, sample_size = -1):
+    def post_processing(self, best_model: ODEBlock, sample_size = -1, raw_data=None):
         """
         Save the best model checkpoint to file.
         
@@ -322,11 +322,11 @@ class Experiments(ABC):
         self._save_ckpt(best_model)
         
         if self.save_cache_data:
-            # Sample from the graph-time-series
-            if self.scaler is not None:
-                raw_data = self.scaler.transform(self.training_set.raw_data_sampled[0])
-            else:
-                raw_data = self.training_set.raw_data_sampled[0]
+            if raw_data is None:
+                if self.scaler is not None:
+                    raw_data = self.scaler.transform(self.training_set.raw_data_sampled[0])
+                else:
+                    raw_data = self.training_set.raw_data_sampled[0]
             
             t = self.training_set.t_sampled[0] if self.config.get("include_time", False) else None
             
