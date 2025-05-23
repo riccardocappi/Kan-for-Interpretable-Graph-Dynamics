@@ -19,6 +19,7 @@ from scipy.optimize import curve_fit
 from sklearn.metrics import r2_score
 import warnings
 import sympy
+import re
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 
@@ -143,7 +144,6 @@ def automatic_fix_symbolic_kan(symb_functions_file, in_dim=1, device='cuda'):
         compute_symbolic=True,
         device=device
     )
-    
     
     for l, layer in enumerate(kan_placeholder.layers):
         symb_layer = all_functions[f"{l}"]
@@ -473,7 +473,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         device=device,
         model_path=f"{model_path}/g_net"
     )
-    symb_g = quantise(symb_g[0])  # Univariate functions
+    symb_g = symb_g[0]  # Univariate functions
     # H_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
@@ -496,8 +496,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         model_path=f"{model_path}/h_net"
     )
     
-    symb_h = quantise(symb_h[0])
-    return symb_h if message_passing else symb_h + aggr_term  # Univariate functions
+    symb_h = symb_h[0]  # Univariate functions
+    return symb_h if message_passing else symb_h + aggr_term  
 
 
 def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
@@ -515,7 +515,7 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
     symb_func = symb_func.subs(subs_dict)
 
-    return quantise(symb_func), top_5_eq[["complexity", "loss", "score", "sympy_format"]]
+    return symb_func, top_5_eq[["complexity", "loss", "score", "sympy_format"]]
 
 
 
@@ -622,6 +622,21 @@ def quantise(expr, quantise_to=0.01):
     if isinstance(expr, sympy.Float):
         return expr.func(round(float(expr) / quantise_to) * quantise_to)
     elif isinstance(expr, (sympy.Symbol, sympy.Integer)):
-        return expr
+        name = str(expr)
+        match = re.match(r'\\sum_\{[^}]*\}\((.*)\)', name)
+        if match:
+            inner_expr_str = match.group(1)
+            try:
+                # Convert inner string to sympy expression
+                inner_expr = sympy.sympify(inner_expr_str)
+                # Quantise inner expression
+                quantised_inner = quantise(inner_expr, quantise_to)
+                # Rebuild symbol name
+                new_name = re.sub(r'\(.*\)', f'({quantised_inner})', name)
+                return sympy.Symbol(new_name)
+            except (sympy.SympifyError, SyntaxError):
+                return expr  # If parsing fails, return the symbol as-is
+        else:
+            return expr
     else:
         return expr.func(*[quantise(arg, quantise_to) for arg in expr.args])
