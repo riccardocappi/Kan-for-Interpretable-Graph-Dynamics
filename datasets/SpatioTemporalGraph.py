@@ -115,7 +115,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         # Apply the five-point stencil to the interior points
         for t in range(2, T - 2):
             derivative[t] = (
-                -raw_data[t - 2] + 8 * raw_data[t - 1] - 8 * raw_data[t + 1] + raw_data[t + 2]
+                -raw_data[t + 2] + 8 * raw_data[t + 1] - 8 * raw_data[t - 1] + raw_data[t - 2]
             ) / (12 * delta_t)
 
         # Handle boundary values with lower-order differences (e.g., forward/backward)

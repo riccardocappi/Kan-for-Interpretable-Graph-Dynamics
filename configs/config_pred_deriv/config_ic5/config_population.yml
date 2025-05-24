@@ -9,7 +9,7 @@ t_span: [0,1]
 t_eval_steps: 300
 seed: 42
 pytorch_seed: 0
-device: 'cuda'
+device: 'cuda:1'
 input_range: [0, 1]
 in_dim: 1
 atol: 0.00001
@@ -20,13 +20,13 @@ include_time: False
 horizon: 15
 history: 1
 preprocess_data: False
-stride: 1
+stride: 5
 storage: "journal"
 save_cache_data: True
 n_iter: 5
 num_samples: -1
 predict_deriv: True
-data_folder: './data_ic5_deriv'
+data_folder: './data_ic5_deriv_gkan'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:

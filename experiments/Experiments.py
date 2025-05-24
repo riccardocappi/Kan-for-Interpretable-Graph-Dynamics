@@ -125,6 +125,8 @@ class Experiments(ABC):
 
         logger.setLevel(logging.INFO)  # Setup the root logger.
         self.optuna_handler = logging.FileHandler(logs_file_path, mode="w")
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        self.optuna_handler.setFormatter(formatter)
         
         logger.addHandler(self.optuna_handler)
         optuna.logging.enable_propagation()
@@ -187,7 +189,7 @@ class Experiments(ABC):
             sampler = GridSampler(self.search_space)
             n_trials = len(sampler._all_grids)
         else:
-            sampler = optuna.samplers.TPESampler()
+            sampler = optuna.samplers.TPESampler(seed=self.seed)
             n_trials = self.n_trials
         
         study = optuna.create_study(
