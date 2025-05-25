@@ -1,0 +1,1 @@
+{"lr": 0.04572228646314566, "lamb": 0.0, "batch_size": 16, "n_hidden_layers_g_net": 1, "hidden_dims_g_net": 8, "af_g_net": "relu", "drop_p_g_net": 0.4897127970978605, "n_hidden_layers_h_net": 1, "hidden_dims_h_net": 56, "af_h_net": "relu", "drop_p_h_net": 0.04755711995158584}
