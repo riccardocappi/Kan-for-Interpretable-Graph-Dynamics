@@ -336,14 +336,15 @@ def get_pysr_model(
     
 
 
-def fit_acts_pysr(x, y, pysr_model = None, sample_size = -1):
+def fit_acts_pysr(x, y, pysr_model = None, sample_size = -1, seed=42):
+    rng = np.random.default_rng(seed)
     if pysr_model is None:
         model = get_pysr_model()
     else:
         model = pysr_model()
     
     if sample_size > 0 and sample_size < len(x):
-        indices = np.random.choice(len(x), sample_size, replace=False)
+        indices = rng.choice(len(x), sample_size, replace=False)
         x_sampled = x[indices]
         y_sampled = y[indices]
     else:
