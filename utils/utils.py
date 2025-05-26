@@ -33,7 +33,7 @@ SYMBOLIC_LIB_NUMPY = {
     'x': lambda x: x,
     'x^2': lambda x: x**2,
     'x^3': lambda x: x**3,
-    'exp': lambda x: np.exp(x),
+    'exp': lambda x: np.clip(np.exp(x), a_min=None, a_max=1e5),  # Clip to avoid overflow
     'abs': lambda x: np.abs(x),
     'sin': lambda x: np.sin(x),
     'cos': lambda x: np.cos(x),
@@ -368,9 +368,10 @@ def fit_params_scipy(x, y, func, device='cuda'):
     return r2, torch.tensor(params, device=device, dtype=torch.float32)
 
 
-def fit_acts_scipy(x, y, sample_size = -1, device='cuda'):    
+def fit_acts_scipy(x, y, sample_size = -1, device='cuda', seed=42):
+    rng = np.random.default_rng(seed)  
     if sample_size > 0 and sample_size < len(x):
-        indices = np.random.choice(len(x), sample_size, replace=False)
+        indices = rng.choice(len(x), sample_size, replace=False)
         x_sampled = x[indices]
         y_sampled = y[indices]
     else:
