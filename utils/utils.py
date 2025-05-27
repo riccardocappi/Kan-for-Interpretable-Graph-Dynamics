@@ -33,7 +33,7 @@ SYMBOLIC_LIB_NUMPY = {
     'x': lambda x: x,
     'x^2': lambda x: x**2,
     'x^3': lambda x: x**3,
-    'exp': lambda x: np.clip(np.exp(x), a_min=None, a_max=1e5),  # Clip to avoid overflow
+    'exp': lambda x: np.clip(np.exp(x), a_min=None, a_max=1e5),
     'abs': lambda x: np.abs(x),
     'sin': lambda x: np.sin(x),
     'cos': lambda x: np.cos(x),
@@ -55,6 +55,20 @@ SYMBOLIC_LIB_SYMPY = {
     'tanh': lambda x: sp.tanh(x),
     'neg': lambda x: -x,
     '0': lambda x: 0 * x,
+}
+
+FUNC_COMPLEXITY = {
+    '0': 0,
+    'x': 1,
+    'neg': 1,
+    'x^2': 2,
+    'x^3': 3,
+    'abs': 2,
+    'sin': 4,
+    'cos': 4,
+    'tan': 4,
+    'tanh': 4,
+    'exp': 5,
 }
 
 
@@ -356,7 +370,14 @@ def fit_acts_pysr(x, y, pysr_model = None, sample_size = -1, seed=42):
     return top_5_eq 
 
 
-def fit_params_scipy(x, y, func, device='cuda'):    
+def penalized_loss(y_true, y_pred, func_name, alpha=0.1):
+    r2 = r2_score(y_true, y_pred)
+    complexity = FUNC_COMPLEXITY.get(func_name, 5)  # default penalty if unknown
+    penalty = alpha * complexity
+    return r2 - penalty
+
+
+def fit_params_scipy(x, y, func, func_name, device='cuda', alpha=0.1):    
     func_optim = lambda x, a, b, c, d: c * func(a*x + b) + d
     try:
         params, _ = curve_fit(func_optim, x, y, p0=[1., 0., 1., 0.], nan_policy='omit')
@@ -364,11 +385,11 @@ def fit_params_scipy(x, y, func, device='cuda'):
         return 1e-8, torch.tensor(np.array([1.,0.,1.,0.]), device=device, dtype=torch.float32)
     post_fun = params[2] * func(params[0]*x + params[1]) + params[3]
         
-    r2 = r2_score(y, post_fun)
+    r2 = penalized_loss(y, post_fun, func_name, alpha=alpha)
     return r2, torch.tensor(params, device=device, dtype=torch.float32)
 
 
-def fit_acts_scipy(x, y, sample_size = -1, device='cuda', seed=42):
+def fit_acts_scipy(x, y, sample_size = -1, device='cuda', seed=42, alpha=0.1):
     rng = np.random.default_rng(seed)  
     if sample_size > 0 and sample_size < len(x):
         indices = rng.choice(len(x), sample_size, replace=False)
@@ -380,7 +401,7 @@ def fit_acts_scipy(x, y, sample_size = -1, device='cuda', seed=42):
     
     scores = []
     for name, func in SYMBOLIC_LIB_NUMPY.items():
-        r2, params = fit_params_scipy(x_sampled, y_sampled, func, device=device)
+        r2, params = fit_params_scipy(x_sampled, y_sampled, func, name, device=device, alpha=alpha)
         scores.append((name, r2, params))
     
     func_name, best_r2, best_params = max(scores, key=lambda x: x[1])
@@ -394,7 +415,7 @@ def fit_acts_scipy(x, y, sample_size = -1, device='cuda', seed=42):
     return best_fun_sympy
     
 
-def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1):
+def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1, alpha=0.1):
     symb_layer_acts = []
     in_dim = cached_act.shape[2]
     out_dim = cached_act.shape[1]
@@ -406,7 +427,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1)
             x = cached_preact[:, i].reshape(-1)
             y = cached_act[:, j, i].reshape(-1)
             
-            symb_func = fit_acts_scipy(x, y, sample_size=sample_size, device=device)
+            symb_func = fit_acts_scipy(x, y, sample_size=sample_size, device=device, alpha=alpha)
             symbolic_functions[j][i] = str(symb_func)
             
             symb_func = symb_func.subs(sp.Symbol('x0'), symb_xs[i])
@@ -417,7 +438,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1)
     return symb_layer_acts, symbolic_functions
 
 
-def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model_path='./models'):
+def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model_path='./models', alpha=0.1):
     n_layers = len(kan_acts)
     all_functions = {}
     
@@ -430,7 +451,8 @@ def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model
             cached_preact=preacts,
             symb_xs=symb_xs,
             device=device,
-            sample_size=sample_size
+            sample_size=sample_size,
+            alpha=alpha
         )
         
         all_functions[l] = symb_functions
@@ -463,7 +485,7 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, device = 'cuda', sample_size=-1, message_passing=True, include_time=False):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, device = 'cuda', sample_size=-1, message_passing=True, include_time=False, alpha=0.1):
     # G_net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)    
@@ -473,7 +495,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
         sample_size=sample_size,
         device=device,
-        model_path=f"{model_path}/g_net"
+        model_path=f"{model_path}/g_net",
+        alpha=alpha
     )
     symb_g = symb_g[0]  # Univariate functions
     # H_Net
@@ -495,7 +518,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         symb_xs=symb_h_in,
         sample_size=sample_size,
         device=device,
-        model_path=f"{model_path}/h_net"
+        model_path=f"{model_path}/h_net",
+        alpha=alpha
     )
     
     symb_h = symb_h[0]  # Univariate functions
