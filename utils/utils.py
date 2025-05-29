@@ -20,6 +20,8 @@ from sklearn.metrics import r2_score
 import warnings
 import sympy
 import re
+import pandas as pd
+from sklearn.linear_model import Lasso
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 
@@ -39,7 +41,6 @@ SYMBOLIC_LIB_NUMPY = {
     'cos': lambda x: np.cos(x),
     'tan': lambda x: np.tan(x),
     'tanh': lambda x: np.tanh(x),
-    'neg': lambda x: -x,
     '0': lambda x: x*0,
 }
 
@@ -53,16 +54,14 @@ SYMBOLIC_LIB_SYMPY = {
     'cos': lambda x: sp.cos(x),
     'tan': lambda x: sp.tan(x),
     'tanh': lambda x: sp.tanh(x),
-    'neg': lambda x: -x,
     '0': lambda x: 0 * x,
 }
 
 FUNC_COMPLEXITY = {
     '0': 0,
     'x': 1,
-    'neg': 1,
-    'x^2': 2,
-    'x^3': 3,
+    'x^2': 1.5,
+    'x^3': 4,
     'abs': 2,
     'sin': 4,
     'cos': 4,
@@ -274,8 +273,8 @@ def save_black_box_to_file(folder_path, cache_input, cache_output):
 def pruning(kan_acts, kan_preacts, theta = 0.01):
 
     def get_acts_scale_spline(l_index):
-        input_range = torch.std(pruned_preacts[l_index], dim=0)
-        output_range_spline = torch.std(pruned_acts[l_index], dim=0)
+        input_range = torch.sum(torch.abs(pruned_preacts[l_index]), dim=0)
+        output_range_spline = torch.sum(torch.abs(pruned_acts[l_index]), dim=0)
         acts_scale_spline = output_range_spline / input_range
         return acts_scale_spline
 
@@ -377,13 +376,33 @@ def penalized_loss(y_true, y_pred, func_name, alpha=0.1):
     return r2 - penalty
 
 
-def fit_params_scipy(x, y, func, func_name, device='cuda', alpha=0.1):    
-    func_optim = lambda x, a, b, c, d: c * func(a*x + b) + d
+def fit_params_scipy(x, y, func, func_name, device='cuda', alpha=0.1):  
+    if func_name == 'x' or func_name == 'neg':
+        func_optim = lambda x, a, b: a*x + b  
+        init_params = [1., 0.]
+    elif func_name=='x^2':
+        func_optim = lambda x, a, b, c: a*x**2 + b*x + c  
+        init_params = [1., 1., 0]
+    elif func_name == 'x^3':
+        func_optim = lambda x, a, b, c, d: a*x**3 + b*x**2 + c*x + d  
+        init_params = [1., 1., 1., 0.]
+    else:
+        func_optim = lambda x, a, b, c, d: c * func(a*x + b) + d
+        init_params = [1., 0., 1., 0.]
+        
     try:
-        params, _ = curve_fit(func_optim, x, y, p0=[1., 0., 1., 0.], nan_policy='omit')
+        params, _ = curve_fit(func_optim, x, y, p0=init_params, nan_policy='omit')
     except RuntimeError:
         return 1e-8, torch.tensor(np.array([1.,0.,1.,0.]), device=device, dtype=torch.float32)
-    post_fun = params[2] * func(params[0]*x + params[1]) + params[3]
+    
+    if func_name == 'x' or func_name == 'neg':
+        post_fun = params[0] * func(x) + params[1]
+    elif func_name == 'x^2':
+        post_fun = params[0] * x**2 + params[1] * x + params[2]
+    elif func_name == 'x^3':
+        post_fun = params[0]*x**3 + params[1]*x**2 + params[2]*x + params[3] 
+    else:
+        post_fun = params[2] * func(params[0]*x + params[1]) + params[3]
         
     r2 = penalized_loss(y, post_fun, func_name, alpha=alpha)
     return r2, torch.tensor(params, device=device, dtype=torch.float32)
@@ -408,14 +427,94 @@ def fit_acts_scipy(x, y, sample_size = -1, device='cuda', seed=42, alpha=0.1):
     if best_r2 == 1e-8: # if the fitting fails, we set the zero function
         func_name = '0'
     
-    best_fun_sympy = SYMBOLIC_LIB_SYMPY[func_name]
     x_symb = sp.Symbol('x0')    # This symbol must be x0 in order to work with the rest of the code
-    best_fun_sympy = best_params[2] * best_fun_sympy(best_params[0]*x_symb + best_params[1]) + best_params[3]
+        
+    if func_name == 'x' or func_name == 'neg':
+        best_fun_sympy = best_params[0] * x_symb + best_params[1]
+    elif func_name == 'x^2':
+        best_fun_sympy = best_params[0] * x_symb**2 + best_params[1] * x_symb + best_params[2]
+    elif func_name == 'x^3':
+        best_fun_sympy = (best_params[0] * x_symb**3 + best_params[1] * x_symb**2 +
+                          best_params[2] * x_symb + best_params[3])
+    else:
+        best_fun_sympy = best_params[2] * SYMBOLIC_LIB_SYMPY[func_name](best_params[0] * x_symb + best_params[1]) + best_params[3]
     
     return best_fun_sympy
+
+
+# Create symbolic feature library
+def build_symbolic_library(x_dim):
+    x_syms = [sp.Symbol(f'x{i}') for i in range(x_dim)]
+
+    exprs = []  # constant term
+    for i in range(x_dim):
+        exprs += [0, x_syms[i], x_syms[i]**2, sp.sin(x_syms[i]), sp.cos(x_syms[i]), sp.exp(x_syms[i]), sp.log(sp.Abs(x_syms[i]) + 1e-5)]
+    if x_dim == 2:
+        x0, x1 = x_syms
+        exprs += [x0 * x1, sp.sin(x0 - x1), sp.cos(x0 - x1), (1 - x0) * x1, (1 - x1) * x0, (x0 + x1) / 2, (x0 - x1) / 2]
+    
+    return exprs
+
+
+def evaluate_library(exprs, x_np):
+    x_dim = x_np.shape[1]
+    x_syms = sp.symbols([f'x{i}' for i in range(x_dim)])  # (x0, x1, ..., xd)
+    
+    funcs = [sp.lambdify(x_syms, expr, modules='numpy') for expr in exprs]
+
+    X_cols = []
+    for f in funcs:
+        try:
+            values = f(*x_np.T)
+            values = np.atleast_1d(values)
+            if values.shape[0] == 1:
+                # Broadcast constant term
+                values = np.full(x_np.shape[0], values.item())
+            X_cols.append(values)
+        except Exception as e:
+            print(f"Failed to evaluate function: {f}. Error: {e}")
+            # Fallback: column of zeros
+            X_cols.append(np.zeros(x_np.shape[0]))
+
+    return np.column_stack(X_cols)
+
+
+def fit_sindy_like(x, y, gamma=0.01):
+    x_np = x
+    if x_np.ndim == 1:
+        x_np = x_np[:, None]
+    y_np = y
+    
+    exprs = build_symbolic_library(x_np.shape[1])
+    Theta = evaluate_library(exprs, x_np)
+
+    # Lasso for sparsity
+    model = Lasso(alpha=gamma, fit_intercept=False, max_iter=10000)
+    model.fit(Theta, y_np)
+    
+    # Build symbolic expression
+    expr = sum(coef * term for coef, term in zip(model.coef_, exprs) if abs(coef) > 1e-2)
+    if expr == 0:
+        expr = sp.sympify(0)
+
+    return expr
+
+
+def fit_acts_sindy(x, y, sample_size=-1, seed=42, gamma=0.01):
+    rng = np.random.default_rng(seed)  
+    if sample_size > 0 and sample_size < len(x):
+        indices = rng.choice(len(x), sample_size, replace=False)
+        x_sampled = x[indices]
+        y_sampled = y[indices]
+    else:
+        x_sampled = x
+        y_sampled = y
+
+    return fit_sindy_like(x_sampled, y_sampled, gamma=gamma)
     
 
-def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1, alpha=0.1):
+
+def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1, alpha=0.1, use_sindy=False, gamma=0.01):
     symb_layer_acts = []
     in_dim = cached_act.shape[2]
     out_dim = cached_act.shape[1]
@@ -427,7 +526,11 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1,
             x = cached_preact[:, i].reshape(-1)
             y = cached_act[:, j, i].reshape(-1)
             
-            symb_func = fit_acts_scipy(x, y, sample_size=sample_size, device=device, alpha=alpha)
+            if not use_sindy:
+                symb_func = fit_acts_scipy(x, y, sample_size=sample_size, device=device, alpha=alpha)
+            else:
+                symb_func = fit_acts_sindy(x, y, sample_size=sample_size, seed=42, gamma=gamma)
+                
             symbolic_functions[j][i] = str(symb_func)
             
             symb_func = symb_func.subs(sp.Symbol('x0'), symb_xs[i])
@@ -438,7 +541,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, device='cuda', sample_size=-1,
     return symb_layer_acts, symbolic_functions
 
 
-def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model_path='./models', alpha=0.1):
+def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model_path='./models', alpha=0.1, gamma=0.01, use_sindy=False):
     n_layers = len(kan_acts)
     all_functions = {}
     
@@ -452,7 +555,9 @@ def fit_kan(kan_acts, kan_preacts, symb_xs, sample_size=-1, device='cuda', model
             symb_xs=symb_xs,
             device=device,
             sample_size=sample_size,
-            alpha=alpha
+            alpha=alpha,
+            gamma=gamma,
+            use_sindy=use_sindy
         )
         
         all_functions[l] = symb_functions
@@ -485,7 +590,7 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, device = 'cuda', sample_size=-1, message_passing=True, include_time=False, alpha=0.1):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, device = 'cuda', sample_size=-1, message_passing=True, include_time=False, alpha=0.1, gamma=0.01, use_sindy=False):
     # G_net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)    
@@ -496,7 +601,9 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         sample_size=sample_size,
         device=device,
         model_path=f"{model_path}/g_net",
-        alpha=alpha
+        alpha=alpha,
+        gamma=gamma,
+        use_sindy=use_sindy
     )
     symb_g = symb_g[0]  # Univariate functions
     # H_Net
@@ -519,23 +626,29 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, devic
         sample_size=sample_size,
         device=device,
         model_path=f"{model_path}/h_net",
-        alpha=alpha
+        alpha=alpha,
+        gamma=gamma,
+        use_sindy=use_sindy
     )
     
     symb_h = symb_h[0]  # Univariate functions
     return symb_h if message_passing else symb_h + aggr_term  
 
 
-def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
+def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1, use_sindy=False, gamma=0.01):
     in_dim = cached_input.size(1)
     out_dim = cached_output.size(1)
 
     x = cached_input.detach().numpy().reshape(-1, in_dim)
     y = cached_output.detach().numpy().reshape(-1, out_dim)
 
-    top_5_eq = fit_acts_pysr(x, y, pysr_model=pysr_model, sample_size=sample_size)
+    if not use_sindy:
+        top_5_eq = fit_acts_pysr(x, y, pysr_model=pysr_model, sample_size=sample_size)
+        symb_func = sp.sympify(top_5_eq["sympy_format"].iloc[0])
     
-    symb_func = sp.sympify(top_5_eq["sympy_format"].iloc[0])
+    else:
+        top_5_eq = pd.DataFrame(columns=["complexity", "loss", "score", "sympy_format"])
+        symb_func = fit_acts_sindy(x, y, sample_size=sample_size, gamma=gamma)
 
     subs_dict = {sp.Symbol(f'x{i}'): symb_xs[i] for i in range(len(symb_xs))}
 
@@ -545,7 +658,7 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
 
 
-def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False):
+def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False, use_sindy=False, gamma=0.01):
     # G_Net
     cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
@@ -553,7 +666,9 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
         cached_input, cached_output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        use_sindy=use_sindy,
+        gamma=gamma
     )
     top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
     
@@ -576,7 +691,9 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
         cached_output, 
         symb_xs=symb_h_in, 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        use_sindy=use_sindy,
+        gamma=gamma
     )
     top_5_eqs_h.to_csv(f"{model_path}/top_5_equations_h.csv")
 
@@ -592,7 +709,9 @@ def fit_black_box_from_kan(
     pysr_model = None, 
     sample_size=-1,
     message_passing=True,
-    include_time=False
+    include_time=False,
+    use_sindy=False,
+    gamma=0.01
     ):
     #G_Net
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
@@ -606,7 +725,9 @@ def fit_black_box_from_kan(
         output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        use_sindy=use_sindy,
+        gamma=gamma
     )
     
     save_path = f"{model_path}/black-box"
@@ -637,7 +758,9 @@ def fit_black_box_from_kan(
         output, 
         symb_xs=symb_h_in, 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        use_sindy=use_sindy,
+        gamma=gamma
     )
     top_5_eqs_h.to_csv(f"{save_path}/top_5_equations_h.csv")
 
