@@ -450,7 +450,7 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
 
 
 def fit_layer(cached_act, cached_preact, symb_xs, val_ratio=0.2, seed=42):
-    alpha_grid = [1e-4, 1e-3, 1e-2, 0.1]
+    alpha_grid = [1e-5, 1e-4, 1e-3, 1e-2, 0.1]
 
     symb_layer_acts = []
     symbolic_functions = defaultdict(dict)
@@ -711,9 +711,7 @@ def grey_fitting_from_kan(
     sample_size=-1
 ):
     
-    func_hierarchy = defaultdict(dict)
-    symb_xs = symb_in
-    
+    func_hierarchy = defaultdict(dict)    
     for index, l_post in enumerate(reversed(range(len(pruned_acts)))): # Starting from last layer
         input = pruned_preacts[0]   # Input is xi, xj
         symb_xs=symb_in
@@ -738,6 +736,42 @@ def grey_fitting_from_kan(
     
     return func_hierarchy
             
+            
+def top_down_spline_fitting(
+        symb_in,
+        pruned_acts,
+        pruned_preacts,
+        pysr_model=None,
+        sample_size=-1
+):
+    
+    func_hierarchy = defaultdict(dict)
+    for index, l_post in enumerate(reversed(range(len(pruned_acts)))): # Starting from last layer
+        black_box_input = pruned_preacts[0]
+        symb_xs=symb_in
+        for l_prev in range(l_post, len(pruned_acts)):
+            symb_neurons = []
+            for j in range(pruned_acts[l_prev].shape[1]):
+                symb_neuron_j = 0
+                for i in range(pruned_acts[l_prev].shape[2]):
+                    input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
+                    symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
+                    black_box_spline, _ = fit_black_box(
+                        cached_input=input_spline,
+                        cached_output=pruned_acts[l_prev][:, j, i].unsqueeze(-1),
+                        symb_xs=symb_xs_spline,
+                        pysr_model=pysr_model,
+                        sample_size=sample_size
+                    )
+                    symb_neuron_j += black_box_spline
+                symb_neurons.append(symb_neuron_j)
+                func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(symb_neuron_j)
+                
+            black_box_input = pruned_acts[l_prev].sum(dim=2)
+            symb_xs = symb_neurons
+    return func_hierarchy
+                
+                    
         
         
 def hierarchical_symb_fitting(
@@ -753,7 +787,7 @@ def hierarchical_symb_fitting(
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
     
-    hierarchy_g = grey_fitting_from_kan(
+    hierarchy_g = top_down_spline_fitting(
         symb_in=[sp.Symbol('x_i'), sp.Symbol('x_j')],
         pruned_acts=pruned_acts,
         pruned_preacts=pruned_preacts,
@@ -772,7 +806,7 @@ def hierarchical_symb_fitting(
     if include_time:
         symb_h_in += [sp.Symbol('t')]
     
-    hierarchy_h = grey_fitting_from_kan(
+    hierarchy_h = top_down_spline_fitting(
         symb_in=symb_h_in,
         pruned_acts=pruned_acts,
         pruned_preacts=pruned_preacts,
