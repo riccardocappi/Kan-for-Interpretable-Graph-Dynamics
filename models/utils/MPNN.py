@@ -13,15 +13,13 @@ class MPNN(MessagePassing):
         h_net: Union[KAN, MLP, Callable],
         aggr = "add",
         message_passing=True,
-        include_time = False,
-        neg=False
+        include_time = False
         ):
         super().__init__(aggr=aggr)
         self.g_net = g_net
         self.h_net = h_net
         self.message_passing = message_passing
         self.include_time = include_time
-        self.neg = neg
         
     
     def forward(self, x, edge_index, edge_attr, t):     
@@ -41,4 +39,4 @@ class MPNN(MessagePassing):
             out = self.h_net(torch.cat([x, aggr_out, t_expanded], dim=-1))
         else:
             out = self.h_net(torch.cat([x, t_expanded], dim=-1)) + aggr_out
-        return out if not self.neg else -out
+        return out

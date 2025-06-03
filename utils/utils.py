@@ -47,6 +47,7 @@ SYMBOLIC_LIB_NUMPY = {
     'cos': lambda x: np.cos(x),
     'tan': lambda x: np.tan(x),
     'tanh': lambda x: np.tanh(x),
+    'ln': lambda x: np.log(x),
     '0': lambda x: x*0,
 }
 
@@ -60,20 +61,8 @@ SYMBOLIC_LIB_SYMPY = {
     'cos': lambda x: sp.cos(x),
     'tan': lambda x: sp.tan(x),
     'tanh': lambda x: sp.tanh(x),
+    'ln': lambda x: sp.ln(x),
     '0': lambda x: 0 * x,
-}
-
-FUNC_COMPLEXITY = {
-    '0': 0,
-    'x': 1,
-    'x^2': 1.5,
-    'x^3': 4,
-    'abs': 2,
-    'sin': 4,
-    'cos': 4,
-    'tan': 4,
-    'tanh': 4,
-    'exp': 5,
 }
 
 
@@ -347,6 +336,7 @@ def get_pysr_model(
         delete_tempfiles=True,
         temp_equation_file=True,
         tempdir='./pysr',
+        progress=False,
         **kwargs
     )
     
@@ -387,10 +377,12 @@ def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):
         init_params = [1., 0.]
     elif func_name=='x^2':
         func_optim = lambda x, a, b, c: a*x**2 + b*x + c  
-        init_params = [1., 1., 0]
+        init_params = [1., 0., 0]
     elif func_name == 'x^3':
         func_optim = lambda x, a, b, c, d: a*x**3 + b*x**2 + c*x + d  
-        init_params = [1., 1., 1., 0.]
+        init_params = [1., 0., 0., 0.]
+    elif (func_name == 'ln') and (np.any(x_train <= 0)):
+        return 1e8, [], 0, lambda x: x*0
     else:
         func_optim = lambda x, a, b, c, d: c * func(a*x + b) + d
         init_params = [1., 0., 1., 0.]
@@ -415,6 +407,10 @@ def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):
         post_fun = params[2] * func(params[0]*x_train + params[1]) + params[3]
         fun_sympy = params[2] * SYMBOLIC_LIB_SYMPY[func_name](params[0] * x_symb + params[1]) + params[3]
     
+    
+    if np.any(np.isnan(post_fun)):
+        return 1e8, [], 0, lambda x: x*0
+    
     fun_sympy_quantized = quantise(fun_sympy, 1e-4)
     mse = penalized_loss(y_train, post_fun, fun_sympy_quantized, alpha=alpha)
     return mse, params, fun_sympy_quantized, func_optim
@@ -431,22 +427,31 @@ def fit_acts_scipy(x, y, alpha=0.1):
 
 
 def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
-    best_mse = float('inf')
-    best_symb_func = None
-    best_func_str = None
+    results = []
 
     for alpha in alpha_grid:
         symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, alpha=alpha)
-
         val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
+        complexity = count_ops(symb_func)
+        log_loss = np.log(val_mse)
+        results.append((symb_func, complexity, log_loss))
 
-        if val_mse < best_mse:
-            best_mse = val_mse
-            best_symb_func = symb_func
-            best_func_str = str(symb_func)
+    # Sort by complexity to compute finite difference derivative
+    results.sort(key=lambda x: x[1])  # sort by complexity
+    scores = [(results[0][0], 0)]
 
-    return best_symb_func, best_func_str
+    for k in range(1, len(results)):
+        c2, c1 = results[k][1], results[k - 1][1]
+        l2, l1 = results[k][2], results[k - 1][2]
+        
+        if c1==c2: continue
 
+        dlogloss_dcomplexity = (l2 - l1) / (c2 - c1)
+        score = -dlogloss_dcomplexity
+        scores.append((results[k][0], score))
+
+    best_symb_func, _ = max(scores, key=lambda x: x[1])
+    return best_symb_func, str(best_symb_func)
 
 
 def fit_layer(cached_act, cached_preact, symb_xs, val_ratio=0.2, seed=42):
@@ -701,48 +706,15 @@ def quantise(expr, quantise_to=0.01):
     else:
         return expr.func(*[quantise(arg, quantise_to) for arg in expr.args])
     
-    
-    
-def grey_fitting_from_kan(
-    symb_in,
-    pruned_acts,
-    pruned_preacts,
-    pysr_model=None,
-    sample_size=-1
-):
-    
-    func_hierarchy = defaultdict(dict)    
-    for index, l_post in enumerate(reversed(range(len(pruned_acts)))): # Starting from last layer
-        input = pruned_preacts[0]   # Input is xi, xj
-        symb_xs=symb_in
-        print(f"Fitting function {index}")
-        for l_prev in range(l_post, len(pruned_acts)):
-            output = pruned_acts[l_prev].sum(dim=2)
-            symb_neurons = []
-            for j in range(output.shape[1]):
-                black_box_neuron, _ = fit_black_box(
-                    input,
-                    output[:, j].unsqueeze(-1),
-                    symb_xs=symb_xs,
-                    pysr_model=pysr_model,
-                    sample_size=sample_size
-                )
-                symb_neurons.append(black_box_neuron)
-                func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(black_box_neuron)
-                # TODO Save json
                 
-            input = output
-            symb_xs = symb_neurons
-    
-    return func_hierarchy
-            
-            
-def top_down_spline_fitting(
+def top_down_fitting(
         symb_in,
         pruned_acts,
         pruned_preacts,
+        saving_path,
         pysr_model=None,
-        sample_size=-1
+        sample_size=-1,
+        neuron_level = False
 ):
     
     func_hierarchy = defaultdict(dict)
@@ -752,28 +724,41 @@ def top_down_spline_fitting(
         for l_prev in range(l_post, len(pruned_acts)):
             symb_neurons = []
             for j in range(pruned_acts[l_prev].shape[1]):
-                symb_neuron_j = 0
-                for i in range(pruned_acts[l_prev].shape[2]):
-                    input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
-                    symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
-                    black_box_spline, _ = fit_black_box(
-                        cached_input=input_spline,
-                        cached_output=pruned_acts[l_prev][:, j, i].unsqueeze(-1),
-                        symb_xs=symb_xs_spline,
+                if neuron_level:
+                    symb_neuron_j,_ = fit_black_box(
+                        black_box_input,
+                        pruned_acts[l_prev].sum(dim=2)[:, j].unsqueeze(-1),
+                        symb_xs=symb_xs,
                         pysr_model=pysr_model,
                         sample_size=sample_size
-                    )
-                    symb_neuron_j += black_box_spline
+                )
+                else:
+                    symb_neuron_j = 0
+                    for i in range(pruned_acts[l_prev].shape[2]):
+                        input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
+                        symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
+                        black_box_spline, _ = fit_black_box(
+                            cached_input=input_spline,
+                            cached_output=pruned_acts[l_prev][:, j, i].unsqueeze(-1),
+                            symb_xs=symb_xs_spline,
+                            pysr_model=pysr_model,
+                            sample_size=sample_size
+                        )
+                        symb_neuron_j += black_box_spline
+                        
                 symb_neurons.append(symb_neuron_j)
                 func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(symb_neuron_j)
                 
             black_box_input = pruned_acts[l_prev].sum(dim=2)
             symb_xs = symb_neurons
-    return func_hierarchy
+            
+    with open(saving_path, "w") as f:
+            json.dump(func_hierarchy, f)
+            
+    
+    
                 
-                    
-        
-        
+   
 def hierarchical_symb_fitting(
     model_path,
     theta=0.1,
@@ -782,21 +767,31 @@ def hierarchical_symb_fitting(
     pysr_model = None,
     sample_size=-1,
     message_passing=False,
-    include_time=False
+    include_time=False,
+    neuron_level=True
 ):
+    
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
+    file_name = 'spline_top_down.json' if not neuron_level else 'neuron_top_down.json'
+    saving_path = f"{model_path}/g_net"
+    os.makedirs(saving_path, exist_ok=True)
     
-    hierarchy_g = top_down_spline_fitting(
+    
+    top_down_fitting(
         symb_in=[sp.Symbol('x_i'), sp.Symbol('x_j')],
         pruned_acts=pruned_acts,
         pruned_preacts=pruned_preacts,
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        neuron_level=neuron_level,
+        saving_path=f"{saving_path}/{file_name}"
     )
     
     cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
+    saving_path = f"{model_path}/h_net" 
+    os.makedirs(saving_path, exist_ok=True)
     
     if message_passing:
         symb_h_in = [sp.Symbol('x_i'), sp.Symbol('AGGR')]
@@ -806,15 +801,15 @@ def hierarchical_symb_fitting(
     if include_time:
         symb_h_in += [sp.Symbol('t')]
     
-    hierarchy_h = top_down_spline_fitting(
+    top_down_fitting(
         symb_in=symb_h_in,
         pruned_acts=pruned_acts,
         pruned_preacts=pruned_preacts,
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        neuron_level=neuron_level,
+        saving_path=f"{saving_path}/{file_name}"
     )
-    
-    return hierarchy_g, hierarchy_h
     
     
     
