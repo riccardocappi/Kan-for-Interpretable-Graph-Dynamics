@@ -90,8 +90,10 @@ class ODEBlock(torch.nn.Module, ABC):
         Here you should save to file model's outputs and inputs that can be used later for symbolic regression.
         
         Args:
-            dummy_x : Input for the forward pass of the model
-            dummy_edge_index : Graph's edge_index for the forward pass of the model
+            - dummy_x : Input for the forward pass of the model
+            - dummy_edge_index : Graph's edge_index for the forward pass of the model
+            - dummy_t : Time span for the forward pass of the model
+            - dummy_edge_attr : Graph's edge attributes for the forward pass of the model
         """
         raise NotImplementedError()
     

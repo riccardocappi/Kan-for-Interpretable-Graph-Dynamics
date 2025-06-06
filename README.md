@@ -11,35 +11,43 @@ The pipeline logic is described by the `Experiments` class and it includes three
 def get_model_opt(self, trial):
     ...
     g_net = KAN(**g_net_config)
-    h_net = KAN(**h_net_config)
-
-    net = GKAN_ODE(
+    h_net = KAN(**h_net_config)        
+    
+    conv = MPNN(
         h_net=h_net,
         g_net=g_net,
-        model_path = f"{self.model_path}/gkan",
-        device = self.device,
-        lmbd_g=lamb_g,
-        lmbd_h=lamb_h,
-        message_passing=self.config.get("message_passing", True)
+        message_passing=self.config.get("message_passing", True),
+        include_time=self.config.get("include_time", True)
     )
     
-    model = NetWrapper(net, self.edge_index, update_grid=False)
+    model = GKAN_ODE(
+        conv = conv,
+        model_path = f"{self.model_path}/gkan",
+        adjoint=self.config.get('adjoint', False),
+        integration_method=self.integration_method,
+        lmbd_g=lamb_g,
+        lmbd_h=lamb_h,
+        atol=self.config.get('atol', 1e-6), 
+        rtol=self.config.get('rtol', 1e-3),
+        predict_deriv=self.predict_deriv
+    )
+
     model = model.to(torch.device(self.device))
-    
+        
     return model
+
+
 ```
-Note that the returned model must be instance of `NetWrapper`. This class just wraps around a torch module in order to properly work with the `torchdiffeq` methods. Actually, the input model for `NetWrapper` should be also an instance of `ModelInterface`. In fact, the `GKAN` class extends both `torch_geometric.nn.MessagePassing` and `model.utils.ModelInterface`.
-```
-class GKAN(MessagePassing, ModelInterface):
-```
-`ModelInterface` provides the general structure that each implemented model must follow in order to properly work with the Experiments pipeline. In particular, each model must implement the following three methods:
+Note that the returned model must be instance of `ODEBlock`. This class integrates its Message Passing Neural Network using `torchdiffeq`. 
+
+`ODEBlock` provides the general structure that each implemented model must follow in order to properly work with the Experiments pipeline. In particular, each model must implement the following three methods:
 - regularization_loss: Computes the regularization loss (e.g. L1 norm of model's weights. Can be also 0. for non-KAN-based models). This function is called during the training process in the `fit` method defined in `train_and_eval.py`.
 
 - save_cached_data: This function is called in the post-processing step of `Experiments`, when saving model checkpoint. Here you should save to file model's outputs and inputs that can be used later for symbolic regression. 
 
 - reset_params: reset the parameters of the model. This function is called to reset model's weights after each run in the `objective` function of the `Experiments` class.
 
-To generate datasets, we use the `scipy` numerical integrator `solve_ivp`. The list of considered dynamics can be found in the `data_utils.py` file. The code to generate the datasets can be found instead in the `create_datasets` function defined in the `utils.py` file.
+To generate datasets, we use the `scipy` numerical integrator `solve_ivp`. The list of considered dynamics can be found in the `data_utils.py` file. The code to generate the datasets can be found instead in the `SyntheticData` class.
 
 ## Usage
 An experiment can be run with different arguments:
@@ -55,13 +63,13 @@ An experiment can be run with different arguments:
 
 Examples:
 ```
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
+python main.py --config=./configs/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
 ```
 To run multiple parallel processes is sufficient to execute the main file multiple times, with different process_id:
 
 ```
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
-python main.py --config=./configs/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=1
+python main.py --config=./configs/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
+python main.py --config=./configs/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=1
 ```
 
 These processes share the same optuna study, which is stored inside a SQLite DB named "sqlite:///optuna_study.db". The actual name of each optuna study is composed of two strings: The `model_name` argument specified in the config.yml file, and the `--study_name` argument. For example, if I specify `model_name: 'model-kuramoto-gkan'` and `--study_name = kuramoto`, the final study name will be 'model-kuramoto-gkan-kuramoto'. Therefore, two processes share the same optuna study if they specify the same `model_name` and the same `--study_name`.
@@ -80,7 +88,7 @@ ___ saved_models_optuna
 The config.yml file should contain the specifics of the experiment. It is divided in two parts.
 ### General arguments for setting up the experiment
 The first set of arguments that must be present in the config file is the following:
-- `dynamics`: Name of the dynamics
+- `name`: Name of the dynamics
 - `model_name`: Name of the model
 - `model_type`: It can be "MPNN" or "GKAN"
 - `epochs`: Number of epochs
@@ -97,6 +105,45 @@ The first set of arguments that must be present in the config file is the follow
 - `n_iter`: Number of initial conditions
 - `integration_kwargs`: Any additional argument to pass to the specified dynamics function.
 - `R`: Number of training runs for each combination of hyper-parameters.
+- `atol`:   
+  Absolute tolerance used by the numerical integrator
+
+- `rtol`: 
+  Relative tolerance for the numerical integrator.
+
+- `adjoint`:
+  Whether to use the adjoint sensitivity method
+
+- `include_time`: 
+  If `True`, includes the time variable as part of the input features
+
+- `horizon`: 
+  Number of future steps the model attempts to predict during training.
+
+- `history`: 
+  Number of past time steps provided as input to the model.
+
+- `preprocess_data`: 
+  If `True`, applies preprocessing steps
+
+- `stride`: stride of sliding windows
+
+- `storage`:  
+  Specifies the storage type or location for experiment results.
+
+- `save_cache_data`:
+  Whether to save final results for symbolic regression
+
+
+- `data_folder`: 
+  Path to the folder where the dataset is stored or will be saved after generation.
+
+- `criterion`: *(str)*  
+  Loss function used for training. Common options include `"MAE"` (Mean Absolute Error) or `"MSE"` (Mean Squared Error).
+
+- `method`: *(str)*  
+  ODE integration method used by the solver. `"dopri5"` is a Runge-Kutta method.
+
 
 ### Hyper-parameter search space
 The search space of the hyper-parameters. Mandatory hyper-parameters are:
@@ -105,6 +152,9 @@ The search space of the hyper-parameters. Mandatory hyper-parameters are:
 - `stride`: Stride of the sliding windows
 
 The search space dictionary can be accessed in the Experiment class with `self.search_space`
+
+## Results
+To look at the results presented in the Paper, please refer to the notebooks `post_processing.ipynb` and `post_processing_mpnn.ipynb`
 
 
 

@@ -18,7 +18,6 @@ import yaml
 from tsl.data.preprocessing.scalers import MinMaxScaler
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
 from train_and_eval import eval_model
-from datasets.RealEpidemics import RealEpidemics
 
 
 class Experiments(ABC):
@@ -69,19 +68,6 @@ class Experiments(ABC):
                 noise_scale=config.get('noise_scale', 0.0),
                 predict_deriv=self.predict_deriv,
                 **config['integration_kwargs']
-            )
-        elif config['name'] == "Real-Epidemics":
-            dataset = RealEpidemics(
-                root = config['data_folder'],
-                name = config['name'],
-                n_samples=config['num_samples'],
-                seed=config['seed'],
-                device=self.device,
-                history=self.history,
-                horizon=self.horizon,
-                n_ics=-1,
-                stride=config.get('stride', 5),
-                noise_scale=0.0
             )
         else:
             raise NotImplementedError()
@@ -319,6 +305,7 @@ class Experiments(ABC):
         Args:
             - best_model : Best model resulting from the model selection procedure
             - sample_size : number of graph snapshot to sample from the training set (-1 samples the whole set)
+            - raw_data : raw data to sample from (if None, it will be sampled from the training set)
         """
         # Save best results
         self._save_ckpt(best_model)

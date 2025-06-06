@@ -1,9 +1,4 @@
 from models.utils.ODEBlock import ODEBlock
-# from torch_geometric.nn import TAGConv
-# import torch
-# import torch.nn.functional as F
-
-
 
 class LB_ODE(ODEBlock):
     def __init__(

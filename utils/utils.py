@@ -434,10 +434,11 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
         val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
         complexity = count_ops(symb_func)
         log_loss = np.log(val_mse)
-        results.append((symb_func, complexity, log_loss))
+        results.append((symb_func, complexity, log_loss, alpha))
 
     # Sort by complexity to compute finite difference derivative
     results.sort(key=lambda x: x[1])  # sort by complexity
+    top_equations = pd.DataFrame(results, columns=["symbolic_function", "complexity", "log_loss", "alpha"])
     scores = [(results[0][0], 0)]
 
     for k in range(1, len(results)):
@@ -451,14 +452,15 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
         scores.append((results[k][0], score))
 
     best_symb_func, _ = max(scores, key=lambda x: x[1])
-    return best_symb_func, str(best_symb_func)
+    return best_symb_func, str(best_symb_func), top_equations
 
 
-def fit_layer(cached_act, cached_preact, symb_xs, val_ratio=0.2, seed=42):
-    alpha_grid = [1e-5, 1e-4, 1e-3, 1e-2, 0.1]
+def fit_layer(cached_act, cached_preact, symb_xs, val_ratio=0.2, seed=42, model_path='./models'):
+    alpha_grid = [1e-5, 1e-4, 1e-3, 1e-2, 0.1, 0.9]
 
     symb_layer_acts = []
     symbolic_functions = defaultdict(dict)
+    top_equations = {}
 
     in_dim = cached_act.shape[2]
     out_dim = cached_act.shape[1]
@@ -472,29 +474,34 @@ def fit_layer(cached_act, cached_preact, symb_xs, val_ratio=0.2, seed=42):
 
             x_train, x_val, y_train, y_val =  train_test_split(x, y, test_size=val_ratio, random_state=seed)
 
-            best_symb_func, best_func_str = find_best_symbolic_func(
+            best_symb_func, best_func_str, top_eq = find_best_symbolic_func(
                 x_train, y_train, x_val, y_val,
                 alpha_grid=alpha_grid
             )
+            top_equations[(i, j)] = top_eq
 
             symbolic_functions[j][i] = best_func_str
             best_symb_func = best_symb_func.subs(sp.Symbol('x0'), symb_xs[i])
             symb_out += best_symb_func
+            
+            
 
         symb_layer_acts.append(symb_out)
 
-    return symb_layer_acts, symbolic_functions
+    return symb_layer_acts, symbolic_functions, top_equations
 
 
 def fit_kan(kan_acts, kan_preacts, symb_xs, model_path='./models'):
     n_layers = len(kan_acts)
     all_functions = {}
+    top_5_save_path = f"{model_path}/top_eqs"
+    os.makedirs(top_5_save_path, exist_ok=True)
     
     for l in range(n_layers):
         acts = kan_acts[l].cpu().detach().numpy()
         preacts = kan_preacts[l].cpu().detach().numpy()
 
-        symb_xs, symb_functions = fit_layer(
+        symb_xs, symb_functions, top_equations = fit_layer(
             cached_act=acts,
             cached_preact=preacts,
             symb_xs=symb_xs
@@ -502,9 +509,12 @@ def fit_kan(kan_acts, kan_preacts, symb_xs, model_path='./models'):
         
         all_functions[l] = symb_functions
         
-        save_path = f"{model_path}/symb_functions.json"
-        with open(save_path, "w") as f:
-            json.dump(all_functions, f)
+        for k, df in top_equations.items():
+            df.to_csv(f"{top_5_save_path}/top_equations({l}, {k[1]}, {k[0]}).csv")
+        
+    save_path = f"{model_path}/symb_functions.json"
+    with open(save_path, "w") as f:
+        json.dump(all_functions, f)
             
     return symb_xs
                 
@@ -745,6 +755,7 @@ def top_down_fitting(
                             sample_size=sample_size
                         )
                         symb_neuron_j += black_box_spline
+                        func_hierarchy[f"f_{index}"][f"spline_{l_prev}_{j}_{i}"] = str(black_box_spline)
                         
                 symb_neurons.append(symb_neuron_j)
                 func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(symb_neuron_j)

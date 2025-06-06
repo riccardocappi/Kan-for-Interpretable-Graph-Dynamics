@@ -25,7 +25,7 @@ storage: "journal"
 save_cache_data: True
 n_iter: 5
 num_samples: -1
-data_folder: './data_ic5_gkan'
+data_folder: './data_ic5'
 criterion: "MAE"
 method: "dopri5"
 integration_kwargs:

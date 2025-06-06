@@ -57,21 +57,6 @@ def fit(model:ODEBlock,
         ):
     """
     Training process
-    
-    Args:
-        - training_set : Training set (by default is the first 80% of the time series)
-        - valid_set : Validation set (by default is the last 20% of the time series)
-        - epochs : Number of epochs
-        - patience : Patience hyper-parameter for early-stopping
-        - lr : Learning rate
-        - lmbd : Hyper-parameter for regularization loss
-        - log : How often to save logs to file
-        - log_file_name : Name of the logs file
-        - criterion : Loss function
-        - opt : Optimizer
-        - save_updates : Whether to save logs during training or not
-        - batch_size : Sliding window size
-        - stride : Stride of the sliding window Data Loader
     """
     
     train_size = len(training_set)
