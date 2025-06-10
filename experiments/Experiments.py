@@ -76,12 +76,10 @@ class Experiments(ABC):
 
         # Compute split sizes
         train_end = int(0.8 * total_len)
-        valid_end = int(0.9 * total_len)  # 80% + 10%
 
         # Create splits
         self.training_set = dataset[:train_end]
-        self.valid_set = dataset[train_end:valid_end]
-        self.test_set = dataset[valid_end:]
+        self.valid_set = dataset[train_end:]
     
         self.epochs = config["epochs"]
         self.patience = config["patience"]
@@ -246,7 +244,6 @@ class Experiments(ABC):
                 model,
                 self.training_set,
                 self.valid_set,
-                test_set=self.test_set,
                 epochs=self.epochs,
                 patience=self.patience,
                 lr = lr,

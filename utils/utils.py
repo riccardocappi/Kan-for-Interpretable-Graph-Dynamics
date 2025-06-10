@@ -109,7 +109,7 @@ def plot(folder_path, layers, show_plots=False):
                 out = activations[:, j, i]
                 out = out[indices[:, i]]
                 plt.figure()
-                plt.plot(preact_sorted[:, i].cpu().detach().numpy(), out.cpu().detach().numpy())
+                plt.plot(preact_sorted[:, i].cpu().detach().numpy(), out.cpu().detach().numpy(), linewidth=2.5)
                 plt.title(f"Act. (Layer: {l}, Neuron: {j}, Input: {i})")
                 plt.savefig(f"{folder_path}/out_{l}_{j}_{i}.png")
                 if show_plots:
@@ -411,7 +411,7 @@ def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):
     if np.any(np.isnan(post_fun)):
         return 1e8, [], 0, lambda x: x*0
     
-    fun_sympy_quantized = quantise(fun_sympy, 1e-4)
+    fun_sympy_quantized = quantise(fun_sympy, 1e-3)
     mse = penalized_loss(y_train, post_fun, fun_sympy_quantized, alpha=alpha)
     return mse, params, fun_sympy_quantized, func_optim
 
@@ -456,8 +456,8 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
 
 
 def fit_layer(cached_act, cached_preact, symb_xs, val_ratio=0.2, seed=42, model_path='./models'):
-    alpha_grid = [1e-5, 1e-4, 1e-3, 1e-2, 0.1, 0.9]
-
+    alpha_grid = torch.logspace(-5, -1, steps=5)
+    
     symb_layer_acts = []
     symbolic_functions = defaultdict(dict)
     top_equations = {}

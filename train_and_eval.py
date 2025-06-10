@@ -42,7 +42,6 @@ def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_sca
 def fit(model:ODEBlock,
         training_set:SpatioTemporalGraph,
         valid_set:SpatioTemporalGraph, 
-        test_set:SpatioTemporalGraph,
         epochs=50,
         patience=30,
         lr = 0.001,
@@ -160,17 +159,5 @@ def fit(model:ODEBlock,
     log_message = f"\nLoading best model found at epoch {best_epoch} with val loss {best_val_loss}" 
     save_logs(logs_file_path, log_message, save_updates)
     model.load_state_dict(best_model_state)
-    
-    # Compute test loss
-    test_loss = eval_model(
-        model=model,
-        valid_data=test_set,
-        criterion=criterion,
-        scaler=scaler,
-        inverse_scale=True
-    )
-    log_message = f"Test loss: {test_loss}"
-    save_logs(logs_file_path, log_message, save_updates)
-    results['test_loss'] = test_loss     
-    
+        
     return results

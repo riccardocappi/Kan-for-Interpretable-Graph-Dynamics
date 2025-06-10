@@ -7,9 +7,9 @@ opt: 'Adam'
 log: 1
 t_span: [0,1]
 t_eval_steps: 300
-seed: 42
+seed: 123
 pytorch_seed: 0
-device: 'cuda:1'
+device: 'cuda'
 input_range: [0, 1]
 in_dim: 1
 atol: 0.00001
@@ -31,9 +31,9 @@ criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
   B: 0.5 
-  R: 0.2
-  b: 2 
-  a: 2
+  R: 0.15
+  b: 1 
+  a: 3
 search_space:
   grid_size_h_net: [5, 15]
   grid_size_g_net: [5, 15]

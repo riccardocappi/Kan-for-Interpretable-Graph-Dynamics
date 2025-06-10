@@ -249,11 +249,12 @@ class KANLayer(torch.nn.Module):
         self.cache_act = output.detach()
         self.cache_preact = x.detach()
         # For regularization loss
-        input_range = torch.std(x, dim=0) + 1e-3
-        output_range_spline = torch.std(output_layer, dim=0)
-        self.acts_scale_spline = output_range_spline / input_range # (out_features, in_features)
+        # input_range = torch.mean(torch.abs(x), dim=0) + 1e-8
+        output_range_spline = torch.mean(torch.abs(output_layer), dim=0)
+        # self.acts_scale_spline = output_range_spline / input_range # (out_features, in_features)
+        self.acts_scale_spline = output_range_spline # (out_features, in_features)
         
-        output = output.sum(dim=2) # (batch, out_features)
+        output = output.sum(dim=2) # (batch, out_features) 
         return output
 
 
@@ -294,13 +295,14 @@ class KANLayer(torch.nn.Module):
 
     def regularization_loss_orig(self, mu_1=1.0, mu_2=1.0):
         assert self.acts_scale_spline is not None, 'Cannot use original L1 norm if activations are not saved'
-        
+
+        # Total L1 norm of all activation functions
         l1 = torch.sum(self.acts_scale_spline)
-        p_row = self.acts_scale_spline / (torch.sum(self.acts_scale_spline, dim=1, keepdim=True) + 1)
-        p_col = self.acts_scale_spline / (torch.sum(self.acts_scale_spline, dim=0, keepdim=True) + 1)
-        entropy_row = - torch.mean(torch.sum(p_row * torch.log2(p_row + 1e-4), dim=1))
-        entropy_col = - torch.mean(torch.sum(p_col * torch.log2(p_col + 1e-4), dim=0))
-        entropy = (entropy_row + entropy_col)
-        reg = mu_1*l1 + mu_2*entropy
-        
+
+        p = self.acts_scale_spline.view(-1) / (l1 + 1e-8)
+        entropy = -torch.sum(p * torch.log(p + 1e-8))
+
+        # Final regularization
+        reg = mu_1 * l1 + mu_2 * entropy
+
         return reg, l1, entropy

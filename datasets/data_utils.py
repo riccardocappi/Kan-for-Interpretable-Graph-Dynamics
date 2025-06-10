@@ -87,7 +87,7 @@ def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=10
         raise Exception('Not supported dynamics!')
 
     t_eval = np.linspace(time_span[0], time_span[1], t_eval_steps)
-    sol = solve_ivp(model, time_span, initial_state, t_eval=t_eval, method='RK45')
+    sol = solve_ivp(model, time_span, initial_state, t_eval=t_eval, method='RK45', atol=1e-12, rtol=1e-12)
 
     return sol.y.T, sol.t  # shape: (t_steps, n_nodes), (t_steps,)
     
