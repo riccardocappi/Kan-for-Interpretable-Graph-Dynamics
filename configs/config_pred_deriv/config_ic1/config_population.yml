@@ -1,16 +1,16 @@
 name: "Population"
 model_name: 'model-population-gkan'
 model_type: 'GKAN'
-epochs: 500
-patience: 100
+epochs: 700
+patience: 200
 opt: 'Adam'
 log: 1
 t_span: [0,1]
-t_eval_steps: 300
+t_eval_steps: 500
 seed: 123
 pytorch_seed: 0
-device: 'cuda'
-input_range: [0, 1]
+device: 'cuda:0'
+input_range: [-1, 1]
 in_dim: 1
 atol: 0.00001
 rtol: 0.001
@@ -19,6 +19,7 @@ message_passing: False
 include_time: False
 horizon: 15
 history: 1
+R: 3
 preprocess_data: False
 stride: 5
 storage: "journal"
@@ -31,7 +32,7 @@ criterion: "MAE"
 method: "dopri5"
 integration_kwargs:
   B: 0.5 
-  R: 0.15
+  R: 0.2
   b: 1 
   a: 3
 search_space:

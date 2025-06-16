@@ -17,7 +17,6 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         horizon = 15,
         n_ics = 3,
         stride=24,
-        noise_scale=0.0,
         predict_deriv=False
     ):
         self.name = name
@@ -29,7 +28,6 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.history = history if not predict_deriv else 1
         self.n_ics = n_ics
         self.stride = stride
-        self.nosie_scale = noise_scale
         self.predict_deriv = predict_deriv
         super().__init__(root)
         self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
@@ -62,12 +60,6 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         data = []
         
         for ic in range(raw_data.size(0)):
-            
-            mean_value = raw_data[ic].mean().item()
-            noise_strength = self.nosie_scale * mean_value
-            nosie = self.rng.normal(0, noise_strength, size=raw_data[ic].shape)
-            noise = torch.from_numpy(nosie).float().to(self.device)
-            raw_data[ic] += noise
             first_derivatives = self.compute_five_point_fd(raw_data[ic], time)
             
             for ts in range(0, raw_data.size(1) - total_seq_len + 1, self.stride):

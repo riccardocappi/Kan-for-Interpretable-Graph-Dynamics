@@ -19,7 +19,6 @@ class SyntheticData(SpatioTemporalGraph):
         horizon = 15,
         history= 1,
         stride=24,
-        noise_scale=0.0,
         predict_deriv=False,
         **integration_kwargs
     ):  
@@ -39,7 +38,6 @@ class SyntheticData(SpatioTemporalGraph):
             horizon=horizon,
             history=history,
             stride=stride,
-            noise_scale=noise_scale,
             predict_deriv=predict_deriv
         )
     

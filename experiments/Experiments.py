@@ -65,7 +65,6 @@ class Experiments(ABC):
                 horizon = self.horizon,
                 history = self.history,
                 stride=config.get('stride', 5),
-                noise_scale=config.get('noise_scale', 0.0),
                 predict_deriv=self.predict_deriv,
                 **config['integration_kwargs']
             )
