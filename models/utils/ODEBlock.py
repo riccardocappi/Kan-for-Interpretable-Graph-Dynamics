@@ -29,6 +29,7 @@ class ODEBlock(torch.nn.Module, ABC):
         model_path = './models',
         adjoint = False,
         integration_method = 'dopri5',
+        predict_deriv = False,
         **kwargs
     ):
         super().__init__()
@@ -42,12 +43,15 @@ class ODEBlock(torch.nn.Module, ABC):
         if self.adjoint:
             kwargs['adjoint_options'] = dict(norm="seminorm")
         if self.integration_method == 'scipy_solver':
-            kwargs['options']['solver'] = 'RK45'
-            
+            kwargs['options']['solver'] = 'RK45'    
         self.kwargs = kwargs
         
+        self.predict_deriv = predict_deriv
+        
+        assert not (self.predict_deriv and self.conv.model.include_time), "Predicting derivatives with time is not supported."
     
-    def forward(self, snapshot):
+    
+    def _forward_integration(self, snapshot):
         edge_index, edge_attr, x, t = snapshot.edge_index, snapshot.edge_attr, snapshot.x, snapshot.t_span
         
         if self.training:
@@ -65,6 +69,20 @@ class ODEBlock(torch.nn.Module, ABC):
         )   # shape (horizon+1, num_nodes, 1)
         
         return integration[1:]
+    
+    
+    def _forward_pred_deriv(self, snapshot):
+        edge_index, edge_attr, x = snapshot.edge_index, snapshot.edge_attr, snapshot.x
+        self.conv.set_graph_attrs(edge_index, edge_attr)
+        out = self.conv(t=torch.tensor([], device = x.device), x=x)
+        return out
+    
+    
+    def forward(self, snapshot):
+        if self.predict_deriv:
+            return self._forward_pred_deriv(snapshot)
+        else:
+            return self._forward_integration(snapshot)
      
     
     def wrap_conv(self, conv):

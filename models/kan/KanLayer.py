@@ -248,6 +248,7 @@ class KANLayer(torch.nn.Module):
         # Store acts
         self.cache_act = output.detach()
         self.cache_preact = x.detach()
+        
         # For regularization loss
         # input_range = torch.mean(torch.abs(x), dim=0) + 1e-8
         output_range_spline = torch.mean(torch.abs(output_layer), dim=0)
@@ -285,10 +286,22 @@ class KANLayer(torch.nn.Module):
     
     def regularization_loss_fake(self, regularize_activation=1.0, regularize_entropy=1.0):
         
-        l1_fake = self.spline_weight.abs().mean(-1)
-        regularization_loss_activation = l1_fake.sum()
-        p = l1_fake / regularization_loss_activation
-        regularization_loss_entropy = -torch.sum(p * p.log())
+        l1_spline = self.spline_weight.abs().mean(-1)
+        spline_term =  l1_spline.sum()    # shape (out, in)
+        
+        l1_base = self.base_weight.abs()  # shape (out, in)
+        base_term =  l1_base.sum()
+        
+        regularization_loss_activation = spline_term + base_term
+        
+        l1_spline_flat = l1_spline.view(-1)
+        l1_base_flat = l1_base.view(-1)
+        
+        l1_total_flat = torch.cat([l1_spline_flat, l1_base_flat], dim=0)
+        
+        p = l1_total_flat / (regularization_loss_activation + 1e-8)
+        regularization_loss_entropy = -torch.sum(p * torch.log(p + 1e-8))
+        
         reg_loss = regularize_activation * regularization_loss_activation + regularize_entropy * regularization_loss_entropy
         return reg_loss, regularization_loss_activation, regularization_loss_entropy
 

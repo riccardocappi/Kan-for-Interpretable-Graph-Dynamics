@@ -7,30 +7,67 @@ from collections import defaultdict
 from torch.utils.data import DataLoader
 import copy
 from datasets.SpatioTemporalGraph import SpatioTemporalGraph
+from torch_geometric.loader import DataLoader as PyGDataLoader
 
 
-def eval_model(model:ODEBlock, valid_data, criterion, scaler = None, inverse_scale = True):
+def get_data_loader(
+    training_set:SpatioTemporalGraph,
+    valid_set:SpatioTemporalGraph,
+    batch_size_train=-1,
+    pred_deriv=False
+):
+    if pred_deriv:
+        train_loader = PyGDataLoader(training_set, batch_size=batch_size_train, shuffle=True)
+        valid_loader = PyGDataLoader(valid_set, batch_size=len(valid_set), shuffle=False)
+    else:
+        collate_fn = lambda samples_list: samples_list
+        train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=True, collate_fn=collate_fn)
+        valid_loader = DataLoader(valid_set, batch_size=len(valid_set), shuffle=False, collate_fn=collate_fn)
+    
+    return train_loader, valid_loader
+        
+
+def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False):
+    y_pred, y_true = None, None
+    if pred_deriv:
+        if scaler is not None:
+            batch_data.x = scaler.transform(batch_data.x)
+        y_pred = model(batch_data)
+        y_true = batch_data.y
+    else:
+        y_pred = []
+        y_true = []
+        for snapshot in batch_data:
+            if scaler is not None:
+                snapshot.x = scaler.transform(snapshot.x)
+                snapshot.y = scaler.transform(snapshot.y)
+                
+            y_true.append(snapshot.y[snapshot.backprop_idx] if model.training else snapshot.y)
+            y_pred.append(model(snapshot=snapshot))
+            
+        y_pred = torch.cat(y_pred, dim=0)
+        y_true = torch.cat(y_true, dim=0)
+        
+    return y_pred, y_true
+
+
+def eval_model(model:ODEBlock, valid_loader, criterion, scaler = None, inverse_scale = True, pred_deriv=False):
     """
     Evaluates the model
     """
     model.eval()
-    y_pred = []
+    y_pred= []
     y_true = []
-    
     with torch.no_grad():
-        for snapshot in valid_data:
-                        
-            if scaler is not None:
-                snapshot.x = scaler.transform(snapshot.x)
-                snapshot.y = scaler.transform(snapshot.y)
-            
-            y_true.append(snapshot.y)
-            y_pred.append(model(snapshot=snapshot))
-                
+        for batch_data in valid_loader:
+            y_pred_batch, y_true_batch = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv)
+            y_pred.append(y_pred_batch)
+            y_true.append(y_true_batch)
+        
         y_pred = torch.cat(y_pred, dim=0)
         y_true = torch.cat(y_true, dim=0)
         
-        if scaler is not None and inverse_scale:
+        if scaler is not None and inverse_scale and not pred_deriv:
             y_pred = scaler.inverse_transform(y_pred)
             y_true = scaler.inverse_transform(y_true)
         
@@ -52,7 +89,8 @@ def fit(model:ODEBlock,
         opt='Adam',
         save_updates=True,
         batch_size=-1,
-        scaler = None
+        scaler = None,
+        pred_deriv=False
         ):
     """
     Training process
@@ -65,8 +103,15 @@ def fit(model:ODEBlock,
     best_epoch = 0
     best_model_state = None
     
-    collate_fn = lambda samples_list: samples_list
-    train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=True, collate_fn=collate_fn)
+    train_loader, valid_loader = get_data_loader(
+        training_set=training_set,
+        valid_set=valid_set,
+        batch_size_train=batch_size_train,
+        pred_deriv=pred_deriv
+    )
+    
+    # collate_fn = lambda samples_list: samples_list
+    # train_loader = DataLoader(training_set, batch_size=batch_size_train, shuffle=True, collate_fn=collate_fn)
     
     if opt == 'Adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -91,20 +136,8 @@ def fit(model:ODEBlock,
     def training():
         global running_training_loss, running_tot_loss
         optimizer.zero_grad()
-        y_pred = []
-        y_true = []
-        for snapshot in batch_data: 
-                       
-            if scaler is not None:
-                snapshot.x = scaler.transform(snapshot.x)
-                snapshot.y = scaler.transform(snapshot.y)
-                        
-            y_true.append(snapshot.y[snapshot.backprop_idx])
-            y_pred.append(model(snapshot=snapshot))
-
-        y_pred = torch.cat(y_pred, dim=0) 
-        y_true = torch.cat(y_true, dim=0)
         
+        y_pred, y_true = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv)
         training_loss = criterion(y_pred, y_true)
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)
@@ -131,10 +164,11 @@ def fit(model:ODEBlock,
         
         val_loss = eval_model(
             model=model,
-            valid_data=valid_set,
+            valid_loader=valid_loader,
             criterion=criterion,
             scaler=scaler, 
-            inverse_scale=False
+            inverse_scale=False,
+            pred_deriv=pred_deriv
         )
         
         results['train_loss'].append(running_training_loss / count)

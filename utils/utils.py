@@ -408,7 +408,7 @@ def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):
         fun_sympy = params[2] * SYMBOLIC_LIB_SYMPY[func_name](params[0] * x_symb + params[1]) + params[3]
     
     
-    if np.any(np.isnan(post_fun)):
+    if np.any(np.isnan(post_fun)) or np.any(np.isinf(post_fun)):
         return 1e8, [], 0, lambda x: x*0
     
     fun_sympy_quantized = quantise(fun_sympy, 1e-3)

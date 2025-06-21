@@ -69,13 +69,14 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
                 x = raw_data[ic, idx_input, :, :]  # Shape: (input_length, num_nodes, 1)
                 
                 if self.predict_deriv:
-                    y = first_derivatives[ts, :, :].unsqueeze(0)
-                    backprop_idx = torch.tensor(0, device=torch.device(self.device))
+                    x = x.squeeze(0)
+                    y = first_derivatives[ts, :, :]
+                    backprop_idx = torch.tensor([], device=self.device)
+                    t_span = torch.tensor([], device=self.device)
                 else: 
                     y = raw_data[ic, idx_target, :, :]  # Shape: (target_length, num_nodes, 1)
                     backprop_idx = torch.tensor([0, self.horizon//2, -1], device=self.device)
-                
-                t_span = time[ic, ts + input_length-1: ts + total_seq_len]
+                    t_span = time[ic, ts + input_length-1: ts + total_seq_len]
                 
                 data.append(
                     Data(

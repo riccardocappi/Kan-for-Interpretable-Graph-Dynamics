@@ -16,20 +16,12 @@ class MPNN_ODE(ODEBlock):
         **kwargs
     ):
         
-        super().__init__(conv, model_path, adjoint, integration_method, **kwargs)
-        self.predict_deriv = predict_deriv
+        super().__init__(conv, model_path, adjoint, integration_method, predict_deriv=predict_deriv, **kwargs)
     
     
     def forward(self, snapshot):
-        if not self.predict_deriv:
-            return super().forward(snapshot)
-        else:
-            edge_index, edge_attr, x, t = snapshot.edge_index, snapshot.edge_attr, snapshot.x, snapshot.t_span
-            self.conv.set_graph_attrs(edge_index, edge_attr)
-            t = t[0].unsqueeze(0)
-            out = self.conv(t=t, x=x[-1])
-            return out.unsqueeze(0)
-      
+        return super().forward(snapshot)
+    
     
     def reset_params(self):
         for layer in self.conv.model.g_net.layers:

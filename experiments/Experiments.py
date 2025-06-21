@@ -252,7 +252,8 @@ class Experiments(ABC):
                 opt=self.opt,
                 save_updates=False,
                 batch_size=batch_size,
-                scaler = self.scaler
+                scaler = self.scaler,
+                pred_deriv=self.predict_deriv
             )
             
             best_val_loss = min(results['validation_loss'])
