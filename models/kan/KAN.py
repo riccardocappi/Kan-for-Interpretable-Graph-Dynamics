@@ -24,7 +24,8 @@ class KAN(torch.nn.Module):
         mu_1 = 1.,
         mu_2 = 1.,
         use_orig_reg = False,
-        compute_symbolic = False
+        compute_symbolic = False,
+        compute_mult = False
         ):
         super(KAN, self).__init__()
         self.layers = torch.nn.ModuleList()
@@ -53,7 +54,8 @@ class KAN(torch.nn.Module):
                     base_activation=base_activation,
                     grid_eps=grid_eps,
                     grid_range=grid_range,
-                    compute_symbolic=compute_symbolic
+                    compute_symbolic=compute_symbolic,
+                    compute_mult=compute_mult
                     )
             )
         self.to(self.device)

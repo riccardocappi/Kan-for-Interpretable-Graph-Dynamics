@@ -69,6 +69,8 @@ class ExperimentsGKAN(Experiments):
             in_dim_ = in_dim + time_dim
             
         hidden_layers = [in_dim_, hidden_dim, in_dim]
+        compute_mult = use_orig_reg
+        
         
         kan_config = {
             'layers_hidden':hidden_layers,
@@ -79,7 +81,8 @@ class ExperimentsGKAN(Experiments):
             'device':self.device,
             'mu_1':mu_1,
             'mu_2':mu_2,
-            'use_orig_reg':use_orig_reg
+            'use_orig_reg':use_orig_reg,
+            'compute_mult': compute_mult
         }
         
         return kan_config

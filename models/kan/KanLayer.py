@@ -1,7 +1,7 @@
 import torch
 import math
 import torch.nn.functional as F
-
+import math
 
 class KANLayer(torch.nn.Module):
     def __init__(
@@ -17,15 +17,26 @@ class KANLayer(torch.nn.Module):
         base_activation=torch.nn.SiLU,
         grid_eps=0.02,
         grid_range=[-1, 1],
-        compute_symbolic=False
+        compute_symbolic=False,
+        compute_mult = False
     ):
         super(KANLayer, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
+        out_features_sum = math.ceil(out_features / 2)
+        out_features_mult = out_features - out_features_sum
         self.grid_size = grid_size
         self.spline_order = spline_order
         self.compute_symbolic = compute_symbolic
+        self.compute_mult = compute_mult
 
+        self.multiplicative_mask = torch.tensor(
+            [False] * out_features_sum + [True] * out_features_mult,
+            dtype=torch.bool
+        )
+        
+        self.multiplicative_mask = (self.multiplicative_mask) & (self.in_features > 1)
+        
         h = (grid_range[1] - grid_range[0]) / grid_size
         grid = (
             (
@@ -251,12 +262,27 @@ class KANLayer(torch.nn.Module):
         
         # For regularization loss
         # input_range = torch.mean(torch.abs(x), dim=0) + 1e-8
-        output_range_spline = torch.mean(torch.abs(output_layer), dim=0)
+        output_range_spline, _ = torch.max(torch.abs(output_layer), dim=0)
         # self.acts_scale_spline = output_range_spline / input_range # (out_features, in_features)
         self.acts_scale_spline = output_range_spline # (out_features, in_features)
         
-        output = output.sum(dim=2) # (batch, out_features) 
-        return output
+        output_sum = output.sum(dim=2) # (batch, out_features)
+        if self.compute_mult:
+            sign = torch.sign(output)
+            abs_output = torch.clamp(torch.abs(output), min=1e-5)
+
+            log_abs = torch.log(abs_output)
+            sum_log = log_abs.sum(dim=2)
+            prod_abs = torch.exp(sum_log)
+
+            sign_product = sign.prod(dim=2)
+            prod_output = sign_product * prod_abs
+            
+            mask = self.multiplicative_mask.to(output.device)[None, :]
+            out = torch.where(mask, prod_output, output_sum)
+        else:
+            out = output_sum
+        return out
 
 
     def get_activations_efficient(self, x):
@@ -274,6 +300,8 @@ class KANLayer(torch.nn.Module):
     
     def forward(self, x: torch.Tensor, store_act=False):
         assert x.size(-1) == self.in_features
+        assert not (store_act == False and self.compute_mult), "Multiplicative node allowed only with original formulation"
+        
         x = x.reshape(-1, self.in_features)
 
         if store_act:

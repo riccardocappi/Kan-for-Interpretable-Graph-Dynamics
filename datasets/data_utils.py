@@ -4,7 +4,7 @@ from scipy.integrate import solve_ivp
 # Mapping nodes to indices for array use
 node_mapping = lambda G: {node: idx for idx, node in enumerate(G.nodes)}
 
-dynamics_name = ['Biochemical', 'Epidemics', 'Neuronal', 'Kuramoto', 'Population']
+dynamics_name = ['Biochemical', 'Epidemics', 'Neuronal', 'Kuramoto', 'Population', 'Diffusive']
 
 
 def Model_Biochemical(t, xx, G, F=1., B=1., R=1.):
@@ -70,6 +70,16 @@ def Model_Population(t, xx, G, B=1., R=1., b=2, a=2):
     return dxdt
 
 
+def Model_Diffusive(t, xx, G, R=1.):
+    dxdt = np.zeros_like(xx)
+    node_to_index = node_mapping(G)
+    for node in G.nodes():
+        i = node_to_index[node]
+        diff_sum = sum([xx[i] - xx[node_to_index[neighbor]] for neighbor in G.neighbors(node)])
+        dxdt[i] = -R * diff_sum
+    return dxdt
+
+
 def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=100, **kwargs):
     assert dynamics in dynamics_name
 
@@ -83,6 +93,8 @@ def numerical_integration(G, dynamics, initial_state, time_span, t_eval_steps=10
         model = lambda t, xx: Model_Kuramoto(t, xx, G, **kwargs)
     elif dynamics == 'Population':
         model = lambda t, xx: Model_Population(t, xx, G, **kwargs)
+    elif dynamics == 'Diffusive':
+        model = lambda t, xx: Model_Diffusive(t, xx, G, **kwargs)
     else:
         raise Exception('Not supported dynamics!')
 

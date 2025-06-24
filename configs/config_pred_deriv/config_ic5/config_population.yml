@@ -6,7 +6,7 @@ patience: 200
 opt: 'Adam'
 log: 1
 t_span: [0,10]
-t_eval_steps: 1000
+t_eval_steps: 1500
 seed: 42
 pytorch_seed: 0
 device: 'cuda:2'
@@ -20,7 +20,7 @@ include_time: False
 horizon: 15
 history: 1
 preprocess_data: False
-stride: 2
+stride: 5
 storage: "journal"
 save_cache_data: True
 n_iter: 5
