@@ -235,13 +235,13 @@ def pruning(kan_acts, kan_preacts, kan_masks_mult, theta = 0.01):
     pruned_masks_mult = kan_masks_mult.copy()
 
     for l in range(n_layers-1):
-        acts_scale_spline = get_acts_scale_spline(l)
-        I_lj, _ = torch.max(acts_scale_spline, dim=1)
+        # acts_scale_spline = get_acts_scale_spline(l)
+        # I_lj, _ = torch.max(acts_scale_spline, dim=1)
 
         acts_scale_spline_next = get_acts_scale_spline(l+1)
         O_lj, _ = torch.max(acts_scale_spline_next, dim=0)
 
-        pruned_nodes = ((I_lj < theta) | (O_lj < theta)).bool()
+        pruned_nodes = (O_lj < theta).bool()
         remaining_indices = torch.where(~pruned_nodes)[0]
         remaining_acts = pruned_acts[l][:, remaining_indices, :]
 

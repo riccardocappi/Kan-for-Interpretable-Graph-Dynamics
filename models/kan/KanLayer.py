@@ -35,7 +35,7 @@ class KANLayer(torch.nn.Module):
             dtype=torch.bool
         )
         
-        self.multiplicative_mask = (self.multiplicative_mask) & (self.in_features > 1)
+        self.multiplicative_mask = (self.multiplicative_mask) & (self.in_features > 1) & (compute_mult)
         
         h = (grid_range[1] - grid_range[0]) / grid_size
         grid = (
