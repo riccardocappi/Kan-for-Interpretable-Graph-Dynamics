@@ -118,3 +118,17 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         derivative[-1] = (raw_data[-1] - raw_data[-2]) / delta_t
 
         return derivative
+    
+    
+    def compute_noise_snr(self, raw_data, snr_db = 20):
+        signal = raw_data.squeeze(-1)  # shape: (IC, T, N)
+        
+        signal_power = signal.pow(2).mean()
+
+        snr_linear = 10 ** (snr_db / 10)
+        noise_power = signal_power / snr_linear
+        noise = torch.randn_like(signal) * noise_power.sqrt()
+        
+        noisy_signal = signal + noise
+
+        return noisy_signal.unsqueeze(-1)
