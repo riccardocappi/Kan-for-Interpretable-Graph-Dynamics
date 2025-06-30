@@ -1,8 +1,13 @@
+import os
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+
 import argparse
 from utils.utils import load_config
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
 import torch
+import numpy as np
+import random
 
 
 def set_pytorch_seed(seed=42):
@@ -10,6 +15,9 @@ def set_pytorch_seed(seed=42):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.use_deterministic_algorithms(True)
 
 
 def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0):
