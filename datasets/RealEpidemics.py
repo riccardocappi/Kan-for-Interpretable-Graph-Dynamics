@@ -48,7 +48,9 @@ class RealEpidemics(SpatioTemporalGraph):
         A = np.delete(A, no_infected, axis=1)
         countries = np.delete(countries, no_infected, axis=0)
         
-        x, x_values = self.inter_points(x, x_values)
+        x, x_values = self.inter_points(x, x_values)    # Shape: (T, N)
+        
+        # TODO: normalize x_values
         
         # Remove self-loops in A (zero the diagonal)
         Aij = A - np.diag(np.diag(A))

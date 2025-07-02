@@ -719,6 +719,7 @@ def top_down_fitting(
         symb_in,
         pruned_acts,
         pruned_preacts,
+        pruned_mask_mult,
         saving_path,
         pysr_model=None,
         sample_size=-1,
@@ -731,6 +732,7 @@ def top_down_fitting(
         symb_xs=symb_in
         for l_prev in range(l_post, len(pruned_acts)):
             symb_neurons = []
+            mask_mult = pruned_mask_mult[l_prev]
             for j in range(pruned_acts[l_prev].shape[1]):
                 if neuron_level:
                     symb_neuron_j,_ = fit_black_box(
@@ -741,7 +743,7 @@ def top_down_fitting(
                         sample_size=sample_size
                 )
                 else:
-                    symb_neuron_j = 0
+                    symb_neuron_j = 0 if not mask_mult[j] else 1
                     for i in range(pruned_acts[l_prev].shape[2]):
                         input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
                         symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
@@ -752,7 +754,11 @@ def top_down_fitting(
                             pysr_model=pysr_model,
                             sample_size=sample_size
                         )
-                        symb_neuron_j += black_box_spline
+                        if not mask_mult[j]:
+                            symb_neuron_j += black_box_spline
+                        else:
+                            symb_neuron_j *= black_box_spline
+                            
                         func_hierarchy[f"f_{index}"][f"spline_{l_prev}_{j}_{i}"] = str(black_box_spline)
                         
                 symb_neurons.append(symb_neuron_j)
@@ -780,8 +786,8 @@ def hierarchical_symb_fitting(
     neuron_level=True
 ):
     
-    cache_acts, cache_preacts = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
-    pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
+    cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
+    pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
     file_name = 'spline_top_down.json' if not neuron_level else 'neuron_top_down.json'
     saving_path = f"{model_path}/g_net"
     os.makedirs(saving_path, exist_ok=True)
@@ -791,14 +797,15 @@ def hierarchical_symb_fitting(
         symb_in=[sp.Symbol('x_i'), sp.Symbol('x_j')],
         pruned_acts=pruned_acts,
         pruned_preacts=pruned_preacts,
+        pruned_mask_mult=pruned_mask_mult,
         pysr_model=pysr_model,
         sample_size=sample_size,
         neuron_level=neuron_level,
         saving_path=f"{saving_path}/{file_name}"
     )
     
-    cache_acts, cache_preacts = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
-    pruned_acts, pruned_preacts = pruning(cache_acts, cache_preacts, theta=theta)
+    cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
+    pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
     saving_path = f"{model_path}/h_net" 
     os.makedirs(saving_path, exist_ok=True)
     
@@ -814,6 +821,7 @@ def hierarchical_symb_fitting(
         symb_in=symb_h_in,
         pruned_acts=pruned_acts,
         pruned_preacts=pruned_preacts,
+        pruned_mask_mult=pruned_mask_mult,
         pysr_model=pysr_model,
         sample_size=sample_size,
         neuron_level=neuron_level,

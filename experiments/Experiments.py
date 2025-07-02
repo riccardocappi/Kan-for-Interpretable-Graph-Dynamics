@@ -30,7 +30,9 @@ class Experiments(ABC):
                  n_trials,
                  model_selection_method='optuna',
                  study_name='example',
-                 process_id=0):
+                 process_id=0,
+                 snr_db = -1
+                 ):
         
         super().__init__()
         
@@ -50,6 +52,7 @@ class Experiments(ABC):
         self.history = config.get('history', 1) 
         self.preprocess_data = config.get('preprocess_data', False)
         self.predict_deriv = config.get("predict_deriv", False)
+        self.snr_db = snr_db
         
         if config['name'] in dynamics_name:
             dataset = SyntheticData(
@@ -66,6 +69,7 @@ class Experiments(ABC):
                 history = self.history,
                 stride=config.get('stride', 5),
                 predict_deriv=self.predict_deriv,
+                snr_db=self.snr_db,
                 **config['integration_kwargs']
             )
         else:

@@ -4,6 +4,21 @@ import networkx as nx
 from torch_geometric.utils import from_networkx
 from utils.utils import integrate
 
+
+def compute_noise_snr(raw_data, snr_db = 20):
+        signal = raw_data
+        
+        signal_power = signal.pow(2).mean()
+
+        snr_linear = 10 ** (snr_db / 10)
+        noise_power = signal_power / snr_linear
+        noise = torch.randn_like(signal) * noise_power.sqrt()
+        
+        noisy_signal = signal + noise
+
+        return noisy_signal
+    
+
 class SyntheticData(SpatioTemporalGraph):
     def __init__(
         self, 
@@ -20,6 +35,7 @@ class SyntheticData(SpatioTemporalGraph):
         history= 1,
         stride=24,
         predict_deriv=False,
+        snr_db = -1,
         **integration_kwargs
     ):  
         
@@ -27,10 +43,13 @@ class SyntheticData(SpatioTemporalGraph):
         self.t_max = t_max
         self.input_range = input_range
         self.int_kwargs = integration_kwargs
+        self.dynamics = dynamics
+        name = dynamics if snr_db < 0 else f"{dynamics}_{snr_db}_db"
+        self.snr_db = snr_db
         
         super().__init__(
             root=root,
-            name=dynamics,
+            name=name,
             n_ics=n_ics,
             n_samples=num_samples,
             seed=seed,
@@ -54,7 +73,7 @@ class SyntheticData(SpatioTemporalGraph):
                 input_range=self.input_range,
                 t_span=self.t_span,
                 t_eval_steps=self.t_max,
-                dynamics=self.name,
+                dynamics=self.dynamics,
                 device=torch.device(self.device),
                 graph=graph,
                 rng=self.rng,
@@ -65,6 +84,9 @@ class SyntheticData(SpatioTemporalGraph):
         
         raw_data = torch.stack(raw_data, dim=0) #(n_ics, t_max, n_nodes, n_features)
         t = torch.stack(t, dim=0)               #(n_ics, t_max)
+        
+        if self.snr_db > 0:
+            raw_data = compute_noise_snr(raw_data=raw_data, snr_db=self.snr_db)
         
         return edge_index, None, raw_data, t
         
