@@ -386,9 +386,12 @@ def fit_acts_scipy(x, y, alpha=0.1):
     return best_fun_sympy, best_params, best_func_optim
 
 
-def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
+def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, sort_by='score'):
     results = []
 
+    assert sort_by in ["score", "log_loss"], "Not supported sorting method"
+    ascending = sort_by == "log_loss" 
+    
     for alpha in alpha_grid:
         symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, alpha=alpha)
         val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
@@ -398,8 +401,8 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
 
     # Sort by complexity to compute finite difference derivative
     results.sort(key=lambda x: x[1])  # sort by complexity
-    top_equations = pd.DataFrame(results, columns=["symbolic_function", "complexity", "log_loss", "alpha"])
-    scores = [(results[0][0], 0)]
+    # top_equations = pd.DataFrame(results, columns=["symbolic_function", "complexity", "log_loss", "alpha"])
+    scores = [(results[0][0], results[0][1], results[0][2], results[0][3], 0)]
 
     for k in range(1, len(results)):
         c2, c1 = results[k][1], results[k - 1][1]
@@ -409,16 +412,25 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid):
 
         dlogloss_dcomplexity = (l2 - l1) / (c2 - c1)
         score = -dlogloss_dcomplexity
-        scores.append((results[k][0], score))
+        scores.append(
+            (results[k][0], 
+             results[k][1],
+             results[k][2],
+             results[k][3], 
+             score
+            )
+        )
 
-    best_symb_func, _ = max(scores, key=lambda x: x[1])
-    return best_symb_func, str(best_symb_func), top_equations
+    
+    top_equations = pd.DataFrame(scores, columns=["symbolic_function", "complexity", "log_loss", "alpha", "score"])
+    top_equations = top_equations.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+    return top_equations
 
 
-def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed=42, sample_size = -1):
+def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed=42, sample_size = -1, sort_by='score'):
     rng = np.random.default_rng(seed)
     
-    alpha_grid = torch.logspace(-5, -1, steps=5)
+    alpha_grid = torch.logspace(-5, 1, steps=5)
     
     symb_layer_acts = []
     symbolic_functions = defaultdict(dict)
@@ -444,19 +456,25 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
 
             x_train, x_val, y_train, y_val =  train_test_split(x_sampled, y_sampled, test_size=val_ratio, random_state=seed)
 
-            best_symb_func, best_func_str, top_eq = find_best_symbolic_func(
+            top_eqs = find_best_symbolic_func(
                 x_train, y_train, x_val, y_val,
-                alpha_grid=alpha_grid
+                alpha_grid=alpha_grid,
+                sort_by=sort_by
             )
-            top_equations[(i, j)] = top_eq
+            top_equations[(i, j)] = top_eqs
 
-            symbolic_functions[j][i] = best_func_str
+            symbolic_functions[j][i] = [str(expr) for expr in top_eqs["symbolic_function"]]
+            
+            best_symb_func = top_eqs["symbolic_function"][0]
+            
             best_symb_func = best_symb_func.subs(sp.Symbol('x0'), symb_xs[i])
             
             if mask_mult[j]:
+                symbolic_functions[j]["mode"] = 'mult'
                 symb_out *= best_symb_func
             else:
                 symb_out += best_symb_func
+                symbolic_functions[j]["mode"] = 'add'
             
             
 
@@ -465,7 +483,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
     return symb_layer_acts, symbolic_functions, top_equations
 
 
-def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1):
+def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1, sort_by='score'):
     n_layers = len(kan_acts)
     all_functions = {}
     top_5_save_path = f"{model_path}/top_eqs"
@@ -482,7 +500,8 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
             symb_xs=symb_xs,
             mask_mult=mask_mult,
             seed=seed,
-            sample_size=sample_size
+            sample_size=sample_size,
+            sort_by=sort_by
         )
         
         all_functions[l] = symb_functions
@@ -525,7 +544,8 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts, masks_mult
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1):
+def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1,
+              sort_by='score'):
     # G_net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta)    
@@ -537,7 +557,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')],
         model_path=f"{model_path}/g_net",
         seed=seed,
-        sample_size=sample_size
+        sample_size=sample_size,
+        sort_by=sort_by
     )
     symb_g = symb_g[0]  # Univariate functions
     # H_Net
@@ -560,7 +581,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         symb_xs=symb_h_in,
         model_path=f"{model_path}/h_net",
         sample_size=sample_size,
-        seed=seed
+        seed=seed,
+        sort_by=sort_by
     )
     
     symb_h = symb_h[0]  # Univariate functions
@@ -828,12 +850,13 @@ def hierarchical_symb_fitting(
         saving_path=f"{saving_path}/{file_name}"
     )
     
-    
-    
-    
-    
-    
-    
+
+def sMAPE():   
+    pass # TODO: Implement
+
+
+
+
     # # Create symbolic feature library
 # def build_symbolic_library(x_dim):
 #     x_syms = [sp.Symbol(f'x{i}') for i in range(x_dim)]

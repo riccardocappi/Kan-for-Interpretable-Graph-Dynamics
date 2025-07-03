@@ -17,10 +17,11 @@ class ExperimentsGKAN(Experiments):
         study_name = 'example',
         process_id=0,
         snr_db = -1,
+        interp_points=False,
         **kwargs
     ):
         super().__init__(config, n_trials, model_selection_method, study_name=study_name, process_id=process_id, 
-                         snr_db=snr_db, **kwargs)
+                         snr_db=snr_db, interp_points=interp_points, **kwargs)
 
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
@@ -54,10 +55,12 @@ class ExperimentsGKAN(Experiments):
                                    self.search_space[f'mu_2_{net_suffix}'][-1], step=0.1)
         
         n_hidden_layers = trial.suggest_int(
-            f'n_hidden_layers_{net_suffix}', 
-            self.search_space.get(f'n_hidden_layers_{net_suffix}', [1])[0], 
-            self.search_space.get(f'n_hidden_layers_{net_suffix}', [1])[-1]
+             f'n_hidden_layers_{net_suffix}', 
+             self.search_space.get(f'n_hidden_layers_{net_suffix}', [1])[0], 
+             self.search_space.get(f'n_hidden_layers_{net_suffix}', [1])[-1]
         )
+        
+        # n_hidden_layers = 1
                     
         hidden_dim = trial.suggest_int(f'hidden_dim_{net_suffix}', self.search_space[f'hidden_dim_{net_suffix}'][0], 
                                        self.search_space[f'hidden_dim_{net_suffix}'][-1])

@@ -5,6 +5,25 @@ import os
 from abc import ABC, abstractmethod
 from utils.utils import sample_irregularly_per_ics
 
+
+def interp_points(raw_data, degree=3):
+    raw_data_smoothed = []
+    
+    for ic in range(raw_data.size(0)):
+        signal = raw_data[ic].detach().cpu().numpy()
+        T,N, _ = signal.shape
+        signal_smoothed = np.zeros_like(signal)
+        x = np.arange(T)
+        for node_idx in range(N):
+            y = signal[:, node_idx, 0]
+            coeffs = np.polyfit(x, y, degree)
+            y_smooth = np.polyval(coeffs, x)
+            signal_smoothed[:, node_idx, 0] = y_smooth
+        raw_data_smoothed.append(torch.tensor(signal_smoothed, dtype=raw_data.dtype, device=raw_data.device))
+    
+    return torch.stack(raw_data_smoothed, dim=0)
+
+
 class SpatioTemporalGraph(InMemoryDataset, ABC):
     def __init__(
         self, 
@@ -17,7 +36,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         horizon = 15,
         n_ics = 3,
         stride=24,
-        predict_deriv=False
+        predict_deriv=False,
+        interp_points=False
     ):
         self.name = name
         self.num_samples = n_samples
@@ -26,6 +46,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.device = device
         self.horizon = horizon if not predict_deriv else 1
         self.history = history if not predict_deriv else 1
+        self.interp_points = interp_points
         self.n_ics = n_ics
         self.stride = stride
         self.predict_deriv = predict_deriv
@@ -49,6 +70,9 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
 
         edge_index, edge_attr, raw_data, time = self.get_raw_data()
         assert (raw_data.size(0) == time.size(0)) and (raw_data.size(1) == time.size(1))
+        
+        if self.interp_points:
+            raw_data = interp_points(raw_data, degree=3)
         
         if self.num_samples > 0:
             raw_data, time = sample_irregularly_per_ics(raw_data, time, self.num_samples)
