@@ -20,7 +20,7 @@ def set_pytorch_seed(seed=42):
     torch.use_deterministic_algorithms(True)
 
 
-def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, snr_db=-1):
+def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, snr_db=-1, denoise=False):
     config = load_config(config_path)   # Load yml config file 
     
     set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
@@ -28,9 +28,11 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
     model_type=config['model_type']
            
     if model_type == 'GKAN':
-        exp = ExperimentsGKAN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db)
+        exp = ExperimentsGKAN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db,
+                              denoise=denoise)
     elif model_type == 'MPNN':
-        exp = ExperimentsMPNN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db)
+        exp = ExperimentsMPNN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db,
+                              denoise=denoise)
     else:
         raise ValueError('Unknown model type')
     
@@ -45,11 +47,12 @@ if __name__ == '__main__':
     parser.add_argument('--study_name', default='example', help='Name of the optuna study to load/create')
     parser.add_argument('--process_id', type=int, default=0, help='ID for the running process')
     parser.add_argument('--snr_db', type=int, default=-1, help='Signal to noise ratio in decibel')
+    parser.add_argument('--denoise', default=False, action='store_true', help='Denoise data')
     
     
     args = parser.parse_args()
     
-    run(args.config, args.n_trials, args.method, args.study_name, args.process_id, args.snr_db)
+    run(args.config, args.n_trials, args.method, args.study_name, args.process_id, args.snr_db, args.denoise)
     
     
     

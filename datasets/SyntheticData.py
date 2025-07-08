@@ -36,7 +36,7 @@ class SyntheticData(SpatioTemporalGraph):
         stride=24,
         predict_deriv=False,
         snr_db = -1,
-        interp_points=False,
+        denoise=False,
         **integration_kwargs
     ):  
         
@@ -46,8 +46,8 @@ class SyntheticData(SpatioTemporalGraph):
         self.int_kwargs = integration_kwargs
         self.dynamics = dynamics
         name = dynamics if snr_db < 0 else f"{dynamics}_{snr_db}_db"
-        if interp_points:
-            name += "_interp"
+        if denoise:
+            name += "_denoise"
         self.snr_db = snr_db
         
         super().__init__(
@@ -61,7 +61,7 @@ class SyntheticData(SpatioTemporalGraph):
             history=history,
             stride=stride,
             predict_deriv=predict_deriv,
-            interp_points=interp_points
+            denoise=denoise
         )
     
     

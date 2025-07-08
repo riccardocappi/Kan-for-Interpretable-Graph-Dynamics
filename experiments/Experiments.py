@@ -32,7 +32,7 @@ class Experiments(ABC):
                  study_name='example',
                  process_id=0,
                  snr_db = -1,
-                 interp_points=False
+                 denoise=False
                  ):
         
         super().__init__()
@@ -71,7 +71,7 @@ class Experiments(ABC):
                 stride=config.get('stride', 5),
                 predict_deriv=self.predict_deriv,
                 snr_db=self.snr_db,
-                interp_points=interp_points,
+                denoise=denoise,
                 **config['integration_kwargs']
             )
         else:

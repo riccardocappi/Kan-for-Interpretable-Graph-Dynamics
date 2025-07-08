@@ -331,7 +331,7 @@ def penalized_loss(y_true, y_pred, func_symb, alpha=0.01):
     return mse + penalty
 
 
-def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):  
+def fit_params_scipy(x_train, y_train, func, func_name, x_symb = None, alpha=0.1):  
     if func_name == 'x' or func_name == 'neg':
         func_optim = lambda x, a, b: a*x + b  
         init_params = [1., 0.]
@@ -352,7 +352,8 @@ def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):
     except RuntimeError:
         return 1e8, [], 0, lambda x: x*0
     
-    x_symb = sp.Symbol('x0')    # This symbol must be x0 in order to work with the rest of the code
+    if x_symb is None:
+        x_symb = sp.Symbol('x0')    # This symbol must be x0 in order to work with the rest of the code
     
     if func_name == 'x' or func_name == 'neg':
         post_fun = params[0] * func(x_train) + params[1]
@@ -376,24 +377,24 @@ def fit_params_scipy(x_train, y_train, func, func_name, alpha=0.1):
     return mse, params, fun_sympy_quantized, func_optim
 
 
-def fit_acts_scipy(x, y, alpha=0.1):    
+def fit_acts_scipy(x, y, x_symb = None, alpha=0.1):    
     scores = []
     for name, func in SYMBOLIC_LIB_NUMPY.items():
-        mse, params, symb, func_optim = fit_params_scipy(x, y, func, name, alpha=alpha)
+        mse, params, symb, func_optim = fit_params_scipy(x, y, func, name, x_symb = x_symb, alpha=alpha)
         scores.append((symb, mse, params, func_optim))
     
     best_fun_sympy, _, best_params, best_func_optim  = min(scores, key=lambda x: x[1])    
     return best_fun_sympy, best_params, best_func_optim
 
 
-def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, sort_by='score'):
+def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, x_symb = None, sort_by='score'):
     results = []
 
     assert sort_by in ["score", "log_loss"], "Not supported sorting method"
     ascending = sort_by == "log_loss" 
     
     for alpha in alpha_grid:
-        symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, alpha=alpha)
+        symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, x_symb=x_symb, alpha=alpha)
         val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
         complexity = count_ops(symb_func)
         log_loss = np.log(val_mse)
@@ -460,6 +461,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
                 x_train, y_train, x_val, y_val,
                 alpha_grid=alpha_grid,
                 sort_by=sort_by
+                # x_symb=symb_xs[i]
             )
             top_equations[(i, j)] = top_eqs
 
@@ -850,11 +852,6 @@ def hierarchical_symb_fitting(
         saving_path=f"{saving_path}/{file_name}"
     )
     
-
-def sMAPE():   
-    pass # TODO: Implement
-
-
 
 
     # # Create symbolic feature library
