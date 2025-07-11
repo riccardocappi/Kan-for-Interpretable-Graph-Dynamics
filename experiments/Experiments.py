@@ -12,6 +12,7 @@ import copy
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
 from datasets.SyntheticData import SyntheticData
+from datasets.RealEpidemics import RealEpidemics
 from datasets.data_utils import dynamics_name
 from utils.utils import SCORES
 import yaml
@@ -44,27 +45,29 @@ class Experiments(ABC):
         self.n_trials = n_trials
         self.method = model_selection_method
         
-        self.device = config["device"]
+        self.device = config.get("device", "cuda:0")
         if self.device == 'cuda':
             assert torch.cuda.is_available()
             
-        self.n_iter = config['n_iter']
+        self.n_iter = config.get('n_iter', 1)
         self.horizon = config.get('horizon', 1)
         self.history = config.get('history', 1) 
         self.preprocess_data = config.get('preprocess_data', False)
         self.predict_deriv = config.get("predict_deriv", False)
         self.snr_db = snr_db
         
+        train_prec = 0.8
+        
         if config['name'] in dynamics_name:
             dataset = SyntheticData(
                 root=config['data_folder'],
                 dynamics=config['name'],
-                t_span=config['t_span'],
-                t_max=config['t_eval_steps'],
-                num_samples=config['num_samples'],
+                t_span=config.get('t_span', (0, 1)),
+                t_max=config.get('t_eval_steps', 2000),
+                num_samples=config.get('num_samples', -1),
                 seed=config['seed'],
-                n_ics=config['n_iter'],
-                input_range=config['input_range'],
+                n_ics=config.get('n_iter', 1),
+                input_range=config.get('input_range', (0, 1)),
                 device=self.device,
                 horizon = self.horizon,
                 history = self.history,
@@ -72,7 +75,23 @@ class Experiments(ABC):
                 predict_deriv=self.predict_deriv,
                 snr_db=self.snr_db,
                 denoise=denoise,
-                **config['integration_kwargs']
+                **config.get('integration_kwargs', {})
+            )
+        elif config['name'] == 'RealEpid':
+            dataset = RealEpidemics(
+                root = config['data_folder'],
+                name = config['name'],
+                predict_deriv=self.predict_deriv,
+                train_perc = train_prec,
+                scale=config.get('scale', True),
+                scale_range=config.get('scale_range', (0, 10)),
+                n_samples=config.get('num_samples', -1),
+                seed=config['seed'],
+                device=self.device,
+                history=self.history,
+                horizon=self.horizon,
+                stride=config.get('stride', 1),
+                denoise=False
             )
         else:
             raise NotImplementedError()
@@ -80,7 +99,7 @@ class Experiments(ABC):
         total_len = len(dataset)
 
         # Compute split sizes
-        train_end = int(0.8 * total_len)
+        train_end = int(train_prec * total_len)
 
         # Create splits
         self.training_set = dataset[:train_end]
@@ -89,7 +108,7 @@ class Experiments(ABC):
         self.epochs = config["epochs"]
         self.patience = config["patience"]
         self.opt = config["opt"]
-        self.log = config["log"]
+        self.log = config.get("log", 10)
         
         self.process_id = process_id
         self.model_path = f'./saved_models_optuna/{config["model_name"]}/{study_name}/{str(process_id)}'
@@ -280,8 +299,9 @@ class Experiments(ABC):
     
     
     def pre_processing(self, training_set:SpatioTemporalGraph):
-        all_train_x = torch.cat([data.x.view(-1) for data in training_set], dim=0)  
-        scaler = MinMaxScaler(out_range=(-1, 1))
+        all_train_x = torch.cat([data.x.view(-1) for data in training_set], dim=0)
+        scale_range = self.config.get('scale_range', (-1, 1))
+        scaler = MinMaxScaler(out_range=scale_range)
         scaler.fit(all_train_x.detach().cpu())
         
         scaler.scale = scaler.scale.to(torch.device(self.device))

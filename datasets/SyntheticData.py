@@ -49,11 +49,11 @@ class SyntheticData(SpatioTemporalGraph):
         if denoise:
             name += "_denoise"
         self.snr_db = snr_db
+        self.n_ics = n_ics
         
         super().__init__(
             root=root,
             name=name,
-            n_ics=n_ics,
             n_samples=num_samples,
             seed=seed,
             device=device,

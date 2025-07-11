@@ -5,6 +5,7 @@ from scipy.interpolate import interp1d
 import torch
 import json
 import os
+from tsl.data.preprocessing.scalers import MinMaxScaler, StandardScaler
 
 
 class RealEpidemics(SpatioTemporalGraph):
@@ -17,10 +18,16 @@ class RealEpidemics(SpatioTemporalGraph):
         device='cpu', 
         history=1, 
         horizon=1, 
-        n_ics=-1, 
         stride=1, 
-        predict_deriv=True
+        predict_deriv=True,
+        denoise=False,
+        train_perc = 0.8,
+        scale=False,
+        scale_range = (-5, 5)
     ):
+        self.train_perc = train_perc
+        self.scale = scale
+        self.scale_range = scale_range
         super().__init__(
             root, 
             name, 
@@ -29,9 +36,9 @@ class RealEpidemics(SpatioTemporalGraph):
             device=device, 
             history=history, 
             horizon=horizon, 
-            n_ics=n_ics, 
             stride=stride,
-            predict_deriv=predict_deriv
+            predict_deriv=predict_deriv,
+            denoise=denoise
         )
     
     
@@ -49,9 +56,7 @@ class RealEpidemics(SpatioTemporalGraph):
         countries = np.delete(countries, no_infected, axis=0)
         
         x, x_values = self.inter_points(x, x_values)    # Shape: (T, N)
-        
-        # TODO: normalize x_values
-        
+                
         # Remove self-loops in A (zero the diagonal)
         Aij = A - np.diag(np.diag(A))
         PSI = 8.91e6
@@ -90,6 +95,18 @@ class RealEpidemics(SpatioTemporalGraph):
         with open(os.path.join(self.root, self.name, "countries_dict.json"), 'w') as f:
             json.dump(countries_dict, f)
         
+        # TODO: Normalize data
+        
+        if self.scale:
+            scaler = MinMaxScaler(out_range=self.scale_range)
+            # scaler = StandardScaler()
+            T = data.shape[0]
+            
+            data_flat = data[:int(self.train_perc * T), :].flatten() # Fit scaler only on training data
+            scaler.fit(data_flat)
+            data = scaler.transform(data)
+            
+        
         data = torch.from_numpy(data).float().unsqueeze(0).unsqueeze(-1).to(self.device)
         
         row, col = np.nonzero(Aij_act)
@@ -105,7 +122,7 @@ class RealEpidemics(SpatioTemporalGraph):
     
     def load_data(self):
         # Read infection data
-        x = pd.read_csv('./data/RealEpidemics/infected_numbers_covid.csv').values
+        x = pd.read_csv('./data/RealEpidemics/infected_numbers_H1N1.csv').values
 
         # Read adjacency matrix (flight data)
         A = np.loadtxt('./data/RealEpidemics/Flights_adj.csv', delimiter=',')

@@ -25,6 +25,7 @@ import pandas as pd
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import train_test_split
 from sympy import lambdify
+import time
 
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -486,6 +487,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
 
 
 def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1, sort_by='score'):
+    start_time = time.time()
     n_layers = len(kan_acts)
     all_functions = {}
     top_5_save_path = f"{model_path}/top_eqs"
@@ -510,12 +512,15 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
         
         for k, df in top_equations.items():
             df.to_csv(f"{top_5_save_path}/top_equations({l}, {k[1]}, {k[0]}).csv")
+    
+    end_time = time.time()
+    print(f"Execution time: {end_time - start_time:.6f} seconds")
         
     save_path = f"{model_path}/symb_functions.json"
     with open(save_path, "w") as f:
         json.dump(all_functions, f)
             
-    return symb_xs
+    return [sp.simplify(symbx) for symbx in symb_xs]
                 
         
 def load_cached_data(cached_acts_path, cached_preacts_path, cached_mask_mult_path, device='cpu'):
@@ -551,7 +556,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     # G_net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta)    
-        
+    
+    print("Fitting G_Net...")
     symb_g = fit_kan(
         pruned_acts,
         pruned_preacts,
@@ -562,12 +568,14 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         sample_size=sample_size,
         sort_by=sort_by
     )
+    print()
+    
     symb_g = symb_g[0]  # Univariate functions
     # H_Net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta)
     
-    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(sp.simplify(symb_g)) + ')')
+    aggr_term = sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')
     if message_passing:
         symb_h_in = [sp.Symbol('x_i'), aggr_term]
     else:
@@ -576,6 +584,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     if include_time:
         symb_h_in += [sp.Symbol('t')]
     
+    print("Fitting H_Net...")
     symb_h = fit_kan(
         pruned_acts,
         pruned_preacts,
@@ -586,7 +595,6 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         seed=seed,
         sort_by=sort_by
     )
-    
     symb_h = symb_h[0]  # Univariate functions
     
     out_formula = symb_h if message_passing else symb_h + aggr_term 
@@ -595,6 +603,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
 
 
 def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
+    start_time = time.time()
     in_dim = cached_input.size(1)
     out_dim = cached_output.size(1)
 
@@ -607,8 +616,10 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
     subs_dict = {sp.Symbol(f'x{i}'): symb_xs[i] for i in range(len(symb_xs))}
 
     symb_func = symb_func.subs(subs_dict)
-
-    return symb_func, top_5_eq[["complexity", "loss", "score", "sympy_format"]]
+    end_time = time.time()
+    print(f"Execution time: {end_time - start_time:.6f} seconds")
+    
+    return sp.simplify(symb_func), top_5_eq[["complexity", "loss", "score", "sympy_format"]]
 
 
 
@@ -616,12 +627,16 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
     # G_Net
     cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
+    
+    print("Fitting G_Net...")
     symb_g, top_5_eqs_g = fit_black_box(
         cached_input, cached_output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
         pysr_model=pysr_model,
         sample_size=sample_size
     )
+    
+    print()
     top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
     
     # H_Net
@@ -638,6 +653,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
     if include_time:
         symb_h_in += [sp.Symbol('t')]
     
+    print("Fitting H_Net...")
     symb_h, top_5_eqs_h = fit_black_box(
         cached_input, 
         cached_output, 
@@ -645,6 +661,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
         pysr_model=pysr_model,
         sample_size=sample_size
     )
+        
     top_5_eqs_h.to_csv(f"{model_path}/top_5_equations_h.csv")
 
     out_formula = symb_h if message_passing else symb_h + aggr_term 
@@ -670,6 +687,7 @@ def fit_black_box_from_kan(
     input = pruned_preacts[0]
     output = pruned_acts[-1].sum(dim=2)
 
+    print("Fitting G_Net...")
     symb_g, top_5_eqs_g = fit_black_box(
         input, 
         output, 
@@ -677,7 +695,7 @@ def fit_black_box_from_kan(
         pysr_model=pysr_model,
         sample_size=sample_size
     )
-    
+
     save_path = f"{model_path}/black-box"
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -701,6 +719,7 @@ def fit_black_box_from_kan(
     if include_time:
         symb_h_in += [sp.Symbol('t')]
 
+    print("Fitting H_Net...")
     symb_h, top_5_eqs_h = fit_black_box(
         input, 
         output, 
@@ -708,6 +727,7 @@ def fit_black_box_from_kan(
         pysr_model=pysr_model,
         sample_size=sample_size
     )
+
     top_5_eqs_h.to_csv(f"{save_path}/top_5_equations_h.csv")
 
     out_formula = symb_h if message_passing else symb_h + aggr_term 

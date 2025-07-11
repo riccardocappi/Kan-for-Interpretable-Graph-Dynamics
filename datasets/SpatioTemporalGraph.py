@@ -34,7 +34,6 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         device='cpu',
         history = 1,
         horizon = 15,
-        n_ics = 3,
         stride=24,
         predict_deriv=False,
         denoise=False
@@ -47,7 +46,6 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.horizon = horizon if not predict_deriv else 1
         self.history = history if not predict_deriv else 1
         self.denoise = denoise
-        self.n_ics = n_ics
         self.stride = stride
         self.predict_deriv = predict_deriv
         super().__init__(root)
