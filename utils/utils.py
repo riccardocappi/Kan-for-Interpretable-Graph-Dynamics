@@ -223,7 +223,7 @@ def save_black_box_to_file(folder_path, cache_input, cache_output):
     torch.save(cache_output, f'{folder_path}/cached_output')
  
  
-def pruning(kan_acts, kan_preacts, kan_masks_mult, theta = 0.01):
+def pruning(kan_acts, kan_preacts, kan_masks_mult, theta = 0.01, verbose=False):
 
     def get_acts_scale_spline(l_index):
         input_range = torch.sum(torch.abs(pruned_preacts[l_index]), dim=0)
@@ -253,7 +253,7 @@ def pruning(kan_acts, kan_preacts, kan_masks_mult, theta = 0.01):
         pruned_masks_mult[l] = pruned_masks_mult[l][remaining_indices]
 
         for j, is_pruned in enumerate(pruned_nodes):
-            if is_pruned:
+            if is_pruned and verbose:
                 print(f"Pruning node ({l},{j})")
 
     return pruned_acts, pruned_preacts, pruned_masks_mult
@@ -486,7 +486,9 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
     return symb_layer_acts, symbolic_functions, top_equations
 
 
-def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1, sort_by='score'):
+def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1, sort_by='score', 
+            verbose = False):
+    
     start_time = time.time()
     n_layers = len(kan_acts)
     all_functions = {}
@@ -514,13 +516,20 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
             df.to_csv(f"{top_5_save_path}/top_equations({l}, {k[1]}, {k[0]}).csv")
     
     end_time = time.time()
-    print(f"Execution time: {end_time - start_time:.6f} seconds")
+    if verbose:
+        print(f"Execution time: {end_time - start_time:.6f} seconds")
         
     save_path = f"{model_path}/symb_functions.json"
     with open(save_path, "w") as f:
         json.dump(all_functions, f)
-            
-    return [sp.simplify(symbx) for symbx in symb_xs]
+    
+    out = []
+    for symbx in symb_xs:
+        out.append(
+            sp.simplify(symbx) if count_ops(symbx) < 20 else symbx
+        )
+    
+    return out
                 
         
 def load_cached_data(cached_acts_path, cached_preacts_path, cached_mask_mult_path, device='cpu'):
@@ -552,12 +561,14 @@ def get_kan_arch(n_layers, model_path):
 
 
 def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1,
-              sort_by='score'):
+              sort_by='score', verbose=False):
     # G_net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
-    pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta)    
+    pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta, verbose=verbose)    
     
-    print("Fitting G_Net...")
+    if verbose:
+        print("Fitting G_Net...")
+        
     symb_g = fit_kan(
         pruned_acts,
         pruned_preacts,
@@ -566,14 +577,14 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         model_path=f"{model_path}/g_net",
         seed=seed,
         sample_size=sample_size,
-        sort_by=sort_by
+        sort_by=sort_by,
+        verbose=verbose
     )
-    print()
     
     symb_g = symb_g[0]  # Univariate functions
     # H_Net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
-    pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta)
+    pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta, verbose=verbose)
     
     aggr_term = sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')
     if message_passing:
@@ -584,7 +595,10 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     if include_time:
         symb_h_in += [sp.Symbol('t')]
     
-    print("Fitting H_Net...")
+    if verbose:
+        print()
+        print("Fitting H_Net...")
+    
     symb_h = fit_kan(
         pruned_acts,
         pruned_preacts,
@@ -593,7 +607,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         model_path=f"{model_path}/h_net",
         sample_size=sample_size,
         seed=seed,
-        sort_by=sort_by
+        sort_by=sort_by,
+        verbose=verbose
     )
     symb_h = symb_h[0]  # Univariate functions
     
@@ -602,13 +617,13 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     return out_formula, symb_g, symb_h
 
 
-def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1):
+def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1, verbose = False):
     start_time = time.time()
     in_dim = cached_input.size(1)
     out_dim = cached_output.size(1)
 
-    x = cached_input.detach().numpy().reshape(-1, in_dim)
-    y = cached_output.detach().numpy().reshape(-1, out_dim)
+    x = cached_input.detach().cpu().numpy().reshape(-1, in_dim)
+    y = cached_output.detach().cpu().numpy().reshape(-1, out_dim)
 
     top_5_eq = fit_acts_pysr(x, y, pysr_model=pysr_model, sample_size=sample_size)
     symb_func = sp.sympify(top_5_eq["sympy_format"].iloc[0])
@@ -617,26 +632,28 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
     symb_func = symb_func.subs(subs_dict)
     end_time = time.time()
-    print(f"Execution time: {end_time - start_time:.6f} seconds")
+    if verbose:
+        print(f"Execution time: {end_time - start_time:.6f} seconds")
     
     return sp.simplify(symb_func), top_5_eq[["complexity", "loss", "score", "sympy_format"]]
 
 
 
-def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False):
+def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False, verbose=False):
     # G_Net
     cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
     cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
-    
-    print("Fitting G_Net...")
+    if verbose:
+        print("Fitting G_Net...")
+        
     symb_g, top_5_eqs_g = fit_black_box(
         cached_input, cached_output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        verbose=verbose
     )
     
-    print()
     top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
     
     # H_Net
@@ -653,13 +670,17 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
     if include_time:
         symb_h_in += [sp.Symbol('t')]
     
-    print("Fitting H_Net...")
+    if verbose:
+        print()
+        print("Fitting H_Net...")
+        
     symb_h, top_5_eqs_h = fit_black_box(
         cached_input, 
         cached_output, 
         symb_xs=symb_h_in, 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        verbose=verbose
     )
         
     top_5_eqs_h.to_csv(f"{model_path}/top_5_equations_h.csv")
@@ -678,22 +699,26 @@ def fit_black_box_from_kan(
     pysr_model = None, 
     sample_size=-1,
     message_passing=True,
-    include_time=False
+    include_time=False,
+    verbose=False
     ):
     #G_Net
     cache_acts, cache_preacts, cached_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
-    pruned_acts, pruned_preacts, _ = pruning(cache_acts, cache_preacts, cached_masks_mult, theta=theta)
+    pruned_acts, pruned_preacts, _ = pruning(cache_acts, cache_preacts, cached_masks_mult, theta=theta, verbose=verbose)
 
     input = pruned_preacts[0]
     output = pruned_acts[-1].sum(dim=2)
 
-    print("Fitting G_Net...")
+    if verbose:
+        print("Fitting G_Net...")
+        
     symb_g, top_5_eqs_g = fit_black_box(
         input, 
         output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        verbose=verbose
     )
 
     save_path = f"{model_path}/black-box"
@@ -704,7 +729,7 @@ def fit_black_box_from_kan(
 
     #H_Net
     cache_acts, cache_preacts, cached_masks_mult = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
-    pruned_acts, pruned_preacts, _ = pruning(cache_acts, cache_preacts, cached_masks_mult, theta=theta)
+    pruned_acts, pruned_preacts, _ = pruning(cache_acts, cache_preacts, cached_masks_mult, theta=theta, verbose=verbose)
 
     input = pruned_preacts[0]
     output = pruned_acts[-1].sum(dim=2)
@@ -719,13 +744,17 @@ def fit_black_box_from_kan(
     if include_time:
         symb_h_in += [sp.Symbol('t')]
 
-    print("Fitting H_Net...")
+    if verbose:
+        print()
+        print("Fitting H_Net...")
+        
     symb_h, top_5_eqs_h = fit_black_box(
         input, 
         output, 
         symb_xs=symb_h_in, 
         pysr_model=pysr_model,
-        sample_size=sample_size
+        sample_size=sample_size,
+        verbose=verbose
     )
 
     top_5_eqs_h.to_csv(f"{save_path}/top_5_equations_h.csv")
@@ -759,118 +788,118 @@ def quantise(expr, quantise_to=0.01):
         return expr.func(*[quantise(arg, quantise_to) for arg in expr.args])
     
                 
-def top_down_fitting(
-        symb_in,
-        pruned_acts,
-        pruned_preacts,
-        pruned_mask_mult,
-        saving_path,
-        pysr_model=None,
-        sample_size=-1,
-        neuron_level = False
-):
+# def top_down_fitting(
+#         symb_in,
+#         pruned_acts,
+#         pruned_preacts,
+#         pruned_mask_mult,
+#         saving_path,
+#         pysr_model=None,
+#         sample_size=-1,
+#         neuron_level = False
+# ):
     
-    func_hierarchy = defaultdict(dict)
-    for index, l_post in enumerate(reversed(range(len(pruned_acts)))): # Starting from last layer
-        black_box_input = pruned_preacts[0]
-        symb_xs=symb_in
-        for l_prev in range(l_post, len(pruned_acts)):
-            symb_neurons = []
-            mask_mult = pruned_mask_mult[l_prev]
-            for j in range(pruned_acts[l_prev].shape[1]):
-                if neuron_level:
-                    symb_neuron_j,_ = fit_black_box(
-                        black_box_input,
-                        pruned_acts[l_prev].sum(dim=2)[:, j].unsqueeze(-1),
-                        symb_xs=symb_xs,
-                        pysr_model=pysr_model,
-                        sample_size=sample_size
-                )
-                else:
-                    symb_neuron_j = 0 if not mask_mult[j] else 1
-                    for i in range(pruned_acts[l_prev].shape[2]):
-                        input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
-                        symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
-                        black_box_spline, _ = fit_black_box(
-                            cached_input=input_spline,
-                            cached_output=pruned_acts[l_prev][:, j, i].unsqueeze(-1),
-                            symb_xs=symb_xs_spline,
-                            pysr_model=pysr_model,
-                            sample_size=sample_size
-                        )
-                        if not mask_mult[j]:
-                            symb_neuron_j += black_box_spline
-                        else:
-                            symb_neuron_j *= black_box_spline
+#     func_hierarchy = defaultdict(dict)
+#     for index, l_post in enumerate(reversed(range(len(pruned_acts)))): # Starting from last layer
+#         black_box_input = pruned_preacts[0]
+#         symb_xs=symb_in
+#         for l_prev in range(l_post, len(pruned_acts)):
+#             symb_neurons = []
+#             mask_mult = pruned_mask_mult[l_prev]
+#             for j in range(pruned_acts[l_prev].shape[1]):
+#                 if neuron_level:
+#                     symb_neuron_j,_ = fit_black_box(
+#                         black_box_input,
+#                         pruned_acts[l_prev].sum(dim=2)[:, j].unsqueeze(-1),
+#                         symb_xs=symb_xs,
+#                         pysr_model=pysr_model,
+#                         sample_size=sample_size
+#                 )
+#                 else:
+#                     symb_neuron_j = 0 if not mask_mult[j] else 1
+#                     for i in range(pruned_acts[l_prev].shape[2]):
+#                         input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
+#                         symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
+#                         black_box_spline, _ = fit_black_box(
+#                             cached_input=input_spline,
+#                             cached_output=pruned_acts[l_prev][:, j, i].unsqueeze(-1),
+#                             symb_xs=symb_xs_spline,
+#                             pysr_model=pysr_model,
+#                             sample_size=sample_size
+#                         )
+#                         if not mask_mult[j]:
+#                             symb_neuron_j += black_box_spline
+#                         else:
+#                             symb_neuron_j *= black_box_spline
                             
-                        func_hierarchy[f"f_{index}"][f"spline_{l_prev}_{j}_{i}"] = str(black_box_spline)
+#                         func_hierarchy[f"f_{index}"][f"spline_{l_prev}_{j}_{i}"] = str(black_box_spline)
                         
-                symb_neurons.append(symb_neuron_j)
-                func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(symb_neuron_j)
+#                 symb_neurons.append(symb_neuron_j)
+#                 func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(symb_neuron_j)
                 
-            black_box_input = pruned_acts[l_prev].sum(dim=2)
-            symb_xs = symb_neurons
+#             black_box_input = pruned_acts[l_prev].sum(dim=2)
+#             symb_xs = symb_neurons
             
-    with open(saving_path, "w") as f:
-            json.dump(func_hierarchy, f)
+#     with open(saving_path, "w") as f:
+#             json.dump(func_hierarchy, f)
             
     
     
                 
    
-def hierarchical_symb_fitting(
-    model_path,
-    theta=0.1,
-    n_g_hidden_layers = 2,
-    n_h_hidden_layers = 2,
-    pysr_model = None,
-    sample_size=-1,
-    message_passing=False,
-    include_time=False,
-    neuron_level=True
-):
+# def hierarchical_symb_fitting(
+#     model_path,
+#     theta=0.1,
+#     n_g_hidden_layers = 2,
+#     n_h_hidden_layers = 2,
+#     pysr_model = None,
+#     sample_size=-1,
+#     message_passing=False,
+#     include_time=False,
+#     neuron_level=True
+# ):
     
-    cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
-    pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
-    file_name = 'spline_top_down.json' if not neuron_level else 'neuron_top_down.json'
-    saving_path = f"{model_path}/g_net"
-    os.makedirs(saving_path, exist_ok=True)
+#     cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
+#     pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
+#     file_name = 'spline_top_down.json' if not neuron_level else 'neuron_top_down.json'
+#     saving_path = f"{model_path}/g_net"
+#     os.makedirs(saving_path, exist_ok=True)
     
     
-    top_down_fitting(
-        symb_in=[sp.Symbol('x_i'), sp.Symbol('x_j')],
-        pruned_acts=pruned_acts,
-        pruned_preacts=pruned_preacts,
-        pruned_mask_mult=pruned_mask_mult,
-        pysr_model=pysr_model,
-        sample_size=sample_size,
-        neuron_level=neuron_level,
-        saving_path=f"{saving_path}/{file_name}"
-    )
+#     top_down_fitting(
+#         symb_in=[sp.Symbol('x_i'), sp.Symbol('x_j')],
+#         pruned_acts=pruned_acts,
+#         pruned_preacts=pruned_preacts,
+#         pruned_mask_mult=pruned_mask_mult,
+#         pysr_model=pysr_model,
+#         sample_size=sample_size,
+#         neuron_level=neuron_level,
+#         saving_path=f"{saving_path}/{file_name}"
+#     )
     
-    cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
-    pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
-    saving_path = f"{model_path}/h_net" 
-    os.makedirs(saving_path, exist_ok=True)
+#     cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
+#     pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
+#     saving_path = f"{model_path}/h_net" 
+#     os.makedirs(saving_path, exist_ok=True)
     
-    if message_passing:
-        symb_h_in = [sp.Symbol('x_i'), sp.Symbol('AGGR')]
-    else:
-        symb_h_in = [sp.Symbol('x_i')]
+#     if message_passing:
+#         symb_h_in = [sp.Symbol('x_i'), sp.Symbol('AGGR')]
+#     else:
+#         symb_h_in = [sp.Symbol('x_i')]
         
-    if include_time:
-        symb_h_in += [sp.Symbol('t')]
+#     if include_time:
+#         symb_h_in += [sp.Symbol('t')]
     
-    top_down_fitting(
-        symb_in=symb_h_in,
-        pruned_acts=pruned_acts,
-        pruned_preacts=pruned_preacts,
-        pruned_mask_mult=pruned_mask_mult,
-        pysr_model=pysr_model,
-        sample_size=sample_size,
-        neuron_level=neuron_level,
-        saving_path=f"{saving_path}/{file_name}"
-    )
+#     top_down_fitting(
+#         symb_in=symb_h_in,
+#         pruned_acts=pruned_acts,
+#         pruned_preacts=pruned_preacts,
+#         pruned_mask_mult=pruned_mask_mult,
+#         pysr_model=pysr_model,
+#         sample_size=sample_size,
+#         neuron_level=neuron_level,
+#         saving_path=f"{saving_path}/{file_name}"
+#     )
     
 
 

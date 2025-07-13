@@ -95,8 +95,6 @@ class RealEpidemics(SpatioTemporalGraph):
         with open(os.path.join(self.root, self.name, "countries_dict.json"), 'w') as f:
             json.dump(countries_dict, f)
         
-        # TODO: Normalize data
-        
         if self.scale:
             scaler = MinMaxScaler(out_range=self.scale_range)
             # scaler = StandardScaler()
