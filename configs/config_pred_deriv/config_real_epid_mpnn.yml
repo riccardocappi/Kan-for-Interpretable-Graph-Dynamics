@@ -2,7 +2,7 @@ name: "RealEpid"
 model_name: 'model-real-epid-mpnn'
 model_type: 'MPNN'
 epochs: 1000
-patience: 450
+patience: 300
 opt: 'Adam'
 log: 10
 seed: 42

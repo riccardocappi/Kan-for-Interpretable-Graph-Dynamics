@@ -120,7 +120,7 @@ class RealEpidemics(SpatioTemporalGraph):
     
     def load_data(self):
         # Read infection data
-        x = pd.read_csv('./data/RealEpidemics/infected_numbers_H1N1.csv').values
+        x = pd.read_csv('./data/RealEpidemics/infected_numbers_covid.csv').values
 
         # Read adjacency matrix (flight data)
         A = np.loadtxt('./data/RealEpidemics/Flights_adj.csv', delimiter=',')
