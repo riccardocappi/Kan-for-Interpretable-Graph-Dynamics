@@ -516,8 +516,9 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
             df.to_csv(f"{top_5_save_path}/top_equations({l}, {k[1]}, {k[0]}).csv")
     
     end_time = time.time()
+    exec_time = end_time - start_time
     if verbose:
-        print(f"Execution time: {end_time - start_time:.6f} seconds")
+        print(f"Execution time: {exec_time:.6f} seconds")
         
     save_path = f"{model_path}/symb_functions.json"
     with open(save_path, "w") as f:
@@ -529,7 +530,7 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
             sp.simplify(symbx) if count_ops(symbx) < 20 else symbx
         )
     
-    return out
+    return out, exec_time
                 
         
 def load_cached_data(cached_acts_path, cached_preacts_path, cached_mask_mult_path, device='cpu'):
@@ -569,7 +570,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     if verbose:
         print("Fitting G_Net...")
         
-    symb_g = fit_kan(
+    symb_g, exec_time_g = fit_kan(
         pruned_acts,
         pruned_preacts,
         kan_masks_mult=pruned_masks_mult,
@@ -599,7 +600,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         print()
         print("Fitting H_Net...")
     
-    symb_h = fit_kan(
+    symb_h, exec_time_h = fit_kan(
         pruned_acts,
         pruned_preacts,
         kan_masks_mult=pruned_masks_mult,
@@ -614,7 +615,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     
     out_formula = symb_h if message_passing else symb_h + aggr_term 
     
-    return out_formula, symb_g, symb_h
+    return out_formula, symb_g, symb_h, (exec_time_g + exec_time_h) / 2
 
 
 def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sample_size=-1, verbose = False):
@@ -632,10 +633,11 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
     symb_func = symb_func.subs(subs_dict)
     end_time = time.time()
+    exec_time = end_time - start_time
     if verbose:
-        print(f"Execution time: {end_time - start_time:.6f} seconds")
+        print(f"Execution time: {exec_time:.6f} seconds")
     
-    return sp.simplify(symb_func), top_5_eq[["complexity", "loss", "score", "sympy_format"]]
+    return sp.simplify(symb_func), top_5_eq[["complexity", "loss", "score", "sympy_format"]], exec_time
 
 
 
@@ -646,7 +648,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
     if verbose:
         print("Fitting G_Net...")
         
-    symb_g, top_5_eqs_g = fit_black_box(
+    symb_g, top_5_eqs_g, exec_time_g = fit_black_box(
         cached_input, cached_output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
         pysr_model=pysr_model,
@@ -674,7 +676,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
         print()
         print("Fitting H_Net...")
         
-    symb_h, top_5_eqs_h = fit_black_box(
+    symb_h, top_5_eqs_h, exec_time_h = fit_black_box(
         cached_input, 
         cached_output, 
         symb_xs=symb_h_in, 
@@ -687,7 +689,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
 
     out_formula = symb_h if message_passing else symb_h + aggr_term 
     
-    return out_formula, symb_g, symb_h
+    return out_formula, symb_g, symb_h, (exec_time_g + exec_time_h)/2
 
 
 def fit_black_box_from_kan(
@@ -712,7 +714,7 @@ def fit_black_box_from_kan(
     if verbose:
         print("Fitting G_Net...")
         
-    symb_g, top_5_eqs_g = fit_black_box(
+    symb_g, top_5_eqs_g, exec_time_g = fit_black_box(
         input, 
         output, 
         symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
@@ -748,7 +750,7 @@ def fit_black_box_from_kan(
         print()
         print("Fitting H_Net...")
         
-    symb_h, top_5_eqs_h = fit_black_box(
+    symb_h, top_5_eqs_h, exec_time_h = fit_black_box(
         input, 
         output, 
         symb_xs=symb_h_in, 
@@ -761,7 +763,7 @@ def fit_black_box_from_kan(
 
     out_formula = symb_h if message_passing else symb_h + aggr_term 
     
-    return out_formula, symb_g, symb_h
+    return out_formula, symb_g, symb_h, (exec_time_g + exec_time_h)/2
 
 
 def quantise(expr, quantise_to=0.01):

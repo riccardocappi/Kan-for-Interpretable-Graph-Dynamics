@@ -39,7 +39,9 @@ class ODEBlock(torch.nn.Module, ABC):
         self.adjoint = adjoint
         self.integration_method = integration_method
         self.odeint_function = odeint_adjoint if self.adjoint else odeint
-        kwargs['options'] = {}
+        if kwargs.get('options') is None:
+            kwargs['options'] = {}
+            
         if self.adjoint:
             kwargs['adjoint_options'] = dict(norm="seminorm")
         if self.integration_method == 'scipy_solver':

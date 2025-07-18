@@ -17,10 +17,11 @@ storage: "journal"
 save_cache_data: True
 num_samples: -1
 predict_deriv: True
-data_folder: './data_real_epid'
+data_folder: './data_real_epid_covid_scaled_2'
 criterion: "MAE"
 scale: True
-scale_range: [-1, 1]
+scale_range: [-2, 2]
+R: 3
 search_space:
   n_hidden_layers_g_net: [1, 2]
   n_hidden_layers_h_net: [1, 2]
