@@ -117,7 +117,8 @@ warnings.filterwarnings("ignore")
 from sympy import latex
 from torch.utils.data import DataLoader
 
-def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e-5, integration_method = 'scipy_solver'):
+def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e-5, integration_method = 'scipy_solver',
+              eval=True):
     conv = MPNN(
         g_net = g,
         h_net = h,
@@ -134,7 +135,8 @@ def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e
         rtol=rtol
     )
 
-    symb = symb.eval()
+    if eval:
+        symb = symb.eval()
     return symb
 
 
@@ -365,9 +367,9 @@ def valid_symb_model(
             pysr_model = lambda: get_pysr_model(
                 model_selection=param1,
                 n_iterations=param2,
-                parallelism="serial",
-                random_state = seed,
-                deterministic = True
+                # parallelism="serial",
+                # random_state = seed,
+                # deterministic = True
             )
             _, g_symb, h_symb, _ = fit_black_box_from_kan(
                 n_g_hidden_layers=n_g_hidden_layers,
@@ -427,9 +429,9 @@ def valid_symb_model(
             pysr_model=lambda: get_pysr_model(
                 model_selection=best['model_selection'],
                 n_iterations=best['param'],
-                parallelism="serial",
-                random_state = seed,
-                deterministic = True
+                # parallelism="serial",
+                # random_state = seed,
+                # deterministic = True
             ),
             sample_size=10000,
             message_passing=False,
@@ -783,7 +785,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=False
+            eval_model=True
         )
 
     """### Kuramoto
@@ -832,7 +834,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=False
+            eval_model=True
         )
 
     """### Epidemics
@@ -880,7 +882,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=False
+            eval_model=True
         )
 
     """### Population
@@ -928,7 +930,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=False
+            eval_model=True
         )
 
 
