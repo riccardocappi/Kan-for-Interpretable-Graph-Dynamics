@@ -373,7 +373,7 @@ def fit_params_scipy(x_train, y_train, func, func_name, x_symb = None, alpha=0.1
     if np.any(np.isnan(post_fun)) or np.any(np.isinf(post_fun)):
         return 1e8, [], 0, lambda x: x*0
     
-    fun_sympy_quantized = quantise(fun_sympy, 1e-3)
+    fun_sympy_quantized = quantise(fun_sympy, 1e-3, is_removing=True)
     mse = penalized_loss(y_train, post_fun, fun_sympy_quantized, alpha=alpha)
     return mse, params, fun_sympy_quantized, func_optim
 
@@ -527,7 +527,7 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
     out = []
     for symbx in symb_xs:
         out.append(
-            sp.simplify(symbx) if count_ops(symbx) < 20 else symbx
+            quantise(sp.simplify(symbx), is_removing=True) if count_ops(symbx) < 20 else symbx
         )
     
     return out, exec_time
@@ -766,9 +766,12 @@ def fit_black_box_from_kan(
     return out_formula, symb_g, symb_h, (exec_time_g + exec_time_h)/2
 
 
-def quantise(expr, quantise_to=0.01):
+def quantise(expr, quantise_to=0.01, is_removing=False):
     if isinstance(expr, sympy.Float):
-        return expr.func(round(float(expr) / quantise_to) * quantise_to)
+        quant = expr.func(round(float(expr) / quantise_to) * quantise_to)
+        if abs(quant) > 0.0 and is_removing:
+            return expr
+        return quant
     elif isinstance(expr, (sympy.Symbol, sympy.Integer)):
         name = str(expr)
         match = re.match(r'\\sum_\{[^}]*\}\((.*)\)', name)
@@ -778,7 +781,7 @@ def quantise(expr, quantise_to=0.01):
                 # Convert inner string to sympy expression
                 inner_expr = sympy.sympify(inner_expr_str)
                 # Quantise inner expression
-                quantised_inner = quantise(inner_expr, quantise_to)
+                quantised_inner = quantise(inner_expr, quantise_to, is_removing)
                 # Rebuild symbol name
                 new_name = re.sub(r'\(.*\)', f'({quantised_inner})', name)
                 return sympy.Symbol(new_name)
@@ -787,7 +790,7 @@ def quantise(expr, quantise_to=0.01):
         else:
             return expr
     else:
-        return expr.func(*[quantise(arg, quantise_to) for arg in expr.args])
+        return expr.func(*[quantise(arg, quantise_to, is_removing) for arg in expr.args])
     
                 
 # def top_down_fitting(

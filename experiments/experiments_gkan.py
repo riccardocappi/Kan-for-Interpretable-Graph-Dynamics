@@ -54,13 +54,12 @@ class ExperimentsGKAN(Experiments):
         mu_2 = trial.suggest_float(f'mu_2_{net_suffix}', self.search_space[f'mu_2_{net_suffix}'][0], 
                                    self.search_space[f'mu_2_{net_suffix}'][-1], step=0.1)
         
+        
         n_hidden_layers = trial.suggest_int(
              f'n_hidden_layers_{net_suffix}', 
-             self.search_space.get(f'n_hidden_layers_{net_suffix}', [1])[0], 
-             self.search_space.get(f'n_hidden_layers_{net_suffix}', [1])[-1]
-        )
-        
-        # n_hidden_layers = 1
+             self.search_space[f'n_hidden_layers_{net_suffix}'][0], 
+             self.search_space[f'n_hidden_layers_{net_suffix}'][-1]
+        ) if f'n_hidden_layers_{net_suffix}' in self.search_space else 1
                     
         hidden_dim = trial.suggest_int(f'hidden_dim_{net_suffix}', self.search_space[f'hidden_dim_{net_suffix}'][0], 
                                        self.search_space[f'hidden_dim_{net_suffix}'][-1])

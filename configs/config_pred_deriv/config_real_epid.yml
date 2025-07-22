@@ -1,45 +1,85 @@
-name: "RealEpid"
-model_name: 'model-real-epid-gkan'
-model_type: 'GKAN'
+criterion: MAE
+data_folder: ./data_real_epid_scaled
+device: cuda:0
 epochs: 1000
-patience: 300
-opt: 'Adam'
-log: 10
-seed: 42
-pytorch_seed: 0
-device: 'cuda:0'
 in_dim: 1
-message_passing: False
-include_time: False
-preprocess_data: False
-stride: 1
-storage: "journal"
-save_cache_data: True
+include_time: false
+log: 10
+message_passing: false
+model_name: model-real-epid-gkan
+model_type: GKAN
+name: RealEpid
 num_samples: -1
-predict_deriv: True
-data_folder: './data_real_epid_covid_scaled_2'
-criterion: "MAE"
-scale: True
-scale_range: [-2, 2]
-R: 3
+opt: Adam
+patience: 300
+predict_deriv: true
+preprocess_data: false
+pytorch_seed: 0
+save_cache_data: true
+scale: true
+scale_range:
+- -1
+- 1
 search_space:
-  grid_size_h_net: [5, 20]
-  grid_size_g_net: [5, 20]
-  spline_order_h_net: [1, 3]
-  spline_order_g_net: [1, 3]
-  range_limit_h_net: [1, 10]
-  range_limit_g_net: [1, 10]
-  n_hidden_layers_h_net: [1, 2]
-  n_hidden_layers_g_net: [1, 2]
-  hidden_dim_h_net: [1, 6]
-  hidden_dim_g_net: [1, 6]
-  lamb_g_net: [0.000001, 1.]
-  lamb_h_net: [0.000001, 1.]
-  lr: [0.0005, 0.05]
-  use_orig_reg: [True]
-  mu_1_g_net: [0.1, 1.0]
-  mu_2_g_net: [0.1, 1.0]
-  mu_1_h_net: [0.1, 1.0]
-  mu_2_h_net: [0.1, 1.0]
-  lamb: [1.]
-  batch_size: [16, 32, 64]
+  batch_size:
+  - 16
+  - 32
+  - 64
+  grid_size_g_net:
+  - 5
+  - 20
+  grid_size_h_net:
+  - 5
+  - 20
+  hidden_dim_g_net:
+  - 1
+  - 6
+  hidden_dim_h_net:
+  - 1
+  - 6
+  lamb:
+  - 1.0
+  lamb_g_net:
+  - 1.0e-06
+  - 1.0
+  lamb_h_net:
+  - 1.0e-06
+  - 1.0
+  lr:
+  - 0.0005
+  - 0.05
+  mu_1_g_net:
+  - 0.1
+  - 1.0
+  mu_1_h_net:
+  - 0.1
+  - 1.0
+  mu_2_g_net:
+  - 0.1
+  - 1.0
+  mu_2_h_net:
+  - 0.1
+  - 1.0
+  n_hidden_layers_g_net:
+  - 1
+  - 2
+  n_hidden_layers_h_net:
+  - 1
+  - 2
+  range_limit_g_net:
+  - 1
+  - 5
+  range_limit_h_net:
+  - 1
+  - 5
+  spline_order_g_net:
+  - 1
+  - 3
+  spline_order_h_net:
+  - 1
+  - 3
+  use_orig_reg:
+  - true
+seed: 42
+storage: journal
+stride: 1

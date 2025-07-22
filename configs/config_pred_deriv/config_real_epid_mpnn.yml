@@ -1,35 +1,59 @@
-name: "RealEpid"
-model_name: 'model-real-epid-mpnn'
-model_type: 'MPNN'
+criterion: MAE
+data_folder: ./data_real_epid_scaled
+device: cuda:0
 epochs: 1000
-patience: 300
-opt: 'Adam'
-log: 10
-seed: 42
-pytorch_seed: 0
-device: 'cuda:0'
 in_dim: 1
-message_passing: False
-include_time: False
-preprocess_data: False
-stride: 1
-storage: "journal"
-save_cache_data: True
+include_time: false
+log: 10
+message_passing: false
+model_name: model-real-epid-mpnn
+model_type: MPNN
+name: RealEpid
 num_samples: -1
-predict_deriv: True
-data_folder: './data_real_epid_covid_scaled_2'
-criterion: "MAE"
-scale: True
-scale_range: [-2, 2]
-R: 3
+opt: Adam
+patience: 300
+predict_deriv: true
+preprocess_data: false
+pytorch_seed: 0
+save_cache_data: true
+scale: true
+scale_range:
+- -1
+- 1
 search_space:
-  n_hidden_layers_g_net: [1, 2]
-  n_hidden_layers_h_net: [1, 2]
-  hidden_dims_g_net: [8, 64]
-  hidden_dims_h_net: [8, 64]
-  af_g_net: ["relu", "softplus", "tanh"]
-  af_h_net: ["relu", "softplus", "tanh"]
-  drop_p_g_net: [0.0001, 0.5]
-  drop_p_h_net: [0.0001, 0.5]
-  lr: [0.0005, 0.05]
-  batch_size: [16, 32, 64]
+  af_g_net:
+  - relu
+  - softplus
+  - tanh
+  af_h_net:
+  - relu
+  - softplus
+  - tanh
+  batch_size:
+  - 16
+  - 32
+  - 64
+  drop_p_g_net:
+  - 0.0001
+  - 0.5
+  drop_p_h_net:
+  - 0.0001
+  - 0.5
+  hidden_dims_g_net:
+  - 8
+  - 64
+  hidden_dims_h_net:
+  - 8
+  - 64
+  lr:
+  - 0.0005
+  - 0.05
+  n_hidden_layers_g_net:
+  - 1
+  - 2
+  n_hidden_layers_h_net:
+  - 1
+  - 2
+seed: 42
+storage: journal
+stride: 1

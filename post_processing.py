@@ -377,7 +377,7 @@ def valid_symb_model(
                 device=device,
                 model_path=model_path_gkan,
                 pysr_model=pysr_model,
-                sample_size=10000,
+                sample_size=sample_size,
                 theta=-np.inf,
                 message_passing=False,
                 verbose=False
@@ -433,7 +433,7 @@ def valid_symb_model(
                 # random_state = seed,
                 # deterministic = True
             ),
-            sample_size=10000,
+            sample_size=sample_size,
             message_passing=False,
             verbose=True,
             include_time=False
@@ -470,7 +470,8 @@ def post_process_gkan(
     scaler=None,
     inverse_scale=False,
     adjoint=True,
-    eval_model=True
+    eval_model=True,
+    res_file_name = 'post_process_res.json'
 ):
 
     results_dict = {}
@@ -582,7 +583,7 @@ def post_process_gkan(
         results_dict["model_test_Var"] = ts_var_model
         results_dict["model_test_Std"] = ts_std_model
 
-    with open(f"{model_path}/post_process_res.json", 'w') as file:
+    with open(f"{model_path}/{res_file_name}", 'w') as file:
         json.dump(results_dict, file, indent=4)
 
 
@@ -753,7 +754,7 @@ if __name__ == '__main__':
         device='cuda',
         n_g_hidden_layers=2,
         n_h_hidden_layers=2,
-        sample_size=30000,
+        sample_size=10000,
         message_passing=False,
         include_time=False,
         atol=1e-5,

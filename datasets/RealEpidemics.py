@@ -23,11 +23,13 @@ class RealEpidemics(SpatioTemporalGraph):
         denoise=False,
         train_perc = 0.8,
         scale=False,
-        scale_range = (-5, 5)
+        scale_range = (-5, 5),
+        infection_data = "./data/RealEpidemics/infected_numbers_covid.csv"
     ):
         self.train_perc = train_perc
         self.scale = scale
         self.scale_range = scale_range
+        self.infection_data = infection_data
         super().__init__(
             root, 
             name, 
@@ -120,7 +122,7 @@ class RealEpidemics(SpatioTemporalGraph):
     
     def load_data(self):
         # Read infection data
-        x = pd.read_csv('./data/RealEpidemics/infected_numbers_covid.csv').values
+        x = pd.read_csv(self.infection_data).values
 
         # Read adjacency matrix (flight data)
         A = np.loadtxt('./data/RealEpidemics/Flights_adj.csv', delimiter=',')
