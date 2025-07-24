@@ -30,6 +30,7 @@ class ODEBlock(torch.nn.Module, ABC):
         adjoint = False,
         integration_method = 'dopri5',
         predict_deriv = False,
+        all_t = False,
         **kwargs
     ):
         super().__init__()
@@ -39,7 +40,8 @@ class ODEBlock(torch.nn.Module, ABC):
         self.adjoint = adjoint
         self.integration_method = integration_method
         self.odeint_function = odeint_adjoint if self.adjoint else odeint
-        if kwargs.get('options') is None:
+        self.all_t = all_t
+        if 'options' not in kwargs:
             kwargs['options'] = {}
             
         if self.adjoint:
@@ -56,7 +58,7 @@ class ODEBlock(torch.nn.Module, ABC):
     def _forward_integration(self, snapshot):
         edge_index, edge_attr, x, t = snapshot.edge_index, snapshot.edge_attr, snapshot.x, snapshot.t_span
         
-        if self.training:
+        if self.training and not self.all_t:
             t = torch.cat([t[0].unsqueeze(0), t[1:][snapshot.backprop_idx]])
         # x shape (history, num_nodes, 1)        
         self.conv.set_graph_attrs(edge_index, edge_attr)

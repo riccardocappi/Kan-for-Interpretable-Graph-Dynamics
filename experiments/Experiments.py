@@ -56,7 +56,7 @@ class Experiments(ABC):
         self.predict_deriv = config.get("predict_deriv", False)
         self.snr_db = snr_db
         
-        train_prec = 0.8
+        train_prec = config.get("tr_perc", 0.8)
         
         if config['name'] in dynamics_name:
             dataset = SyntheticData(

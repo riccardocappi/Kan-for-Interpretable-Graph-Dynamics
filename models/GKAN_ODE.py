@@ -14,9 +14,10 @@ class GKAN_ODE(ODEBlock):
         lmbd_g=0.,
         lmbd_h=0.,
         predict_deriv = False,
+        all_t=False,
         **kwargs
     ):
-        super().__init__(conv, model_path, adjoint, integration_method, predict_deriv=predict_deriv, **kwargs)
+        super().__init__(conv, model_path, adjoint, integration_method, predict_deriv=predict_deriv,all_t=all_t, **kwargs)
         self.lamb_g = lmbd_g
         self.lamb_h = lmbd_h
         

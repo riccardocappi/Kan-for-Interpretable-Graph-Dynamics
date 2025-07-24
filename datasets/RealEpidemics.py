@@ -24,12 +24,14 @@ class RealEpidemics(SpatioTemporalGraph):
         train_perc = 0.8,
         scale=False,
         scale_range = (-5, 5),
-        infection_data = "./data/RealEpidemics/infected_numbers_covid.csv"
+        infection_data = "./data/RealEpidemics/infected_numbers_covid.csv",
+        inf_threshold = 500
     ):
         self.train_perc = train_perc
         self.scale = scale
         self.scale_range = scale_range
         self.infection_data = infection_data
+        self.inf_threshold = inf_threshold
         super().__init__(
             root, 
             name, 
@@ -75,7 +77,7 @@ class RealEpidemics(SpatioTemporalGraph):
         Period = 45
 
         for i, inf in enumerate(infected):
-            if len(inf) >= Period and inf[Period - 1] >= 500:
+            if len(inf) >= Period and inf[Period - 1] >= self.inf_threshold:
                 data.append(inf[:Period])
                 Ind.append(i)
                 j += 1

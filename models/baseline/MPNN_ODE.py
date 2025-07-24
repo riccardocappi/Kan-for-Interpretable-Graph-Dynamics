@@ -13,10 +13,11 @@ class MPNN_ODE(ODEBlock):
         adjoint=False, 
         integration_method='dopri5',
         predict_deriv = False,
+        all_t = False,
         **kwargs
     ):
         
-        super().__init__(conv, model_path, adjoint, integration_method, predict_deriv=predict_deriv, **kwargs)
+        super().__init__(conv, model_path, adjoint, integration_method, predict_deriv=predict_deriv, all_t = all_t, **kwargs)
     
     
     def forward(self, snapshot):

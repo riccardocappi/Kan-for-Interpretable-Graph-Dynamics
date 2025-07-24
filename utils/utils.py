@@ -332,7 +332,7 @@ def penalized_loss(y_true, y_pred, func_symb, alpha=0.01):
     return mse + penalty
 
 
-def fit_params_scipy(x_train, y_train, func, func_name, x_symb = None, alpha=0.1):  
+def fit_params_scipy(x_train, y_train, func, func_name, x_symb = None, alpha=0.1, cut_threshold=1e-3):  
     if func_name == 'x' or func_name == 'neg':
         func_optim = lambda x, a, b: a*x + b  
         init_params = [1., 0.]
@@ -373,29 +373,32 @@ def fit_params_scipy(x_train, y_train, func, func_name, x_symb = None, alpha=0.1
     if np.any(np.isnan(post_fun)) or np.any(np.isinf(post_fun)):
         return 1e8, [], 0, lambda x: x*0
     
-    fun_sympy_quantized = quantise(fun_sympy, 1e-3, is_removing=True)
+    fun_sympy_quantized = quantise(fun_sympy, cut_threshold, is_removing=True)
     mse = penalized_loss(y_train, post_fun, fun_sympy_quantized, alpha=alpha)
     return mse, params, fun_sympy_quantized, func_optim
 
 
-def fit_acts_scipy(x, y, x_symb = None, alpha=0.1):    
+def fit_acts_scipy(x, y, x_symb = None, alpha=0.1, cut_threshold = 1e-3):    
     scores = []
     for name, func in SYMBOLIC_LIB_NUMPY.items():
-        mse, params, symb, func_optim = fit_params_scipy(x, y, func, name, x_symb = x_symb, alpha=alpha)
+        mse, params, symb, func_optim = fit_params_scipy(x, y, func, name, x_symb = x_symb, alpha=alpha,
+                                                         cut_threshold=cut_threshold)
         scores.append((symb, mse, params, func_optim))
     
     best_fun_sympy, _, best_params, best_func_optim  = min(scores, key=lambda x: x[1])    
     return best_fun_sympy, best_params, best_func_optim
 
 
-def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, x_symb = None, sort_by='score'):
+def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, x_symb = None, sort_by='score',
+                            cut_threshold=1e-3):
     results = []
 
     assert sort_by in ["score", "log_loss"], "Not supported sorting method"
     ascending = sort_by == "log_loss" 
     
     for alpha in alpha_grid:
-        symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, x_symb=x_symb, alpha=alpha)
+        symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, x_symb=x_symb, alpha=alpha,
+                                                       cut_threshold=cut_threshold)
         val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
         complexity = count_ops(symb_func)
         log_loss = np.log(val_mse)
@@ -429,7 +432,8 @@ def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, x_symb =
     return top_equations
 
 
-def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed=42, sample_size = -1, sort_by='score'):
+def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed=42, sample_size = -1, sort_by='score',
+              cut_threshold=1e-3):
     rng = np.random.default_rng(seed)
     
     alpha_grid = torch.logspace(-5, 1, steps=5)
@@ -461,7 +465,8 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
             top_eqs = find_best_symbolic_func(
                 x_train, y_train, x_val, y_val,
                 alpha_grid=alpha_grid,
-                sort_by=sort_by
+                sort_by=sort_by,
+                cut_threshold=cut_threshold
                 # x_symb=symb_xs[i]
             )
             top_equations[(i, j)] = top_eqs
@@ -487,7 +492,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
 
 
 def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1, sort_by='score', 
-            verbose = False):
+            verbose = False, cut_threshold = 1e-3):
     
     start_time = time.time()
     n_layers = len(kan_acts)
@@ -527,7 +532,7 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
     out = []
     for symbx in symb_xs:
         out.append(
-            quantise(sp.simplify(symbx), is_removing=True) if count_ops(symbx) < 20 else symbx
+            quantise(sp.simplify(symbx), quantise_to=cut_threshold, is_removing=True) if count_ops(symbx) < 20 else symbx
         )
     
     return out, exec_time
@@ -562,7 +567,7 @@ def get_kan_arch(n_layers, model_path):
 
 
 def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1,
-              sort_by='score', verbose=False):
+              sort_by='score', verbose=False, cut_threshold = 1e-3):
     # G_net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta, verbose=verbose)    
@@ -579,7 +584,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         seed=seed,
         sample_size=sample_size,
         sort_by=sort_by,
-        verbose=verbose
+        verbose=verbose,
+        cut_threshold=cut_threshold
     )
     
     symb_g = symb_g[0]  # Univariate functions
@@ -609,7 +615,8 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         sample_size=sample_size,
         seed=seed,
         sort_by=sort_by,
-        verbose=verbose
+        verbose=verbose,
+        cut_threshold=cut_threshold
     )
     symb_h = symb_h[0]  # Univariate functions
     

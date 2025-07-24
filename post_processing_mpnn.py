@@ -355,7 +355,7 @@ def post_process_mpnn(
     inverse_scale=False,
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res.json'
+    res_file_name = 'post_process_res_2.json'
 ):
 
     results_dict = {}

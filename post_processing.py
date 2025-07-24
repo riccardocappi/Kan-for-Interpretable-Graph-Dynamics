@@ -33,6 +33,7 @@ from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
 from train_and_eval import eval_model
 import sympytorch
+import itertools
 
 storage = JournalStorage(JournalFileBackend("optuna_journal_storage.log"))
 
@@ -118,7 +119,7 @@ from sympy import latex
 from torch.utils.data import DataLoader
 
 def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e-5, integration_method = 'scipy_solver',
-              eval=True):
+              eval=True, options = {}, all_t = False):
     conv = MPNN(
         g_net = g,
         h_net = h,
@@ -132,7 +133,9 @@ def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e
         adjoint=True,
         integration_method=integration_method,
         atol=atol,
-        rtol=rtol
+        rtol=rtol,
+        options = options,
+        all_t=all_t
     )
 
     if eval:
@@ -330,7 +333,7 @@ def valid_symb_model(
     n_h_hidden_layers=2,
     sample_size=10000
 ):
-
+    
     seed = 9999
     graph = nx.barabasi_albert_graph(100, 3, seed=seed)
 
@@ -361,15 +364,15 @@ def valid_symb_model(
         return errs[0]
 
     # Helper to fit model for current config
-    def fit_single_model(param1, param2):
+    def fit_single_model(param1, param2, param3=None):
         if black_box_fitting:
             print(f"Fitting black-box model with {param1} and {param2} iterations")
             pysr_model = lambda: get_pysr_model(
-                model_selection=param1,
+                model_selection=param1, 
                 n_iterations=param2,
-                # parallelism="serial",
-                # random_state = seed,
-                # deterministic = True
+                parallelism="serial",
+                random_state = seed,
+                deterministic = True
             )
             _, g_symb, h_symb, _ = fit_black_box_from_kan(
                 n_g_hidden_layers=n_g_hidden_layers,
@@ -383,7 +386,7 @@ def valid_symb_model(
                 verbose=False
             )
         else:
-            print(f"Fitting symbolic model with {param1} and theta {param2}")
+            print(f"Fitting symbolic model with {param1}, theta {param2} and cutting threshold {param3}")
             _, g_symb, h_symb, _ = fit_model(
                 n_g_hidden_layers=n_g_hidden_layers,
                 n_h_hidden_layers=n_h_hidden_layers,
@@ -393,26 +396,34 @@ def valid_symb_model(
                 include_time=False,
                 sample_size=sample_size,
                 sort_by=param1,
-                verbose=False
+                verbose=False,
+                cut_threshold=param3
             )
         return g_symb, h_symb
 
-    # Define parameter grid
-    param_grid = (
-        (["score", "accuracy"], [50, 100, 200]) if black_box_fitting
-        else (["score", "log_loss"], [0.01, 0.05, 0.1])
-    )
+    if black_box_fitting:
+        param_grid = (["score", "accuracy"], [50, 100, 200])
+        search_space = [(mod, val) for mod in param_grid[0] for val in param_grid[1]]
+    else:
+        param_grid = (
+            ["score", "log_loss"],       
+            [0.01, 0.05, 0.1],           
+            [0.1, 0.01, 0.001]    
+        )
+        search_space = list(itertools.product(*param_grid))
 
-    search_space = [(mod, val) for mod in param_grid[0] for val in param_grid[1]]
     valid_losses = []
 
-    for mod, val in search_space:
-        g_symb, h_symb = fit_single_model(mod, val)
+    for params in search_space:
+        g_symb, h_symb = fit_single_model(*params)
         try:
             loss = evaluate_model(g_symb, h_symb)
         except AssertionError:
             loss = 1e8
-        valid_losses.append({'model_selection': mod, 'param': val, 'valid_loss': loss})
+        if black_box_fitting:
+            valid_losses.append({'model_selection': params[0], 'param': params[1], 'valid_loss': loss})
+        else:
+            valid_losses.append({'sort_by': params[0], 'theta': params[1], 'cut_threshold': params[2], 'valid_loss': loss})
 
     # Select best performing configuration
     best = min(valid_losses, key=lambda x: x['valid_loss'])
@@ -429,9 +440,9 @@ def valid_symb_model(
             pysr_model=lambda: get_pysr_model(
                 model_selection=best['model_selection'],
                 n_iterations=best['param'],
-                # parallelism="serial",
-                # random_state = seed,
-                # deterministic = True
+                parallelism="serial",
+                random_state = seed,
+                deterministic = True
             ),
             sample_size=sample_size,
             message_passing=False,
@@ -443,16 +454,16 @@ def valid_symb_model(
             model_path=model_path_gkan,
             n_g_hidden_layers=n_g_hidden_layers,
             n_h_hidden_layers=n_h_hidden_layers,
-            theta=best['param'],
+            theta=best['theta'],
             message_passing=False,
             include_time=False,
             sample_size=sample_size,
-            sort_by=best['model_selection'],
-            verbose=True
+            sort_by=best['sort_by'],
+            verbose=True,
+            cut_threshold=best["cut_threshold"]
         )
 
     return gkan_symb, symb_g, symb_h, exec_time
-
 
 def post_process_gkan(
     config,
@@ -471,7 +482,7 @@ def post_process_gkan(
     inverse_scale=False,
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res.json'
+    res_file_name = 'post_process_res_seed_2.json'
 ):
 
     results_dict = {}
