@@ -14,18 +14,19 @@ def set_pytorch_seed(seed=42):
     np.random.seed(seed)
     random.seed(seed)
     torch.use_deterministic_algorithms(True)
+    
+set_pytorch_seed(0)
 
 from tsl.data.preprocessing.scalers import MinMaxScaler
-import torch
 import sympytorch
 import sympy as sp
 import copy
-import numpy as np
 from post_processing import get_model
 from torch.optim import LBFGS
+from utils.utils import save_logs
 
 
-def get_symb_model(model_type):
+def get_symb_model(model_type, device):
     if model_type == "GKAN":
         model_path = "./saved_models_optuna/model-real-epid-gkan/real_epid_gkan_7/0"
     
@@ -53,13 +54,47 @@ def get_symb_model(model_type):
             )
             
             symb_model = symb_model.train()
-            symb_model = symb_model.to(args.device)
+            symb_model = symb_model.to(device)
             
             return symb_model
         
         return model_path, build_symb_gkan
+    
     elif model_type == "MPNN":
-        pass
+        model_path = "./saved_models_optuna/model-real-epid-mpnn/real_epid_mpnn_7/0"
+
+        def build_symb_mpnn_to_opt():
+            x_i, x_j = sp.symbols('x_i x_j')
+
+            a = 3.7716758
+            b = 1.9867662
+            c = 1.2657967
+
+            eps = 1e-6
+            expr1 = sp.ln(sp.Max(sp.tan(x_i + c)**2 + 1, eps))
+            expr2 = a * sp.ln(sp.Max(x_i + b, eps))
+
+            g_symb = sympytorch.SymPyModule(expressions=[expr1])
+            h_symb = sympytorch.SymPyModule(expressions=[expr2])
+            
+            g_symb = symb_wrapper(g_symb, is_self_interaction=False)
+            h_symb = symb_wrapper(h_symb, is_self_interaction=True)
+
+            symb_model = get_model(
+                g = g_symb,
+                h = h_symb,
+                message_passing=False,
+                include_time=False,
+                integration_method='rk4',
+                eval=False,
+                all_t=True
+            )
+
+            symb_model = symb_model.train()   
+            symb_model = symb_model.to(device)
+            
+            return symb_model
+        return model_path, build_symb_mpnn_to_opt
     
     else:
         raise NotImplementedError("Not supported model")
@@ -120,6 +155,7 @@ def fit_param_per_country_gd(
     results_df = pd.DataFrame()
     lr_grid = [1e-2, 1e-3]
     epochs_grid = [50, 100]
+    logs_file = f"{model_path}/logs_fine_tuning.txt"
 
     for country_name, node in countries_dict.items():
         print(f"\nProcessing country {country_name}")
@@ -216,7 +252,13 @@ def fit_param_per_country_gd(
         pairwise_int_coeffs = torch.cat([p.detach().cpu().flatten() for p in g_net.parameters()]).numpy()
         coeffs = np.concatenate([self_int_coeffs, pairwise_int_coeffs])
         results_df[country_name] = coeffs
-        print(f"Inferred coeffs for {country_name}: {coeffs}")
+        # print(f"Inferred coeffs for {country_name}: {coeffs}")
+        save_logs(
+            file_name=logs_file, 
+            log_message=f"Inferred coeffs for {country_name}: {coeffs}",
+            save_updates=True
+        )
+        
 
     results_df.to_csv(f"{model_path}/{save_file}")
     
@@ -235,8 +277,6 @@ if __name__ == '__main__':
     
     args = parser.parse_args() 
     
-    set_pytorch_seed(0)
-    
     real_epid_data = RealEpidemics(
         root=args.root,
         name='RealEpid',
@@ -251,7 +291,7 @@ if __name__ == '__main__':
     with open(f"{args.root}/RealEpid/countries_dict.json", 'r') as f:
         countries_dict = json.load(f)
         
-    model_path, build_symb_gkan = get_symb_model(args.model_type)
+    model_path, build_symb_model = get_symb_model(args.model_type, device=args.device)
     
     scaler = get_scaler(data = real_epid_data, tr_perc=0.8)
     
@@ -259,7 +299,7 @@ if __name__ == '__main__':
         data=real_epid_data,
         countries_dict=countries_dict,
         model_path=model_path,
-        build_symb_model=build_symb_gkan,
+        build_symb_model=build_symb_model,
         device=args.device,
         patience=30,
         save_file=args.save_file,
