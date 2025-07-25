@@ -4,13 +4,14 @@ from torch_geometric.utils import degree
 from typing import Union, Callable
 from models.kan.KAN import KAN
 from models.utils.MLP import MLP
+from models.baseline.LLC import Q_inter, Q_self
 
 
 class MPNN(MessagePassing):
     def __init__(
         self,
-        g_net: Union[KAN, MLP, Callable],
-        h_net: Union[KAN, MLP, Callable],
+        g_net: Union[KAN, MLP, Callable, Q_inter],
+        h_net: Union[KAN, MLP, Callable, Q_self],
         aggr = "add",
         message_passing=True,
         include_time = False
