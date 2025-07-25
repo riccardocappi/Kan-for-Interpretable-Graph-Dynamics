@@ -1,5 +1,5 @@
 criterion: MAE
-data_folder: ./data_real_epid_covid_scaled09
+data_folder: ./data_real_epid_covid_scaled
 device: cuda:0
 epochs: 1000
 in_dim: 1
@@ -57,4 +57,3 @@ search_space:
 seed: 42
 storage: journal
 stride: 1
-tr_perc: 0.9

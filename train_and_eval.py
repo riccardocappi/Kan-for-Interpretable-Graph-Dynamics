@@ -42,7 +42,7 @@ def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False):
                 snapshot.x = scaler.transform(snapshot.x)
                 snapshot.y = scaler.transform(snapshot.y)
                 
-            y_true.append(snapshot.y[snapshot.backprop_idx] if model.training else snapshot.y)
+            y_true.append(snapshot.y[snapshot.backprop_idx] if (model.training and not model.all_t) else snapshot.y)
             y_pred.append(model(snapshot=snapshot))
             
         y_pred = torch.cat(y_pred, dim=0)
