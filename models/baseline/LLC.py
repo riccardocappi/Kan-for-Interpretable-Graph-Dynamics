@@ -1,103 +1,30 @@
-import torch
-from models.utils.MLP import MLP
-from typing import List
 from models.utils.ODEBlock import ODEBlock
 from models.utils.MPNN import MPNN
-
-class Q_inter(torch.nn.Module):
-    def __init__(
-        self,
-        hidden_layers:List,
-        af,
-        dropout_rate = 0.0
-    ):
-        super().__init__()
-        
-        in_dim = hidden_layers[0]
-        self.g0 = MLP(
-            hidden_layers=hidden_layers,
-            af = af,
-            dropout_rate=dropout_rate
-        )
-        
-        assert in_dim % 2 == 0, "Pairwise interaction network must have in dimension 2 * x_i dim"
-        
-        hidden_layers_g1 = hidden_layers
-        hidden_layers_g1[0] = in_dim / 2
-        
-        self.g1 = MLP(
-            hidden_layers=hidden_layers_g1,
-            af = af,
-            dropout_rate=dropout_rate
-        )
-        
-        self.g2 = MLP(
-            hidden_layers=hidden_layers_g1,
-            af = af,
-            dropout_rate=dropout_rate
-        )
-    
-    
-    def forward(self, x):
-        # x has shape (batch, in_dim*2)
-        in_dim = x.shape[1] // 2
-        x_i = x[:, :in_dim]   # First half
-        x_j = x[:, in_dim:]   # Second half
-        
-        out_g0 = self.g0(x)
-        out_g1 = self.g1(x_i)
-        out_g2 = self.g2(x_j)
-        
-        out = out_g0 + (out_g1 * out_g2)
-        return out
-    
-    
-    def reset_params(self):
-        for g in [self.g0, self.g1, self.g2]:
-            for layer in g.layers:
-                layer.reset_parameters()
-                
-
-
-class Q_self(torch.nn.Module):
-    def __init__(
-        self,
-        hidden_layers:List,
-        af,
-        dropout_rate = 0.0
-    ):
-        super().__init__()
-        self.f = MLP(
-            hidden_layers=hidden_layers,
-            af=af,
-            dropout_rate=dropout_rate
-        )
-    
-    def forward(self, x):
-        return self.f(x)
-    
-    def reset_params(self):
-        for layer in self.f.layers:
-            layer.reset_parameters()
-    
-    
+import torch   
+import os 
+from utils.utils import save_black_box_to_file
 
 class LLC_ODE(ODEBlock):
     def __init__(
         self, 
-        conv:MPNN, 
+        conv:MPNN,
         model_path='./models', 
         adjoint=False, 
         integration_method='dopri5', 
         predict_deriv=False, 
-        all_t=False, 
+        all_t=False,
         **kwargs
     ):
+        self.last_y_pred, self.last_y_true = None, None # For penalization term computation
         super().__init__(conv, model_path, adjoint, integration_method, predict_deriv, all_t, **kwargs)
     
     
     def forward(self, snapshot):
-        return super().forward(snapshot)
+        out = super().forward(snapshot)
+        if self.predict_deriv and self.training:  # Penalization term is computed only when trained to predict dx/dt, as in the original paper
+            self.last_y_true = snapshot.y
+            self.last_y_pred = out
+        return out
     
     
     def reset_params(self):
@@ -107,11 +34,48 @@ class LLC_ODE(ODEBlock):
         
 
     def regularization_loss(self, reg_loss_metrics):
-        pass
+        node_losses = torch.mean(torch.abs(self.last_y_true - self.last_y_pred), dim=1)
+        variance = torch.var(node_losses)
+        penalty = variance
+        reg_loss_metrics["penalty_term"] = penalty.item()
+        return penalty
             
     
     def save_cached_data(self, dummy_x, dummy_edge_index, dummy_t, dummy_edge_attr):
-        pass
+        self.eval()
+        
+        
+        self.conv.model.g_net.save_black_box = True
+        self.conv.model.h_net.f.save_black_box = True
+        
+        with torch.no_grad():
+            # Forward pass
+            _ = self.conv.model.forward(dummy_x, dummy_edge_index, edge_attr=dummy_edge_attr, t=dummy_t)
+            
+        g_net_model_path = f"{self.model_path}/g_net"
+        h_net_model_path = f"{self.model_path}/h_net"
+        
+        os.makedirs(g_net_model_path, exist_ok=True)
+        os.makedirs(h_net_model_path, exist_ok=True)
+        
+        assert (self.conv.model.g_net.cache_input is not None) and (self.conv.model.g_net.cache_output is not None)
+        assert (self.conv.model.h_net.cache_input is not None) and (self.conv.model.h_net.cache_output is not None)
+        
+        save_black_box_to_file(
+            folder_path=f'{g_net_model_path}/cached_data',
+            cache_input=self.conv.model.g_net.cache_input,
+            cache_output=self.conv.model.g_net.cache_output
+        )
+        
+        save_black_box_to_file(
+            folder_path=f'{h_net_model_path}/cached_data',
+            cache_input=self.conv.model.h_net.cache_input,
+            cache_output=self.conv.model.h_net.cache_output
+        )
+        
+        
+        
+        
     
     
     

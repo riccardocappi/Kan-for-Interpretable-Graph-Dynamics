@@ -5,6 +5,7 @@ import argparse
 from utils.utils import load_config
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
+from experiments.experiments_llc import ExperimentsLLC
 import torch
 import numpy as np
 import random
@@ -33,6 +34,9 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
     elif model_type == 'MPNN':
         exp = ExperimentsMPNN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db,
                               denoise=denoise)
+    elif model_type == "LLC":
+        exp = ExperimentsLLC(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db, 
+                             denoise=denoise)
     else:
         raise ValueError('Unknown model type')
     

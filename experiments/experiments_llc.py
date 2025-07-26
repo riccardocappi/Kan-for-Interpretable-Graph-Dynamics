@@ -1,50 +1,30 @@
 from .Experiments import Experiments
 from models.utils.MPNN import MPNN
-from models.baseline.MPNN_ODE import MPNN_ODE
+from models.baseline.LLC import LLC_ODE
 import torch
 import torch.nn.functional as F
-from models.utils.MLP import MLP
+from models.baseline.LLC_Conv import Q_inter, Q_self
+from experiments.experiments_mpnn import activations
 
-# Possible activation functions
-activations = {
-    "relu": F.relu,
-    "sigmoid": F.sigmoid,
-    "softplus": F.softplus,
-    "tanh": F.tanh,
-    "identity": torch.nn.Identity()
-}
-
-
-class ExperimentsMPNN(Experiments):
-    """
-    Implements the experiment pipeline for Message Passing Neural Network-ODE (MPNN-ODE) model
-    """
+class ExperimentsLLC(Experiments):
     def __init__(
         self, 
-        config,
+        config, 
         n_trials, 
-        model_selection_method='optuna',
-        study_name = 'example',
-        process_id = 0,
-        snr_db = -1,
+        model_selection_method='optuna', 
+        study_name='example', 
+        process_id=0, 
+        snr_db=-1,
         denoise=False,
         **kwargs
     ):
-        super().__init__(config, n_trials, model_selection_method, study_name=study_name, process_id=process_id, 
-                         snr_db=snr_db, denoise=denoise, **kwargs)
-        
-        self.h_net_suffix = 'h_net'
-        self.g_net_suffix = 'g_net'
-        
-        
-    def _get_mlp_config_trial(self, trial, net_suffix):
-        """
-        Returns the configuration of a single MLP
-        
-        Args:
-            - trial : current optuna trial
-            - net_suffix : whether to consider the g_net hyper-params or the h_net ones
-        """
+        super().__init__(config, n_trials, model_selection_method, study_name, process_id, snr_db, denoise, **kwargs)
+        self.g_net_suffix = "g0"
+        self.h_net_suffix = "h_net"
+    
+    
+    def __get_mlp_config_trial(self, trial, net_suffix):
+
         n_hidden_layers = trial.suggest_int(
             f'n_hidden_layers_{net_suffix}', 
             self.search_space[f'n_hidden_layers_{net_suffix}'][0], 
@@ -88,24 +68,32 @@ class ExperimentsMPNN(Experiments):
             log=True
         )
         
-        mlp_config = {
-            'hidden_layers': hidden_layers,
-            'af': af,
-            'dropout_rate': dropout_rate
-        }
+        if net_suffix is not self.h_net_suffix:
+            mlp_config = {
+                f'hidden_layers_{net_suffix}': hidden_layers,
+                f'af_{net_suffix}': af,
+                f'dr_{net_suffix}': dropout_rate
+            }
+        else:
+            mlp_config = {
+                'hidden_layers': hidden_layers,
+                'af': af,
+                'dropout_rate': dropout_rate
+            }
         
         return mlp_config
     
     
     def get_model_opt(self, trial):
-        """
-        Constructs MPNN model
-        """
-        g_net_config = self._get_mlp_config_trial(trial=trial, net_suffix=self.g_net_suffix)
-        h_net_config = self._get_mlp_config_trial(trial=trial, net_suffix=self.h_net_suffix)
+        g0_config = self.__get_mlp_config_trial(trial=trial, net_suffix=self.g_net_suffix)
+        g1_config = self.__get_mlp_config_trial(trial=trial, net_suffix="g1")
+        g2_config = self.__get_mlp_config_trial(trial=trial, net_suffix="g2")
         
-        g_net = MLP(**g_net_config)
-        h_net = MLP(**h_net_config)
+        g_net_config = {**g0_config, **g1_config, **g2_config}
+        h_net_config = self.__get_mlp_config_trial(trial=trial, net_suffix=self.h_net_suffix)
+        
+        g_net = Q_inter(**g_net_config)
+        h_net = Q_self(**h_net_config)
         
         net = MPNN(
             g_net=g_net,
@@ -114,15 +102,21 @@ class ExperimentsMPNN(Experiments):
             include_time=self.config.get("include_time", False)
         )
         
-        model = MPNN_ODE(
-            conv = net,
-            model_path=f'{self.model_path}/mpnn',
+        model = LLC_ODE(
+            conv=net,
+            model_path=f'{self.model_path}/llc',
             adjoint=self.config.get('adjoint', False),
             integration_method=self.integration_method,
+            predict_deriv=self.predict_deriv,
             atol=self.config.get('atol', 1e-6), 
-            rtol=self.config.get('rtol', 1e-3),
-            predict_deriv=self.predict_deriv
+            rtol=self.config.get('rtol', 1e-3)
         )
-        model = model.to(torch.device(self.device))
         
+        model = model.to(torch.device(self.device))
         return model
+        
+        
+        
+        
+    
+        

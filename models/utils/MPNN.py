@@ -4,7 +4,7 @@ from torch_geometric.utils import degree
 from typing import Union, Callable
 from models.kan.KAN import KAN
 from models.utils.MLP import MLP
-from models.baseline.LLC import Q_inter, Q_self
+from models.baseline.LLC_Conv import Q_inter, Q_self
 
 
 class MPNN(MessagePassing):
@@ -21,8 +21,6 @@ class MPNN(MessagePassing):
         self.h_net = h_net
         self.message_passing = message_passing
         self.include_time = include_time
-        self.upduate_out = None
-        self.message_out = None
         
     
     def forward(self, x, edge_index, edge_attr, t):     
@@ -42,8 +40,5 @@ class MPNN(MessagePassing):
         if self.message_passing:
             out = self.h_net(torch.cat([x, aggr_out, t_expanded], dim=-1))
         else:
-            out = self.h_net(torch.cat([x, t_expanded], dim=-1)) + aggr_out
-            
-        self.upduate_out = out
-        self.message_out = aggr_out
+            out = self.h_net(torch.cat([x, t_expanded], dim=-1)) + aggr_out            
         return out
