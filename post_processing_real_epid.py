@@ -95,7 +95,74 @@ def get_symb_model(model_type, device):
             
             return symb_model
         return model_path, build_symb_mpnn_to_opt
+    elif model_type == "TSS":
+        model_path = "./saved_models_optuna/tss/real_epid_covid_scratch"
+        def build_symb_model_tss_to_opt():
+            x_i, x_j = sp.symbols('x_i x_j')    
+
+            # a = 0.074
+            # b = 7.130
+            # expr1 = b * (1 / (1 + sp.exp(- (x_j - x_i))))
+            # expr2 = a * x_i
+            a = 4.37
+            b = 7.21
+            expr1 = b * (x_i / x_j)
+            expr2 = a * x_i
+            
+            g_symb = sympytorch.SymPyModule(expressions=[expr1])
+            h_symb = sympytorch.SymPyModule(expressions=[expr2])
+            
+            g_symb = symb_wrapper(g_symb, is_self_interaction=False)
+            h_symb = symb_wrapper(h_symb, is_self_interaction=True)
+
+            symb_model = get_model(
+                g = g_symb,
+                h = h_symb,
+                message_passing=False,
+                include_time=False,
+                integration_method='rk4',
+                eval=False,
+                all_t=True
+            )
+            
+            symb_model = symb_model.train()   
+            symb_model = symb_model.to(device)
+            
+            return symb_model
     
+        return model_path, build_symb_model_tss_to_opt
+    elif model_type == "LLC":
+        model_path = "./saved_models_optuna/model-real-epid-llc/real_epid_llc_3/0"
+        def build_symb_llc_to_opt():
+            x_i, x_j = sp.symbols('x_i x_j')    
+
+            a = 3.3846776
+            b = 0.99761075
+            c = 1.0
+            expr1 = c*((x_i - x_j) * sp.exp(- x_j))
+            expr2 = a * sp.tanh(x_i + b)
+            
+            g_symb = sympytorch.SymPyModule(expressions=[expr1])
+            h_symb = sympytorch.SymPyModule(expressions=[expr2])
+            
+            g_symb = symb_wrapper(g_symb, is_self_interaction=False)
+            h_symb = symb_wrapper(h_symb, is_self_interaction=True)
+
+            symb_model = get_model(
+                g = g_symb,
+                h = h_symb,
+                message_passing=False,
+                include_time=False,
+                integration_method='rk4',
+                eval=False,
+                all_t=True
+            )
+            
+            symb_model = symb_model.train()   
+            symb_model = symb_model.to(device)
+            
+            return symb_model
+        return model_path, build_symb_llc_to_opt
     else:
         raise NotImplementedError("Not supported model")
     
@@ -139,7 +206,7 @@ def fit_param_per_country_gd(
     save_file="inferred_coeff.csv", 
     scaler=None, 
     tr_perc=0.8,
-    optimizer_type="lbfgs"  # 'lbfgs' or 'adam'
+    val_perc=0.1
 ):  
     def get_predictions(data_0, model, node_idx):
         try:
@@ -151,11 +218,12 @@ def fit_param_per_country_gd(
     N = data[0].x.shape[1]
     T = data[0].y.shape[0]
     tr_end = int(T * tr_perc)
+    valid_end = int(T * (tr_perc + val_perc))
 
     results_df = pd.DataFrame()
     lr_grid = [1e-2, 1e-3]
     epochs_grid = [50, 100]
-    logs_file = f"{model_path}/logs_fine_tuning.txt"
+    logs_file = f"{model_path}/logs_fine_tuning_{data.root}.txt"
 
     for country_name, node in countries_dict.items():
         print(f"\nProcessing country {country_name}")
@@ -173,13 +241,7 @@ def fit_param_per_country_gd(
                     else:
                         param.requires_grad_(False)
 
-                if optimizer_type.lower() == "lbfgs":
-                    optimizer = LBFGS(model.parameters(), lr=lr, line_search_fn="strong_wolfe",
-                                      tolerance_grad=1e-32, tolerance_change=1e-32)
-                elif optimizer_type.lower() == "adam":
-                    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-                else:
-                    raise ValueError("Unsupported optimizer type. Use 'lbfgs' or 'adam'.")
+                optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
                 best_val_loss_config = float('inf')
                 best_epoch = 0
@@ -197,31 +259,19 @@ def fit_param_per_country_gd(
                     model.train()
                     optimizer.zero_grad()
                     
-                    if optimizer_type == "lbfgs":
-                        def closure():
-                            optimizer.zero_grad()
-                            y_pred_cl = get_predictions(data_0, model, node)
-                            y_true_cl = data[0].y[:, node, :].to(device)
-                            if scaler is not None:
-                                y_true_cl = scaler.transform(y_true_cl.cpu()).to(device)
-                            loss_cl = loss_fn(y_pred_cl[:tr_end], y_true_cl[:tr_end])
-                            loss_cl.backward()
-                            return loss_cl
-                        loss = optimizer.step(closure)
-                    else:
-                        y_pred = get_predictions(data_0, model, node)
-                        y_true = data[0].y[:, node, :].to(device)
-                        if scaler is not None:
-                            y_true = scaler.transform(y_true.cpu()).to(device)
+                    y_pred = get_predictions(data_0, model, node)
+                    y_true = data[0].y[:, node, :].to(device)
+                    if scaler is not None:
+                        y_true = scaler.transform(y_true.cpu()).to(device)
 
-                        loss = loss_fn(y_pred[:tr_end], y_true[:tr_end])
-                        loss.backward()
-                        optimizer.step()
+                    loss = loss_fn(y_pred[:tr_end], y_true[:tr_end])
+                    loss.backward()
+                    optimizer.step()
 
                     with torch.no_grad():
                         model.eval()
-                        y_pred_val = get_predictions(data_0, model, node)[tr_end:]
-                        val_loss = loss_fn(y_pred_val, y_true[tr_end:]).item()
+                        y_pred_val = get_predictions(data_0, model, node)[tr_end:valid_end]
+                        val_loss = loss_fn(y_pred_val, y_true[tr_end:valid_end]).item()
 
                     if val_loss < best_val_loss_config:
                         best_val_loss_config = val_loss
@@ -233,7 +283,13 @@ def fit_param_per_country_gd(
                         break
 
                     if epoch % log == 0:
-                        print(f"Epoch {epoch}, train loss: {loss.item():.4f}, val loss: {val_loss:.4f}")
+                        mes = f"Epoch {epoch}, train loss: {loss.item():.4f}, val loss: {val_loss:.4f}"
+                        print(mes)
+                        save_logs(
+                            file_name=logs_file, 
+                            log_message=mes,
+                            save_updates=True
+                        )
 
                 # Save best model across grid
                 if best_val_loss_config < best_val_loss:
@@ -248,8 +304,22 @@ def fit_param_per_country_gd(
 
         h_net = final_model.conv.model.h_net
         g_net = final_model.conv.model.g_net
-        self_int_coeffs = torch.cat([p.detach().cpu().flatten() for p in h_net.parameters()]).numpy()
-        pairwise_int_coeffs = torch.cat([p.detach().cpu().flatten() for p in g_net.parameters()]).numpy()
+
+        # Handle empty parameter lists safely
+        h_params = list(h_net.parameters())
+        g_params = list(g_net.parameters())
+
+        if h_params:
+            self_int_coeffs = torch.cat([p.detach().cpu().flatten() for p in h_params]).numpy()
+        else:
+            self_int_coeffs = np.array([])
+
+        if g_params:
+            pairwise_int_coeffs = torch.cat([p.detach().cpu().flatten() for p in g_params]).numpy()
+        else:
+            pairwise_int_coeffs = np.array([])
+
+        # Concatenate safely even if one or both are empty
         coeffs = np.concatenate([self_int_coeffs, pairwise_int_coeffs])
         results_df[country_name] = coeffs
         # print(f"Inferred coeffs for {country_name}: {coeffs}")
@@ -274,6 +344,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, required=True, help='CUDA device to use (e.g., cuda:0)')
     parser.add_argument('--save_file', type=str, required=True, help='File name to save the results')
     parser.add_argument("--model_type", type=str, default="GKAN", help="Can be GKAN or MPNN")
+    parser.add_argument('--scale', action='store_true', help='Whether to scale the input data')
     
     args = parser.parse_args() 
     
@@ -293,7 +364,11 @@ if __name__ == '__main__':
         
     model_path, build_symb_model = get_symb_model(args.model_type, device=args.device)
     
-    scaler = get_scaler(data = real_epid_data, tr_perc=0.8)
+    use_scale = args.scale
+    scaler = None
+    if use_scale:
+        print("!!!SCALING!!!")
+        scaler = get_scaler(data = real_epid_data, tr_perc=0.8)
     
     fit_param_per_country_gd(
         data=real_epid_data,
@@ -305,5 +380,5 @@ if __name__ == '__main__':
         save_file=args.save_file,
         scaler=scaler,
         tr_perc=0.8,
-        optimizer_type="adam"
+        val_perc=0.1
     )

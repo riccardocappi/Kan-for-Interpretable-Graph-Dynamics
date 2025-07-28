@@ -81,8 +81,8 @@ class ExperimentsGKAN(Experiments):
             in_dim_ = in_dim + time_dim
             
         hidden_layers = [in_dim_] + hidden_layers + [in_dim]
-        compute_mult = use_orig_reg
-        
+        # compute_mult = use_orig_reg
+        compute_mult = False
         
         kan_config = {
             'layers_hidden':hidden_layers,

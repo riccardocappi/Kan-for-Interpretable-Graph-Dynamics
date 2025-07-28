@@ -64,8 +64,7 @@ class ExperimentsLLC(Experiments):
         dropout_rate = trial.suggest_float(
             f'drop_p_{net_suffix}',
             self.search_space[f'drop_p_{net_suffix}'][0],
-            self.search_space[f'drop_p_{net_suffix}'][-1],
-            log=True
+            self.search_space[f'drop_p_{net_suffix}'][-1]
         )
         
         if net_suffix is not self.h_net_suffix:

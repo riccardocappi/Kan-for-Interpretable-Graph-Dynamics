@@ -1,37 +1,28 @@
-name: "Epidemics"
-model_name: 'model-epidemics-llc'
-model_type: 'LLC'
+criterion: MAE
+data_folder: ./data_real_epid_covid_scaled
+device: cuda:0
 epochs: 1000
-patience: 200
-opt: 'Adam'
-log: 1
-t_span: [0,2]
-t_eval_steps: 2000
-seed: 42
-pytorch_seed: 0
-device: 'cuda:1'
-input_range: [0, 1]
 in_dim: 1
-atol: 0.00001
-rtol: 0.001
-adjoint: True
-message_passing: False
-include_time: False
-horizon: 15
-history: 1
-preprocess_data: False
-stride: 1
-storage: "journal"
-save_cache_data: True
-n_iter: 1
+include_time: false
+log: 10
+message_passing: false
+model_name: model-real-epid-llc
+model_type: LLC
+name: RealEpid
 num_samples: -1
-predict_deriv: True
-data_folder: './data_ic1_deriv'
-criterion: "MAE"
-method: "dopri5"
-integration_kwargs:
-  B: 0.5
-  R: 0.5
+opt: Adam
+patience: 300
+predict_deriv: true
+preprocess_data: false
+pytorch_seed: 0
+save_cache_data: true
+scale: true
+seed: 42
+storage: journal
+stride: 1
+scale_range:
+- -1
+- 1
 search_space:
   n_hidden_layers_g0: [1, 2]
   hidden_dims_g0: [8, 64]
