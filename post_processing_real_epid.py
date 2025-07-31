@@ -104,9 +104,9 @@ def get_symb_model(model_type, device):
             # b = 7.130
             # expr1 = b * (1 / (1 + sp.exp(- (x_j - x_i))))
             # expr2 = a * x_i
-            a = 4.37
-            b = 7.21
-            expr1 = b * (x_i / x_j)
+            a = 2.8960925732791423
+            b = -0.08586779838500642
+            expr1 = b * x_i * sp.sin(x_j)
             expr2 = a * x_i
             
             g_symb = sympytorch.SymPyModule(expressions=[expr1])
