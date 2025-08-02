@@ -15,4 +15,4 @@ optuna_journal_storage.log
 README.md
 outputs
 test_kan.ipynb
-
+ablation./
