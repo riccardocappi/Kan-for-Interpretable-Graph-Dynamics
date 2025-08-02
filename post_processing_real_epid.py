@@ -163,6 +163,58 @@ def get_symb_model(model_type, device):
             
             return symb_model
         return model_path, build_symb_llc_to_opt
+    
+    elif model_type == 'SW':
+        model_path = "./saved_models_optuna/model-real-epid-gkan/real_epid_gkan_7/0"
+        def build_symb_sw_to_opt():
+            x_i, x_j = sp.symbols('x_i x_j')
+            a = 0.00793399829034096
+            b = 2.49162501367285
+            c = 4.60957300897616
+            d = 0.0179951346099805
+            e = 0.867764356138973
+            f = 1.41939897565132
+            g = 0.0114351987094713
+            
+            expr1 = a*sp.tanh(b*x_i - c) - d*sp.tanh(e*x_j - f) - g
+            
+            h = 1.19863983320216
+            i = 0.573780466363341
+            j = 1.29877970942686
+            k = 0.937609075806
+            l = 0.786015724237153
+            m = 2.90646585491406
+            n = 0.1771112458638
+            o = 0.0871818528414837
+            p = 1.36529222873796
+            q = 0.587179376084621
+            r = 1.08466950319977
+             
+            expr2 = h*sp.tanh(i*sp.tanh(j*x_i + k) + l) - m*sp.tanh(n*x_i**3 + o*x_i**2 - p*x_i - q) + r
+            
+            g_symb = sympytorch.SymPyModule(expressions=[expr1])
+            h_symb = sympytorch.SymPyModule(expressions=[expr2])
+            
+            g_symb = symb_wrapper(g_symb, is_self_interaction=False)
+            h_symb = symb_wrapper(h_symb, is_self_interaction=True)
+            
+            symb_model = get_model(
+                g = g_symb,
+                h = h_symb,
+                message_passing=False,
+                include_time=False,
+                integration_method='rk4',
+                eval=False,
+                all_t=True
+            )
+            
+            symb_model = symb_model.train()   
+            symb_model = symb_model.to(device)
+            
+            return symb_model
+
+        return model_path, build_symb_sw_to_opt
+            
     else:
         raise NotImplementedError("Not supported model")
     
@@ -302,8 +354,8 @@ def fit_param_per_country_gd(
         final_model = build_symb_model().to(device)
         final_model.load_state_dict(best_model_state)
 
-        h_net = final_model.conv.model.h_net
-        g_net = final_model.conv.model.g_net
+        h_net = final_model.conv.model.h_net.symb
+        g_net = final_model.conv.model.g_net.symb
 
         # Handle empty parameter lists safely
         h_params = list(h_net.parameters())
@@ -322,6 +374,7 @@ def fit_param_per_country_gd(
         # Concatenate safely even if one or both are empty
         coeffs = np.concatenate([self_int_coeffs, pairwise_int_coeffs])
         results_df[country_name] = coeffs
+        
         # print(f"Inferred coeffs for {country_name}: {coeffs}")
         save_logs(
             file_name=logs_file, 

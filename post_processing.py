@@ -48,50 +48,6 @@ def set_pytorch_seed(seed=42):
     random.seed(seed)
     torch.use_deterministic_algorithms(True)
 
-# config = load_config("./configs/config_pred_deriv/config_real_epid_mpnn.yml")
-# config['patience'] = 450
-# exp = ExperimentsMPNN(
-#     config=config,
-#     n_trials=3,
-#     study_name="test_mult_2"
-# )
-
-# exp.run()
-
-# config = load_config("./configs/config_pred_deriv/config_ic1/config_population.yml")
-# # config['t_span'] = [0, 1]
-# exp = ExperimentsGKAN(
-#     config=config,
-#     n_trials=1,
-#     study_name="test_mult_10",
-#     snr_db=20
-# )
-
-# data = exp.training_set.raw_data_sampled[0].detach().cpu().numpy()
-# plt.plot(data[:, 30, :])
-
-# exp.training_set[0].y
-
-# exp.epochs = 10
-# exp.run()
-
-# config_pop = load_config("./configs/config_pred_deriv/config_ic1/config_population_mpnn.yml")
-# # config_pop["t_eval_steps"] = 1000
-# # config_pop["t_span"] = [0, 10]
-
-# exp = ExperimentsMPNN(
-#     config=config_pop,
-#     n_trials=1,
-#     study_name='test_mult_3'
-# )
-
-# data = exp.training_set.raw_data_sampled[0].detach().cpu().numpy()
-# plt.plot(data[:, 6, :])
-
-# exp.training_set.raw_data_sampled.min()
-
-# exp.epochs = 10
-# exp.run()
 
 """## Utils"""
 
@@ -331,7 +287,8 @@ def valid_symb_model(
     black_box_fitting=True,
     n_g_hidden_layers=2,
     n_h_hidden_layers=2,
-    sample_size=10000
+    sample_size=10000,
+    grid_orig = None
 ):
     
     seed = 9999
@@ -364,7 +321,7 @@ def valid_symb_model(
         return errs[0]
 
     # Helper to fit model for current config
-    def fit_single_model(param1, param2, param3=None):
+    def fit_single_model(param1, param2, param3=None, is_orig=False):
         if black_box_fitting:
             print(f"Fitting black-box model with {param1} and {param2} iterations")
             pysr_model = lambda: get_pysr_model(
@@ -386,44 +343,69 @@ def valid_symb_model(
                 verbose=False
             )
         else:
-            print(f"Fitting symbolic model with {param1}, theta {param2} and cutting threshold {param3}")
-            _, g_symb, h_symb, _ = fit_model(
-                n_g_hidden_layers=n_g_hidden_layers,
-                n_h_hidden_layers=n_h_hidden_layers,
-                model_path=model_path_gkan,
-                theta=param2,
-                message_passing=False,
-                include_time=False,
-                sample_size=sample_size,
-                sort_by=param1,
-                verbose=False,
-                cut_threshold=param3
-            )
+            
+            if not is_orig:
+                print(f"Fitting symbolic model with {param1}, theta {param2} and cutting threshold {param3}")
+                _, g_symb, h_symb, _ = fit_model(
+                    n_g_hidden_layers=n_g_hidden_layers,
+                    n_h_hidden_layers=n_h_hidden_layers,
+                    model_path=model_path_gkan,
+                    theta=param2,
+                    message_passing=False,
+                    include_time=False,
+                    sample_size=sample_size,
+                    sort_by=param1,
+                    verbose=False,
+                    cut_threshold=param3
+                )
+            else:
+                print(f"Fitting symbolic model with {param1}, theta {param2} and ws {param3}")
+                _, g_symb, h_symb, _ = fit_model(
+                    n_g_hidden_layers=n_g_hidden_layers,
+                    n_h_hidden_layers=n_h_hidden_layers,
+                    model_path=model_path_gkan,
+                    theta=param2,
+                    message_passing=False,
+                    include_time=False,
+                    sample_size=sample_size,
+                    verbose=False,
+                    fit_orig=True,
+                    a_range = param1,
+                    b_range = param1,
+                    weight_simple = param3
+                )
         return g_symb, h_symb
 
     if black_box_fitting:
         param_grid = (["score", "accuracy"], [50, 100, 200])
         search_space = [(mod, val) for mod in param_grid[0] for val in param_grid[1]]
     else:
-        param_grid = (
-            ["score", "log_loss"],       
-            [0.01, 0.05, 0.1],           
-            [0.1, 0.01, 0.001]    
-        )
+        if grid_orig == None:
+            param_grid = (
+                ["score", "log_loss"],       
+                [0.01, 0.05, 0.1],           
+                [0.1, 0.01, 0.001]    
+            )
+        else:
+            param_grid = grid_orig
+            
+            
         search_space = list(itertools.product(*param_grid))
 
     valid_losses = []
 
     for params in search_space:
-        g_symb, h_symb = fit_single_model(*params)
+        g_symb, h_symb = fit_single_model(*params, grid_orig != None)
         try:
             loss = evaluate_model(g_symb, h_symb)
         except AssertionError:
             loss = 1e8
         if black_box_fitting:
             valid_losses.append({'model_selection': params[0], 'param': params[1], 'valid_loss': loss})
-        else:
+        elif grid_orig == None:
             valid_losses.append({'sort_by': params[0], 'theta': params[1], 'cut_threshold': params[2], 'valid_loss': loss})
+        else:
+            valid_losses.append({'grid_range': params[0], 'theta': params[1], "ws":params[2], 'valid_loss': loss})
 
     # Select best performing configuration
     best = min(valid_losses, key=lambda x: x['valid_loss'])
@@ -450,18 +432,34 @@ def valid_symb_model(
             include_time=False
         )
     else:
-        gkan_symb, symb_g, symb_h, exec_time = fit_model(
-            model_path=model_path_gkan,
-            n_g_hidden_layers=n_g_hidden_layers,
-            n_h_hidden_layers=n_h_hidden_layers,
-            theta=best['theta'],
-            message_passing=False,
-            include_time=False,
-            sample_size=sample_size,
-            sort_by=best['sort_by'],
-            verbose=True,
-            cut_threshold=best["cut_threshold"]
-        )
+        if grid_orig == None:
+            gkan_symb, symb_g, symb_h, exec_time = fit_model(
+                model_path=model_path_gkan,
+                n_g_hidden_layers=n_g_hidden_layers,
+                n_h_hidden_layers=n_h_hidden_layers,
+                theta=best['theta'],
+                message_passing=False,
+                include_time=False,
+                sample_size=sample_size,
+                sort_by=best['sort_by'],
+                verbose=True,
+                cut_threshold=best["cut_threshold"]
+            )
+        else:
+            gkan_symb, symb_g, symb_h, exec_time = fit_model(
+                model_path=model_path_gkan,
+                n_g_hidden_layers=n_g_hidden_layers,
+                n_h_hidden_layers=n_h_hidden_layers,
+                theta=best['theta'],
+                message_passing=False,
+                include_time=False,
+                sample_size=sample_size,
+                verbose=True,
+                fit_orig=True,
+                a_range = best['grid_range'],
+                b_range = best['grid_range'],
+                weight_simple = best['ws']
+            )
 
     return gkan_symb, symb_g, symb_h, exec_time
 
@@ -482,7 +480,10 @@ def post_process_gkan(
     inverse_scale=False,
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res_3.json'
+    res_file_name = 'post_process_res_new.json',
+    compute_mult = True,
+    grid_orig = None,
+    skip_bb = False,
 ):
 
     results_dict = {}
@@ -516,30 +517,30 @@ def post_process_gkan(
             print("Evaluation failed!")
             return np.inf, np.inf, np.inf
 
+    if not skip_bb:
+        print("Black-Box fitting \n")
+        bb_symb, bb_g_symb, bb_h_symb, exec_time = valid_symb_model(
+            config=config,
+            model_path_gkan=f"{model_path}/gkan",
+            device=device,
+            atol=atol,
+            rtol=rtol,
+            method=method,
+            black_box_fitting=True,
+            n_g_hidden_layers=n_g_hidden_layers,
+            n_h_hidden_layers=n_h_hidden_layers,
+            sample_size = sample_size
+        )
 
-    print("Black-Box fitting \n")
-    bb_symb, bb_g_symb, bb_h_symb, exec_time = valid_symb_model(
-        config=config,
-        model_path_gkan=f"{model_path}/gkan",
-        device=device,
-        atol=atol,
-        rtol=rtol,
-        method=method,
-        black_box_fitting=True,
-        n_g_hidden_layers=n_g_hidden_layers,
-        n_h_hidden_layers=n_h_hidden_layers,
-        sample_size = sample_size
-    )
+        print(latex(quantise(bb_symb)))
+        ts_mean_bb, ts_var_bb, ts_std_bb = print_symb_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
 
-    print(latex(quantise(bb_symb)))
-    ts_mean_bb, ts_var_bb, ts_std_bb = print_symb_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
-
-    results_dict["black_box_symb_quant"] = str(quantise(bb_symb))
-    results_dict["black_box_symb"] = str(bb_symb)
-    results_dict["black_box_symb_test_MAE"] = ts_mean_bb
-    results_dict["black_box_symb_test_Var"] = ts_var_bb
-    results_dict["black_box_symb_test_Std"] = ts_std_bb
-    results_dict["black_box_exec_time"] = exec_time
+        results_dict["black_box_symb_quant"] = str(quantise(bb_symb))
+        results_dict["black_box_symb"] = str(bb_symb)
+        results_dict["black_box_symb_test_MAE"] = ts_mean_bb
+        results_dict["black_box_symb_test_Var"] = ts_var_bb
+        results_dict["black_box_symb_test_Std"] = ts_std_bb
+        results_dict["black_box_exec_time"] = exec_time
 
     print("Spline-wise fitting\n")
     spline_symb, spl_g_symb, spl_h_symb, exec_time = valid_symb_model(
@@ -552,7 +553,8 @@ def post_process_gkan(
         black_box_fitting=False,
         n_g_hidden_layers=n_g_hidden_layers,
         n_h_hidden_layers=n_h_hidden_layers,
-        sample_size = sample_size
+        sample_size = sample_size,
+        grid_orig=grid_orig
     )
     print(latex(quantise(spline_symb)))
     ts_mean_sw, ts_var_sw, ts_std_sw = print_symb_error(g_symb=spl_g_symb, h_symb=spl_h_symb)
@@ -575,7 +577,8 @@ def post_process_gkan(
             method=method,
             adjoint=adjoint,
             atol=atol,
-            rtol=rtol
+            rtol=rtol,
+            compute_mult=compute_mult
         )
 
         tot_params = sum(p.numel() for p in best_model.parameters() if p.requires_grad)
@@ -750,17 +753,38 @@ if __name__ == '__main__':
     print(f"Std Test loss of symbolic formula: {ts_std}")
 
     """## Symb Reg
+    
 
     ### Biochemical
 
     #### IC=1
     """
+    
+    grid_orig = (
+        [(-10, 10), (-5, 5)],
+        [0.01, 0.05, 0.1],
+        [0.0, 0.5, 1.0]
+    )
+    # model_path_gkan = "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0"
 
-    model_path_gkan = "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0"
-
+    # post_process_gkan(
+    #     config=bio_config,
+    #     model_path=model_path_gkan,
+    #     test_set=BIO,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
+    
     post_process_gkan(
         config=bio_config,
-        model_path=model_path_gkan,
+        model_path="./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0",
         test_set=BIO,
         device='cuda',
         n_g_hidden_layers=2,
@@ -770,7 +794,11 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5"
+        method="dopri5",
+        compute_mult=True,
+        grid_orig=grid_orig,
+        skip_bb=True,
+        res_file_name="sw_orig_kan.json"
     )
 
     """#### SNR"""
@@ -797,7 +825,11 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=True
+            eval_model=True,
+            compute_mult=True,
+            grid_orig=grid_orig,
+            skip_bb=True,
+            res_file_name="sw_orig_kan.json"
         )
 
     """### Kuramoto
@@ -805,11 +837,26 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
 
+    # post_process_gkan(
+    #     config=kur_config,
+    #     model_path=model_path_gkan,
+    #     test_set=KUR,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
+    
     post_process_gkan(
         config=kur_config,
-        model_path=model_path_gkan,
+        model_path="./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0",
         test_set=KUR,
         device='cuda',
         n_g_hidden_layers=2,
@@ -819,7 +866,11 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5"
+        method="dopri5",
+        compute_mult=True,
+        grid_orig=grid_orig,
+        skip_bb=True,
+        res_file_name="sw_orig_kan.json"
     )
 
     """#### SNR"""
@@ -846,7 +897,11 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=True
+            eval_model=True,
+            compute_mult=True,
+            grid_orig=grid_orig,
+            skip_bb=True,
+            res_file_name="sw_orig_kan.json"
         )
 
     """### Epidemics
@@ -854,11 +909,26 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
 
+    # post_process_gkan(
+    #     config=epid_config,
+    #     model_path=model_path_gkan,
+    #     test_set=EPID,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
+    
     post_process_gkan(
         config=epid_config,
-        model_path=model_path_gkan,
+        model_path="./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0",
         test_set=EPID,
         device='cuda',
         n_g_hidden_layers=2,
@@ -868,7 +938,11 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5"
+        method="dopri5",
+        compute_mult=True,
+        grid_orig=grid_orig,
+        skip_bb=True,
+        res_file_name="sw_orig_kan.json"
     )
 
     """#### SNR"""
@@ -894,7 +968,11 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=True
+            eval_model=True,
+            compute_mult=True,
+            grid_orig=grid_orig,
+            skip_bb=True,
+            res_file_name="sw_orig_kan.json"
         )
 
     """### Population
@@ -902,11 +980,26 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
 
+    # post_process_gkan(
+    #     config=pop_config,
+    #     model_path=model_path_gkan,
+    #     test_set=POP,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
+    
     post_process_gkan(
         config=pop_config,
-        model_path=model_path_gkan,
+        model_path="./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0",
         test_set=POP,
         device='cuda',
         n_g_hidden_layers=2,
@@ -916,7 +1009,11 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5"
+        method="dopri5",
+        compute_mult=True,
+        grid_orig=grid_orig,
+        skip_bb=True,
+        res_file_name="sw_orig_kan.json"
     )
 
     """#### SNR"""
@@ -942,7 +1039,11 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            eval_model=True
+            eval_model=True,
+            compute_mult=True,
+            grid_orig=grid_orig,
+            skip_bb=True,
+            res_file_name="sw_orig_kan.json"
         )
 
 
@@ -1131,7 +1232,9 @@ if __name__ == '__main__':
     df.set_index(0, inplace=True)
     row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {}
+    text_sympy_mapping_g = {
+    "expx1jMinusx1i": sp.exp(x_j - x_i)
+    }
 
     text_sympy_mapping_h = {
         "x1x1x1": x_i * x_i * x_i,
@@ -1343,14 +1446,12 @@ if __name__ == '__main__':
     row_means = df.mean(axis=1)
 
     text_sympy_mapping_g = {
-        "sinx1j": sp.sin(x_j),
         "x1j": x_j
     }
 
     text_sympy_mapping_h = {
         "constant": sp.S(1.0)
     }
-
     get_tss_test_error(
         text_sympy_mapping_g=text_sympy_mapping_g,
         text_sympy_mapping_h=text_sympy_mapping_h,

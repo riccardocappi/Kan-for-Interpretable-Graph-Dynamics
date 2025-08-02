@@ -58,182 +58,49 @@ from experiments.experiments_mpnn import activations
 from sympy import latex
 from torch.utils.data import DataLoader
 
-def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e-5, integration_method = 'scipy_solver'):
-    conv = MPNN(
-        g_net = g,
-        h_net = h,
-        message_passing=message_passing,
-        include_time=include_time
-    )
-
-    symb = MPNN_ODE(
-        conv=conv,
-        model_path="./saved_models_optuna/tmp_symb",
-        adjoint=True,
-        integration_method=integration_method,
-        atol=atol,
-        rtol=rtol
-    )
-
-    symb = symb.eval()
-    return symb
+from sympy import latex
+from torch.utils.data import DataLoader
+from post_processing import get_model, make_callable, get_symb_test_error, get_test_set, integrate_test_set, plot_predictions
 
 
-def make_callable(expr):
-    free_syms = expr.free_symbols
-    if not free_syms:
-        # Expression is constant
-        const_value = float(expr)
-        return lambda x: torch.full((x.shape[0], 1), const_value, dtype=x.dtype, device=x.device)
-
-    sym_module = sympytorch.SymPyModule(expressions=[expr])
-    syms = {str(s) for s in free_syms}
-    if {'x_i', 'x_j'} <= syms:
-        return lambda x: sym_module(x_i=x[:, 0], x_j=x[:, 1])
-    elif 'x_i' in syms:
-        return lambda x: sym_module(x_i=x[:, 0])
-    elif 'x_j' in syms:
-        return lambda x: sym_module(x_j=x[:, 1])
-    else:
-        raise ValueError(f"Unexpected symbols in expression: {free_syms}")
-
-
-def get_symb_test_error(g_symb, h_symb, test_set, message_passing=False, include_time=False, atol=1e-5, rtol=1e-5, scaler = None, inverse_scale=False, method='scipy_solver',
-                        is_symb=True):
-
-    if is_symb:
-        if isinstance(g_symb, int):
-            g_symb = sp.sympify(g_symb)
-
-        if isinstance(h_symb, int):
-            h_symb = sp.sympify(h_symb)
-
-        g_symb = make_callable(g_symb)
-        h_symb = make_callable(h_symb)
-
-    test_losses = []
-
-    for ts in test_set:
-        symb = get_model(
-            g=g_symb,
-            h=h_symb,
-            message_passing=message_passing,
-            include_time=include_time,
-            atol=atol,
-            rtol=rtol,
-            integration_method=method
-        )
-
-        collate_fn = lambda samples_list: samples_list
-        test_loader = DataLoader(ts, batch_size=len(ts), shuffle=True, collate_fn=collate_fn)
-
-        test_loss = eval_model(
-            model=symb,
-            valid_loader=test_loader,
-            criterion=torch.nn.L1Loss(),
-            scaler=scaler,
-            inverse_scale=inverse_scale,
-            pred_deriv=False
-        )
-
-        test_losses.append(test_loss)
-
-    return test_losses
-
-
-
-def get_test_set(dynamics, device='cuda', input_range=(0, 1), t_span = (0, 1), **integration_kwargs):
-    seeds = [12345, 67890, 111213]
-
-    graphs = [
-        nx.barabasi_albert_graph(70, 3, seed=seeds[0]),
-        nx.watts_strogatz_graph(50, 6, 0.3, seed=seeds[1]),
-        nx.erdos_renyi_graph(100, 0.05, seed=seeds[2])
-    ]
-
-    test_set = []
-    for i, graph in enumerate(graphs):
-        snapshots = integrate_test_set(
-            graph=graph,
-            dynamics=dynamics,
-            seed=seeds[i],
-            device=device,
-            input_range=input_range,
-            t_span=t_span,
-            **integration_kwargs
-        )
-        test_set.append(snapshots)
-
-    return test_set
-
-
-
-def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range = (0, 1), t_span = (0, 1), **integration_kwargs):
-    # graph = nx.barabasi_albert_graph(100, 3, seed=seed)
-    edge_index = from_networkx(graph).edge_index
-    edge_index = edge_index.to(torch.device(device))
-    rng = np.random.default_rng(seed=seed)
-
-    data, t = integrate(
-        input_range=input_range,
-        t_span = t_span,
-        t_eval_steps=300,
-        dynamics=dynamics,
-        device=device,
-        graph=graph,
-        rng = rng,
-        **integration_kwargs
-    )
-
-    snapshot = Data(
-        x = data[0].unsqueeze(0),
-        y = data[1:],
-        edge_index=edge_index,
-        edge_attr=None,
-        t_span = t
-    )
-
-    return [snapshot]
-
-
-def build_model_from_file(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
+def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/mpnn/state_dict.pth"
     with open(best_params_file, 'r') as f:
         best_hyperparams = json.load(f)
-
+    
     in_dim = 1
-
+    
     hidden_layers = [best_hyperparams["hidden_dims_g_net"] for _ in range(best_hyperparams["n_hidden_layers_g_net"])]
-    hidden_layers = [2*in_dim] + hidden_layers + [in_dim]
+    hidden_layers = [2*in_dim] + hidden_layers + [in_dim]    
     # g_net
     g_net = MLP(
         hidden_layers=hidden_layers,
         af = activations[best_hyperparams['af_g_net']],
         dropout_rate=best_hyperparams['drop_p_g_net'],
     )
-
+    
     time_dim = 1 if include_time else 0
     in_dim_h = 2 if message_passing else 1
     in_dim_h += time_dim
     hidden_layers = [best_hyperparams["hidden_dims_h_net"] for _ in range(best_hyperparams["n_hidden_layers_h_net"])]
-    hidden_layers = [in_dim_h] + hidden_layers + [in_dim]
-
-
+    hidden_layers = [in_dim_h] + hidden_layers + [in_dim] 
+    
+    
     # h_net
     h_net = MLP(
         hidden_layers=hidden_layers,
         af = activations[best_hyperparams['af_h_net']],
         dropout_rate=best_hyperparams['drop_p_h_net'],
     )
-
+    
     mpnn = MPNN(
         h_net=h_net,
         g_net=g_net,
         message_passing=message_passing,
         include_time=include_time
     )
-
+    
     model = MPNN_ODE(
         conv=mpnn,
         model_path='./saved_models_optuna/tmp',
@@ -242,10 +109,10 @@ def build_model_from_file(model_path, message_passing=False, include_time=False,
         atol=atol,
         rtol=rtol
     )
-
+    
     model = model.to(torch.device('cuda'))
     model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device('cuda')))
-
+    
     return model
 
 
@@ -366,9 +233,9 @@ def valid_symb_model(
         pysr_model = lambda: get_pysr_model(
             model_selection=param1, 
             n_iterations=param2,
-            parallelism="serial",
-            random_state = seed,
-            deterministic = True
+            # parallelism="serial",
+            # random_state = seed,
+            # deterministic = True
         )
         _, g_symb, h_symb, _ = fit_mpnn(
             device=device,
@@ -403,9 +270,9 @@ def valid_symb_model(
         pysr_model=lambda: get_pysr_model(
             model_selection=best['model_selection'],
             n_iterations=best['param'],
-            parallelism="serial",
-            random_state = seed,
-            deterministic = True
+            # parallelism="serial",
+            # random_state = seed,
+            # deterministic = True
         ),
         sample_size=sample_size,
         message_passing=False,
@@ -432,7 +299,7 @@ def post_process_mpnn(
     adjoint=True,
     eval_model=True,
     model_type="MPNN",
-    save_file = "post_process_res_seed.json"
+    res_file_name="post_process_res.json"
 ):
     
     results_dict = {}
@@ -492,7 +359,7 @@ def post_process_mpnn(
         print("Evaluate raw model\n")
         # Loading best model
         if model_type == "MPNN":
-            best_model = build_model_from_file(
+            best_model = build_model_from_file_mpnn(
                 model_path=model_path,
                 message_passing=message_passing,
                 include_time=include_time,
@@ -530,25 +397,24 @@ def post_process_mpnn(
         results_dict["model_test_Var"] = ts_var_model
         results_dict["model_test_Std"] = ts_std_model
     
-    with open(f"{model_path}/{save_file}", 'w') as file:
-        json.dump(results_dict, file, indent=4)  
+    with open(f"{model_path}/{res_file_name}", 'w') as file:
+        json.dump(results_dict, file, indent=4)   
 
-
-def plot_predictions(y_true, y_pred, node_index = 0):
-    plt.figure(figsize=(16, 8))
-    plt.plot(y_true[:, node_index, :], label='y_true', marker='o')
-    plt.plot(y_pred[:, node_index, :], label='y_pred', marker='o')
-    plt.xlabel('Time step')
-    plt.ylabel('Value')
-    plt.title(f'y_true vs y_pred for Node {node_index}')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
+import argparse
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--is_llc", 
+        action="store_true", 
+        help="Set this flag to enable LLC mode"
+    )
+    args = parser.parse_args()
+    
     set_pytorch_seed(0)
+    is_llc = args.is_llc
+    
+    print(f"\n\nIS LLC? {is_llc}\n\n")
     """## LB Losses
 
     ### Kuramoto
@@ -683,9 +549,10 @@ if __name__ == '__main__':
 
     #### IC=1
     """
-
-    # model_path_mpnn = './saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_12/0'
-    model_path_mpnn = './saved_models_optuna/model-biochemical-llc/biochemical_llc_2/0'
+    if not is_llc:
+        model_path_mpnn = './saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_12/0'
+    else: model_path_mpnn = './saved_models_optuna/model-biochemical-llc/biochemical_llc_2/0'
+    
     post_process_mpnn(
         config=bio_config,
         model_path=model_path_mpnn,
@@ -697,40 +564,50 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC"
+        model_type="LLC" if is_llc else "MPNN",
+        res_file_name="post_process_res_final.json"
     )
 
     """#### SNR"""
+    # if is_llc:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3/0",
+    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3/0",
+    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3/0"
+    #     ]
+    # else:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
+    #         "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
+    #         "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+    #     ]
 
-    model_paths = [
-        "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3/0",
-        "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3/0",
-        "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3/0"
-    ]
-
-    for model_path in model_paths:
-        print(model_path)
+    # for model_path in model_paths:
+    #     print(model_path)
         
-        post_process_mpnn(
-            config=bio_config,
-            model_path=model_path,
-            test_set=BIO,
-            device='cuda',
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            model_type="LLC"
-        )
+    #     post_process_mpnn(
+    #         config=bio_config,
+    #         model_path=model_path,
+    #         test_set=BIO,
+    #         device='cuda',
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         model_type="LLC" if is_llc else "MPNN",
+    #         res_file_name="post_process_res_final.json"
+    #     )
 
     """### Kuramoto
 
     #### IC=1
     """
-
-    model_path_mpnn = './saved_models_optuna/model-kuramoto-llc/kuramoto_llc_2/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-kuramoto-llc/kuramoto_llc_2/0'
+    else:
+        model_path_mpnn = './saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_12/0'
 
     post_process_mpnn(
         config=kur_config,
@@ -743,16 +620,24 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC"
+        model_type="LLC" if is_llc else "MPNN",
+        res_file_name="post_process_res_final.json"
     )
 
     """#### SNR"""
 
-    model_paths = [
-        "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_70db_3/0",
-        "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_50db_3/0",
-        "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_20db_3/0"
-    ]
+    if is_llc:
+        model_paths = [
+            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_70db_3/0",
+            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_50db_3/0",
+            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_20db_3/0"
+        ]
+    else:
+        model_paths = [
+            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
+            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
+            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+        ]
 
     for model_path in model_paths:
         print(model_path)
@@ -768,7 +653,8 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC"
+            model_type="LLC" if is_llc else "MPNN",
+            res_file_name="post_process_res_final.json"
         )
 
     """### Epidemics
@@ -776,7 +662,10 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    model_path_mpnn = './saved_models_optuna/model-epidemics-llc/epidemics_llc_2/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-epidemics-llc/epidemics_llc_2/0'
+    else:
+        model_path_mpnn = './saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_12/0'
 
     post_process_mpnn(
         config=epid_config,
@@ -789,16 +678,24 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC"
+        model_type="LLC" if is_llc else "MPNN",
+        res_file_name="post_process_res_final.json"
     )
 
     """#### SNR"""
 
-    model_paths = [
-        "./saved_models_optuna/model-epidemics-llc/epidemics_llc_70db_3/0",
-        "./saved_models_optuna/model-epidemics-llc/epidemics_llc_50db_3/0",
-        "./saved_models_optuna/model-epidemics-llc/epidemics_llc_20db_3/0"
-    ]
+    if is_llc:
+        model_paths = [
+            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_70db_3/0",
+            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_50db_3/0",
+            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_20db_3/0"
+        ]
+    else:
+        model_paths = [
+            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
+            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
+            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+        ]
 
     for model_path in model_paths:
         print(model_path)
@@ -813,15 +710,18 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC"
+            model_type="LLC" if is_llc else "MPNN",
+            res_file_name="post_process_res_final.json"
         )
 
     """### Population
 
     #### IC=1
     """
-
-    model_path_mpnn = './saved_models_optuna/model-population-llc/population_llc_2/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-population-llc/population_llc_2/0'
+    else:
+        model_path_mpnn = './saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_12/0'
 
     post_process_mpnn(
         config=pop_config,
@@ -834,16 +734,24 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC"
+        model_type="LLC" if is_llc else "MPNN",
+        res_file_name="post_process_res_final.json"
     )
 
     """#### SNR"""
 
-    model_paths = [
-        "./saved_models_optuna/model-population-llc/population_llc_70db_3/0",
-        "./saved_models_optuna/model-population-llc/population_llc_50db_3/0",
-        "./saved_models_optuna/model-population-llc/population_llc_20db_3/0"
-    ]
+    if is_llc:
+        model_paths = [
+            "./saved_models_optuna/model-population-llc/population_llc_70db_3/0",
+            "./saved_models_optuna/model-population-llc/population_llc_50db_3/0",
+            "./saved_models_optuna/model-population-llc/population_llc_20db_3/0"
+        ]
+    else:
+        model_paths = [
+            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
+            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
+            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+        ]
 
     for model_path in model_paths:
         print(model_path)
@@ -858,5 +766,6 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC"
+            model_type="LLC" if is_llc else "MPNN",
+            res_file_name="post_process_res_final.json"
         )

@@ -26,6 +26,7 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import train_test_split
 from sympy import lambdify
 import time
+from utils.orig_sw_fitting import *
 
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -390,53 +391,58 @@ def fit_acts_scipy(x, y, x_symb = None, alpha=0.1, cut_threshold = 1e-3):
 
 
 def find_best_symbolic_func(x_train, y_train, x_val, y_val, alpha_grid, x_symb = None, sort_by='score',
-                            cut_threshold=1e-3):
-    results = []
-
-    assert sort_by in ["score", "log_loss"], "Not supported sorting method"
-    ascending = sort_by == "log_loss" 
+                            cut_threshold=1e-3, fit_orig = False, **kwargs):
     
-    for alpha in alpha_grid:
-        symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, x_symb=x_symb, alpha=alpha,
-                                                       cut_threshold=cut_threshold)
-        val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
-        complexity = count_ops(symb_func)
-        log_loss = np.log(val_mse)
-        results.append((symb_func, complexity, log_loss, alpha))
-
-    # Sort by complexity to compute finite difference derivative
-    results.sort(key=lambda x: x[1])  # sort by complexity
-    # top_equations = pd.DataFrame(results, columns=["symbolic_function", "complexity", "log_loss", "alpha"])
-    scores = [(results[0][0], results[0][1], results[0][2], results[0][3], 0)]
-
-    for k in range(1, len(results)):
-        c2, c1 = results[k][1], results[k - 1][1]
-        l2, l1 = results[k][2], results[k - 1][2]
+    if not fit_orig:
+        results = []
+        assert sort_by in ["score", "log_loss"], "Not supported sorting method"
+        ascending = sort_by == "log_loss" 
         
-        if c1==c2: continue
+        for alpha in alpha_grid:
+            symb_func, params, func_optim = fit_acts_scipy(x_train, y_train, x_symb=x_symb, alpha=alpha,
+                                                        cut_threshold=cut_threshold)
+            val_mse = mean_squared_error(y_val, func_optim(x_val, *params))
+            complexity = count_ops(symb_func)
+            log_loss = np.log(val_mse)
+            results.append((symb_func, complexity, log_loss, alpha))
 
-        dlogloss_dcomplexity = (l2 - l1) / (c2 - c1)
-        score = -dlogloss_dcomplexity
-        scores.append(
-            (results[k][0], 
-             results[k][1],
-             results[k][2],
-             results[k][3], 
-             score
+        # Sort by complexity to compute finite difference derivative
+        results.sort(key=lambda x: x[1])  # sort by complexity
+        # top_equations = pd.DataFrame(results, columns=["symbolic_function", "complexity", "log_loss", "alpha"])
+        scores = [(results[0][0], results[0][1], results[0][2], results[0][3], 0)]
+
+        for k in range(1, len(results)):
+            c2, c1 = results[k][1], results[k - 1][1]
+            l2, l1 = results[k][2], results[k - 1][2]
+            
+            if c1==c2: continue
+
+            dlogloss_dcomplexity = (l2 - l1) / (c2 - c1)
+            score = -dlogloss_dcomplexity
+            scores.append(
+                (results[k][0], 
+                results[k][1],
+                results[k][2],
+                results[k][3], 
+                score
+                )
             )
-        )
 
-    
-    top_equations = pd.DataFrame(scores, columns=["symbolic_function", "complexity", "log_loss", "alpha", "score"])
-    top_equations = top_equations.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
-    return top_equations
-
+        
+        top_equations = pd.DataFrame(scores, columns=["symbolic_function", "complexity", "log_loss", "alpha", "score"])
+        top_equations = top_equations.sort_values(by=sort_by, ascending=ascending).reset_index(drop=True)
+        return top_equations
+    else:
+        top_eq = suggest_symbolic(x_train, y_train, **kwargs)
+        top_equations = pd.DataFrame(top_eq, columns=["symbolic_function"])
+        return top_equations
 
 def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed=42, sample_size = -1, sort_by='score',
-              cut_threshold=1e-3):
+              cut_threshold=1e-3, alpha_grid=None, fit_orig=False, **kwargs):
     rng = np.random.default_rng(seed)
     
-    alpha_grid = torch.logspace(-5, 1, steps=5)
+    if alpha_grid is None:
+        alpha_grid = torch.logspace(-5, 1, steps=5)
     
     symb_layer_acts = []
     symbolic_functions = defaultdict(dict)
@@ -466,7 +472,9 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
                 x_train, y_train, x_val, y_val,
                 alpha_grid=alpha_grid,
                 sort_by=sort_by,
-                cut_threshold=cut_threshold
+                cut_threshold=cut_threshold,
+                fit_orig=fit_orig,
+                **kwargs
                 # x_symb=symb_xs[i]
             )
             top_equations[(i, j)] = top_eqs
@@ -492,7 +500,7 @@ def fit_layer(cached_act, cached_preact, symb_xs, mask_mult, val_ratio=0.2, seed
 
 
 def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models', seed=42, sample_size = -1, sort_by='score', 
-            verbose = False, cut_threshold = 1e-3):
+            verbose = False, cut_threshold = 1e-3, alpha_grid = None, fit_orig=False, **kwargs):
     
     start_time = time.time()
     n_layers = len(kan_acts)
@@ -512,7 +520,10 @@ def fit_kan(kan_acts, kan_preacts, kan_masks_mult, symb_xs, model_path='./models
             mask_mult=mask_mult,
             seed=seed,
             sample_size=sample_size,
-            sort_by=sort_by
+            sort_by=sort_by,
+            fit_orig=fit_orig,
+            alpha_grid=alpha_grid,
+            **kwargs
         )
         
         all_functions[l] = symb_functions
@@ -567,7 +578,7 @@ def get_kan_arch(n_layers, model_path):
 
 
 def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1,
-              sort_by='score', verbose=False, cut_threshold = 1e-3):
+              sort_by='score', verbose=False, cut_threshold = 1e-3, alpha_grid = None, fit_orig=False, **kwargs):
     # G_net
     cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta, verbose=verbose)    
@@ -585,7 +596,10 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         sample_size=sample_size,
         sort_by=sort_by,
         verbose=verbose,
-        cut_threshold=cut_threshold
+        cut_threshold=cut_threshold,
+        fit_orig=fit_orig,
+        alpha_grid=alpha_grid,
+        **kwargs
     )
     
     symb_g = symb_g[0]  # Univariate functions
@@ -616,7 +630,9 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         seed=seed,
         sort_by=sort_by,
         verbose=verbose,
-        cut_threshold=cut_threshold
+        cut_threshold=cut_threshold,
+        alpha_grid=alpha_grid,
+        **kwargs
     )
     symb_h = symb_h[0]  # Univariate functions
     
