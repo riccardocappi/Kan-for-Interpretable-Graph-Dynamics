@@ -233,9 +233,9 @@ def valid_symb_model(
         pysr_model = lambda: get_pysr_model(
             model_selection=param1, 
             n_iterations=param2,
-            # parallelism="serial",
-            # random_state = seed,
-            # deterministic = True
+            parallelism="serial",
+            random_state = seed,
+            deterministic = True
         )
         _, g_symb, h_symb, _ = fit_mpnn(
             device=device,
@@ -270,9 +270,9 @@ def valid_symb_model(
         pysr_model=lambda: get_pysr_model(
             model_selection=best['model_selection'],
             n_iterations=best['param'],
-            # parallelism="serial",
-            # random_state = seed,
-            # deterministic = True
+            parallelism="serial",
+            random_state = seed,
+            deterministic = True
         ),
         sample_size=sample_size,
         message_passing=False,
@@ -565,40 +565,40 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final.json"
+        res_file_name="post_process_res_final_seed.json"
     )
 
     """#### SNR"""
-    # if is_llc:
-    #     model_paths = [
-    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3/0",
-    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3/0",
-    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3/0"
-    #     ]
-    # else:
-    #     model_paths = [
-    #         "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
-    #         "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
-    #         "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
-    #     ]
+    if is_llc:
+        model_paths = [
+            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3/0",
+            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3/0",
+            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3/0"
+        ]
+    else:
+        model_paths = [
+            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
+            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
+            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+        ]
 
-    # for model_path in model_paths:
-    #     print(model_path)
+    for model_path in model_paths:
+        print(model_path)
         
-    #     post_process_mpnn(
-    #         config=bio_config,
-    #         model_path=model_path,
-    #         test_set=BIO,
-    #         device='cuda',
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         model_type="LLC" if is_llc else "MPNN",
-    #         res_file_name="post_process_res_final.json"
-    #     )
+        post_process_mpnn(
+            config=bio_config,
+            model_path=model_path,
+            test_set=BIO,
+            device='cuda',
+            sample_size=10000,
+            message_passing=False,
+            include_time=False,
+            atol=1e-5,
+            rtol=1e-5,
+            method="dopri5",
+            model_type="LLC" if is_llc else "MPNN",
+            res_file_name="post_process_res_final_seed.json"
+        )
 
     """### Kuramoto
 
@@ -621,7 +621,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final.json"
+        res_file_name="post_process_res_final_seed.json"
     )
 
     """#### SNR"""
@@ -654,7 +654,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final.json"
+            res_file_name="post_process_res_final_seed.json"
         )
 
     """### Epidemics
@@ -679,7 +679,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final.json"
+        res_file_name="post_process_res_final_seed.json"
     )
 
     """#### SNR"""
@@ -711,7 +711,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final.json"
+            res_file_name="post_process_res_final_seed.json"
         )
 
     """### Population
@@ -735,7 +735,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final.json"
+        res_file_name="post_process_res_final_seed.json"
     )
 
     """#### SNR"""
@@ -767,5 +767,5 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final.json"
+            res_file_name="post_process_res_final_seed.json"
         )

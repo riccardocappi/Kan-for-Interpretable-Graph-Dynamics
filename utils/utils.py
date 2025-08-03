@@ -630,6 +630,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
         seed=seed,
         sort_by=sort_by,
         verbose=verbose,
+        fit_orig=fit_orig,
         cut_threshold=cut_threshold,
         alpha_grid=alpha_grid,
         **kwargs

@@ -216,7 +216,8 @@ def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range =
     return [snapshot]
 
 
-def build_model_from_file(model_path, message_passing, include_time, method='dopri5', adjoint=False, atol=1e-5, rtol=1e-5):
+def build_model_from_file(model_path, message_passing, include_time, method='dopri5', adjoint=False, atol=1e-5, rtol=1e-5,
+                          compute_mult=True):
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/gkan/state_dict.pth"
 
@@ -232,7 +233,7 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
         mu_1=best_hyperparams['mu_1_g_net'],
         mu_2=best_hyperparams['mu_2_g_net'],
         device='cuda',
-        compute_mult=True,
+        compute_mult=compute_mult,
         store_act=True
     )
 
@@ -249,7 +250,7 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
         mu_1=best_hyperparams['mu_1_h_net'],
         mu_2=best_hyperparams['mu_2_h_net'],
         device='cuda',
-        compute_mult=True,
+        compute_mult=compute_mult,
         store_act=True
     )
 
@@ -327,9 +328,9 @@ def valid_symb_model(
             pysr_model = lambda: get_pysr_model(
                 model_selection=param1, 
                 n_iterations=param2,
-                # parallelism="serial",
-                # random_state = seed,
-                # deterministic = True
+                parallelism="serial",
+                random_state = seed,
+                deterministic = True
             )
             _, g_symb, h_symb, _ = fit_black_box_from_kan(
                 n_g_hidden_layers=n_g_hidden_layers,
@@ -422,9 +423,9 @@ def valid_symb_model(
             pysr_model=lambda: get_pysr_model(
                 model_selection=best['model_selection'],
                 n_iterations=best['param'],
-                # parallelism="serial",
-                # random_state = seed,
-                # deterministic = True
+                parallelism="serial",
+                random_state = seed,
+                deterministic = True
             ),
             sample_size=sample_size,
             message_passing=False,
@@ -760,31 +761,11 @@ if __name__ == '__main__':
     #### IC=1
     """
     
-    grid_orig = (
-        [(-10, 10), (-5, 5)],
-        [0.01, 0.05, 0.1],
-        [0.0, 0.5, 1.0]
-    )
-    # model_path_gkan = "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0"
 
-    # post_process_gkan(
-    #     config=bio_config,
-    #     model_path=model_path_gkan,
-    #     test_set=BIO,
-    #     device='cuda',
-    #     n_g_hidden_layers=2,
-    #     n_h_hidden_layers=2,
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
-    
     post_process_gkan(
         config=bio_config,
-        model_path="./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0",
+        model_path=model_path_gkan,
         test_set=BIO,
         device='cuda',
         n_g_hidden_layers=2,
@@ -794,13 +775,9 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5",
-        compute_mult=True,
-        grid_orig=grid_orig,
-        skip_bb=True,
-        res_file_name="sw_orig_kan.json"
+        method="dopri5"
     )
-
+    
     """#### SNR"""
 
     model_paths_gkan = [
@@ -826,10 +803,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             eval_model=True,
-            compute_mult=True,
-            grid_orig=grid_orig,
-            skip_bb=True,
-            res_file_name="sw_orig_kan.json"
+            compute_mult=True
         )
 
     """### Kuramoto
@@ -837,26 +811,11 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    # model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
 
-    # post_process_gkan(
-    #     config=kur_config,
-    #     model_path=model_path_gkan,
-    #     test_set=KUR,
-    #     device='cuda',
-    #     n_g_hidden_layers=2,
-    #     n_h_hidden_layers=2,
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
-    
     post_process_gkan(
         config=kur_config,
-        model_path="./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0",
+        model_path=model_path_gkan,
         test_set=KUR,
         device='cuda',
         n_g_hidden_layers=2,
@@ -866,11 +825,7 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5",
-        compute_mult=True,
-        grid_orig=grid_orig,
-        skip_bb=True,
-        res_file_name="sw_orig_kan.json"
+        method="dopri5"
     )
 
     """#### SNR"""
@@ -898,10 +853,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             eval_model=True,
-            compute_mult=True,
-            grid_orig=grid_orig,
-            skip_bb=True,
-            res_file_name="sw_orig_kan.json"
+            compute_mult=True
         )
 
     """### Epidemics
@@ -909,26 +861,11 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    # model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
 
-    # post_process_gkan(
-    #     config=epid_config,
-    #     model_path=model_path_gkan,
-    #     test_set=EPID,
-    #     device='cuda',
-    #     n_g_hidden_layers=2,
-    #     n_h_hidden_layers=2,
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
-    
     post_process_gkan(
         config=epid_config,
-        model_path="./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0",
+        model_path=model_path_gkan,
         test_set=EPID,
         device='cuda',
         n_g_hidden_layers=2,
@@ -938,11 +875,7 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5",
-        compute_mult=True,
-        grid_orig=grid_orig,
-        skip_bb=True,
-        res_file_name="sw_orig_kan.json"
+        method="dopri5"
     )
 
     """#### SNR"""
@@ -969,10 +902,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             eval_model=True,
-            compute_mult=True,
-            grid_orig=grid_orig,
-            skip_bb=True,
-            res_file_name="sw_orig_kan.json"
+            compute_mult=True
         )
 
     """### Population
@@ -980,26 +910,11 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    # model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
 
-    # post_process_gkan(
-    #     config=pop_config,
-    #     model_path=model_path_gkan,
-    #     test_set=POP,
-    #     device='cuda',
-    #     n_g_hidden_layers=2,
-    #     n_h_hidden_layers=2,
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
-    
     post_process_gkan(
         config=pop_config,
-        model_path="./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0",
+        model_path=model_path_gkan,
         test_set=POP,
         device='cuda',
         n_g_hidden_layers=2,
@@ -1009,12 +924,9 @@ if __name__ == '__main__':
         include_time=False,
         atol=1e-5,
         rtol=1e-5,
-        method="dopri5",
-        compute_mult=True,
-        grid_orig=grid_orig,
-        skip_bb=True,
-        res_file_name="sw_orig_kan.json"
+        method="dopri5"
     )
+    
 
     """#### SNR"""
 
@@ -1040,10 +952,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             eval_model=True,
-            compute_mult=True,
-            grid_orig=grid_orig,
-            skip_bb=True,
-            res_file_name="sw_orig_kan.json"
+            compute_mult=True
         )
 
 
