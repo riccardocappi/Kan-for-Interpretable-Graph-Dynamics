@@ -1,5 +1,4 @@
 data
-saved_models_optuna
 .venv
 __pycache__
 gkanconv-ode*
