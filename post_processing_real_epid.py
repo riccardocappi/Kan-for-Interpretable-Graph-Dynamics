@@ -96,18 +96,18 @@ def get_symb_model(model_type, device):
             return symb_model
         return model_path, build_symb_mpnn_to_opt
     elif model_type == "TSS":
-        model_path = "./saved_models_optuna/tss/real_epid_covid_scratch"
+        model_path = "./saved_models_optuna/tss/real_epid_covid"
         def build_symb_model_tss_to_opt():
             x_i, x_j = sp.symbols('x_i x_j')    
 
-            # a = 0.074
-            # b = 7.130
-            # expr1 = b * (1 / (1 + sp.exp(- (x_j - x_i))))
-            # expr2 = a * x_i
-            a = 2.8960925732791423
-            b = -0.08586779838500642
-            expr1 = b * x_i * sp.sin(x_j)
+            a = 0.074
+            b = 7.130
+            expr1 = b * (1 / (1 + sp.exp(- (x_j - x_i))))
             expr2 = a * x_i
+            # a = 2.8960925732791423
+            # b = -0.08586779838500642
+            # expr1 = b * x_i * sp.sin(x_j)
+            # expr2 = a * x_i
             
             g_symb = sympytorch.SymPyModule(expressions=[expr1])
             h_symb = sympytorch.SymPyModule(expressions=[expr2])

@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(-0.48*sin(x_i - x_j)) + 2.03",
+    "black_box_symb": "\\sum_{j}( -0.48121974*sin(x_i - x_j)) - 0.00025278135*x_i**3 + 2.0274642",
+    "black_box_symb_test_MAE": 0.01488142212231954,
+    "black_box_symb_test_Var": 1.9259101120412645e-05,
+    "black_box_symb_test_Std": 0.004388519240064084,
+    "black_box_exec_time": 620.8324756622314,
+    "Number of params": 7500,
+    "model_test_MAE": 0.03257205213109652,
+    "model_test_Var": 5.1874211730930225e-05,
+    "model_test_Std": 0.007202375422798385
+}

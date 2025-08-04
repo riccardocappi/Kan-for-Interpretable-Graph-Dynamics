@@ -1,0 +1,306 @@
+
+Epoch 0, train loss: 0.0116, val loss: 0.0562
+Epoch 10, train loss: 0.0082, val loss: 0.0495
+Epoch 20, train loss: 0.0069, val loss: 0.0388
+Epoch 30, train loss: 0.0064, val loss: 0.0327
+Epoch 0, train loss: 0.0116, val loss: 0.0562
+Epoch 10, train loss: 0.0082, val loss: 0.0495
+Epoch 20, train loss: 0.0069, val loss: 0.0388
+Epoch 30, train loss: 0.0064, val loss: 0.0327
+Epoch 0, train loss: 0.0116, val loss: 0.0057
+Epoch 10, train loss: 0.0069, val loss: 0.0424
+Epoch 20, train loss: 0.0063, val loss: 0.0298
+Epoch 30, train loss: 0.0062, val loss: 0.0260
+Epoch 0, train loss: 0.0116, val loss: 0.0057
+Epoch 10, train loss: 0.0069, val loss: 0.0424
+Epoch 20, train loss: 0.0063, val loss: 0.0298
+Epoch 30, train loss: 0.0062, val loss: 0.0260
+Inferred coeffs for Canada: [ 2.4658787e+00  2.4672065e+00  1.0000000e+06  1.0000000e-06
+ -4.9747094e-03]
+Epoch 0, train loss: 0.0782, val loss: 0.2870
+Epoch 10, train loss: 0.0634, val loss: 0.4684
+Epoch 20, train loss: 0.0594, val loss: 0.3449
+Epoch 30, train loss: 0.0560, val loss: 0.4081
+Epoch 0, train loss: 0.0782, val loss: 0.2870
+Epoch 10, train loss: 0.0634, val loss: 0.4684
+Epoch 20, train loss: 0.0594, val loss: 0.3449
+Epoch 30, train loss: 0.0560, val loss: 0.4081
+Epoch 0, train loss: 0.0782, val loss: 0.2423
+Epoch 10, train loss: 0.0710, val loss: 0.2900
+Epoch 20, train loss: 0.0666, val loss: 0.3322
+Epoch 30, train loss: 0.0641, val loss: 0.3673
+Epoch 0, train loss: 0.0782, val loss: 0.2423
+Epoch 10, train loss: 0.0710, val loss: 0.2900
+Epoch 20, train loss: 0.0666, val loss: 0.3322
+Epoch 30, train loss: 0.0641, val loss: 0.3673
+Inferred coeffs for Hong Kong: [ 2.4658787e+00  2.4672065e+00  1.0000000e+06  1.0000000e-06
+ -4.9747112e-03]
+Epoch 0, train loss: 0.0491, val loss: 0.1653
+Epoch 10, train loss: 0.0148, val loss: 0.0860
+Epoch 20, train loss: 0.0105, val loss: 0.0542
+Epoch 30, train loss: 0.0102, val loss: 0.0394
+Epoch 0, train loss: 0.0491, val loss: 0.1653
+Epoch 10, train loss: 0.0148, val loss: 0.0860
+Epoch 20, train loss: 0.0105, val loss: 0.0542
+Epoch 30, train loss: 0.0102, val loss: 0.0394
+Epoch 0, train loss: 0.0491, val loss: 0.2161
+Epoch 10, train loss: 0.0340, val loss: 0.1598
+Epoch 20, train loss: 0.0203, val loss: 0.1037
+Epoch 30, train loss: 0.0112, val loss: 0.0515
+Epoch 40, train loss: 0.0125, val loss: 0.0323
+Epoch 0, train loss: 0.0491, val loss: 0.2161
+Epoch 10, train loss: 0.0340, val loss: 0.1598
+Epoch 20, train loss: 0.0203, val loss: 0.1037
+Epoch 30, train loss: 0.0112, val loss: 0.0515
+Epoch 40, train loss: 0.0125, val loss: 0.0323
+Epoch 50, train loss: 0.0114, val loss: 0.0462
+Epoch 60, train loss: 0.0110, val loss: 0.0583
+Inferred coeffs for Singapore: [2.4263079e+00 2.5065100e+00 1.0000000e+06 1.0000000e-06 1.5719786e-02]
+Epoch 0, train loss: 0.7935, val loss: 2.3581
+Epoch 10, train loss: 0.6720, val loss: 2.0339
+Epoch 20, train loss: 0.5376, val loss: 1.6450
+Epoch 30, train loss: 0.3889, val loss: 1.1774
+Epoch 40, train loss: 0.2274, val loss: 0.6190
+Epoch 0, train loss: 0.7935, val loss: 2.3581
+Epoch 10, train loss: 0.6720, val loss: 2.0339
+Epoch 20, train loss: 0.5376, val loss: 1.6450
+Epoch 30, train loss: 0.3889, val loss: 1.1774
+Epoch 40, train loss: 0.2274, val loss: 0.6190
+Epoch 50, train loss: 0.0690, val loss: 0.0449
+Epoch 60, train loss: 0.0954, val loss: 0.2730
+Epoch 70, train loss: 0.0696, val loss: 0.0457
+Epoch 80, train loss: 0.0712, val loss: 0.0498
+Epoch 90, train loss: 0.0690, val loss: 0.0513
+Epoch 0, train loss: 0.7935, val loss: 2.3843
+Epoch 10, train loss: 0.7819, val loss: 2.3552
+Epoch 20, train loss: 0.7702, val loss: 2.3258
+Epoch 30, train loss: 0.7583, val loss: 2.2961
+Epoch 40, train loss: 0.7462, val loss: 2.2661
+Epoch 0, train loss: 0.7935, val loss: 2.3843
+Epoch 10, train loss: 0.7819, val loss: 2.3552
+Epoch 20, train loss: 0.7702, val loss: 2.3258
+Epoch 30, train loss: 0.7583, val loss: 2.2961
+Epoch 40, train loss: 0.7462, val loss: 2.2661
+Epoch 50, train loss: 0.7339, val loss: 2.2357
+Epoch 60, train loss: 0.7214, val loss: 2.2047
+Epoch 70, train loss: 0.7087, val loss: 2.1730
+Epoch 80, train loss: 0.6957, val loss: 2.1406
+Epoch 90, train loss: 0.6825, val loss: 2.1074
+Inferred coeffs for China: [1.9468540e+00 3.0557919e+00 1.0000000e+06 1.0000000e-06 5.0841963e-01]
+Epoch 0, train loss: 0.0486, val loss: 0.2578
+Epoch 10, train loss: 0.0213, val loss: 0.0522
+Epoch 20, train loss: 0.0114, val loss: 0.0658
+Epoch 30, train loss: 0.0062, val loss: 0.0536
+Epoch 40, train loss: 0.0064, val loss: 0.0487
+Epoch 0, train loss: 0.0486, val loss: 0.2578
+Epoch 10, train loss: 0.0213, val loss: 0.0522
+Epoch 20, train loss: 0.0114, val loss: 0.0658
+Epoch 30, train loss: 0.0062, val loss: 0.0536
+Epoch 40, train loss: 0.0064, val loss: 0.0487
+Epoch 50, train loss: 0.0063, val loss: 0.0444
+Epoch 0, train loss: 0.0486, val loss: 0.0922
+Epoch 10, train loss: 0.0143, val loss: 0.0711
+Epoch 20, train loss: 0.0066, val loss: 0.0367
+Epoch 30, train loss: 0.0064, val loss: 0.0240
+Epoch 40, train loss: 0.0069, val loss: 0.0405
+Epoch 0, train loss: 0.0486, val loss: 0.0922
+Epoch 10, train loss: 0.0143, val loss: 0.0711
+Epoch 20, train loss: 0.0066, val loss: 0.0367
+Epoch 30, train loss: 0.0064, val loss: 0.0240
+Epoch 40, train loss: 0.0069, val loss: 0.0405
+Inferred coeffs for Canada: h_net.symb._nodes.0._args.0._value.0                                                            1.088308
+h_net.symb._nodes.0._args.1._args.0._value.0                                                    1.197979
+h_net.symb._nodes.0._args.1._args.1._args.0._args.0._value.0                                    0.792814
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.0._value.0                            0.553022
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.1._args.0._args.0._value.0            0.942496
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.1._args.0._args.1._args.0._value.0    1.290950
+h_net.symb._nodes.0._args.2._args.0._value.0                                                   -2.896468
+h_net.symb._nodes.0._args.2._args.1._args.0._args.0._value.0                                   -0.584888
+h_net.symb._nodes.0._args.2._args.1._args.0._args.1._args.0._value.0                            0.183648
+h_net.symb._nodes.0._args.2._args.1._args.0._args.2._args.0._value.0                            0.083484
+h_net.symb._nodes.0._args.2._args.1._args.0._args.3._args.0._value.0                           -1.364537
+g_net.symb._nodes.0._args.0._value.0                                                           -0.007767
+g_net.symb._nodes.0._args.1._args.0._value.0                                                    0.004267
+g_net.symb._nodes.0._args.1._args.1._args.0._args.0._value.0                                   -4.626653
+g_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.0._value.0                            2.460835
+g_net.symb._nodes.0._args.2._args.0._value.0                                                   -0.025193
+g_net.symb._nodes.0._args.2._args.1._args.0._args.0._value.0                                   -1.389475
+g_net.symb._nodes.0._args.2._args.1._args.0._args.1._args.0._value.0                            0.918520
+dtype: float32
+Epoch 0, train loss: 0.2666, val loss: 0.2457
+Epoch 10, train loss: 0.1208, val loss: 0.2397
+Epoch 20, train loss: 0.1027, val loss: 0.6715
+Epoch 30, train loss: 0.0923, val loss: 0.6258
+Epoch 40, train loss: 0.0897, val loss: 0.4702
+Epoch 0, train loss: 0.2666, val loss: 0.2457
+Epoch 10, train loss: 0.1208, val loss: 0.2397
+Epoch 20, train loss: 0.1027, val loss: 0.6715
+Epoch 30, train loss: 0.0923, val loss: 0.6258
+Epoch 40, train loss: 0.0897, val loss: 0.4702
+Epoch 0, train loss: 0.2666, val loss: 0.3022
+Epoch 10, train loss: 0.1303, val loss: 0.3045
+Epoch 20, train loss: 0.1035, val loss: 0.6832
+Epoch 30, train loss: 0.1077, val loss: 0.7412
+Epoch 0, train loss: 0.2666, val loss: 0.3022
+Epoch 10, train loss: 0.1303, val loss: 0.3045
+Epoch 20, train loss: 0.1035, val loss: 0.6832
+Epoch 30, train loss: 0.1077, val loss: 0.7412
+Inferred coeffs for Hong Kong: h_net.symb._nodes.0._args.0._value.0                                                            1.090680
+h_net.symb._nodes.0._args.1._args.0._value.0                                                    1.204654
+h_net.symb._nodes.0._args.1._args.1._args.0._args.0._value.0                                    0.792022
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.0._value.0                            0.567798
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.1._args.0._args.0._value.0            0.943616
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.1._args.0._args.1._args.0._value.0    1.292776
+h_net.symb._nodes.0._args.2._args.0._value.0                                                   -2.900465
+h_net.symb._nodes.0._args.2._args.1._args.0._args.0._value.0                                   -0.593194
+h_net.symb._nodes.0._args.2._args.1._args.0._args.1._args.0._value.0                            0.183117
+h_net.symb._nodes.0._args.2._args.1._args.0._args.2._args.0._value.0                            0.081174
+h_net.symb._nodes.0._args.2._args.1._args.0._args.3._args.0._value.0                           -1.359281
+g_net.symb._nodes.0._args.0._value.0                                                           -0.005425
+g_net.symb._nodes.0._args.1._args.0._value.0                                                    0.001924
+g_net.symb._nodes.0._args.1._args.1._args.0._args.0._value.0                                   -4.613852
+g_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.0._value.0                            2.486577
+g_net.symb._nodes.0._args.2._args.0._value.0                                                   -0.024005
+g_net.symb._nodes.0._args.2._args.1._args.0._args.0._value.0                                   -1.425432
+g_net.symb._nodes.0._args.2._args.1._args.0._args.1._args.0._value.0                            0.861731
+dtype: float32
+Epoch 0, train loss: 0.0502, val loss: 0.3149
+Epoch 10, train loss: 0.0496, val loss: 0.1899
+Epoch 20, train loss: 0.0205, val loss: 0.0557
+Epoch 30, train loss: 0.0122, val loss: 0.0767
+Epoch 40, train loss: 0.0119, val loss: 0.0304
+Epoch 0, train loss: 0.0502, val loss: 0.3149
+Epoch 10, train loss: 0.0496, val loss: 0.1899
+Epoch 20, train loss: 0.0205, val loss: 0.0557
+Epoch 30, train loss: 0.0122, val loss: 0.0767
+Epoch 40, train loss: 0.0119, val loss: 0.0304
+Epoch 50, train loss: 0.0118, val loss: 0.0196
+Epoch 0, train loss: 0.0502, val loss: 0.0650
+Epoch 10, train loss: 0.0196, val loss: 0.1010
+Epoch 20, train loss: 0.0130, val loss: 0.0430
+Epoch 30, train loss: 0.0116, val loss: 0.0442
+Epoch 0, train loss: 0.0502, val loss: 0.0650
+Epoch 10, train loss: 0.0196, val loss: 0.1010
+Epoch 20, train loss: 0.0130, val loss: 0.0430
+Epoch 30, train loss: 0.0116, val loss: 0.0442
+Inferred coeffs for Singapore: h_net.symb._nodes.0._args.0._value.0                                                            1.087403
+h_net.symb._nodes.0._args.1._args.0._value.0                                                    1.196183
+h_net.symb._nodes.0._args.1._args.1._args.0._args.0._value.0                                    0.792691
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.0._value.0                            0.549254
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.1._args.0._args.0._value.0            0.942098
+h_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.1._args.0._args.1._args.0._value.0    1.290580
+h_net.symb._nodes.0._args.2._args.0._value.0                                                   -2.895807
+h_net.symb._nodes.0._args.2._args.1._args.0._args.0._value.0                                   -0.582752
+h_net.symb._nodes.0._args.2._args.1._args.0._args.1._args.0._value.0                            0.183899
+h_net.symb._nodes.0._args.2._args.1._args.0._args.2._args.0._value.0                            0.083960
+h_net.symb._nodes.0._args.2._args.1._args.0._args.3._args.0._value.0                           -1.365809
+g_net.symb._nodes.0._args.0._value.0                                                           -0.008671
+g_net.symb._nodes.0._args.1._args.0._value.0                                                    0.005171
+g_net.symb._nodes.0._args.1._args.1._args.0._args.0._value.0                                   -4.666919
+g_net.symb._nodes.0._args.1._args.1._args.0._args.1._args.0._value.0                            2.411178
+g_net.symb._nodes.0._args.2._args.0._value.0                                                   -0.024591
+g_net.symb._nodes.0._args.2._args.1._args.0._args.0._value.0                                   -1.379429
+g_net.symb._nodes.0._args.2._args.1._args.0._args.1._args.0._value.0                            0.920644
+dtype: float32
+Epoch 0, train loss: 0.9564, val loss: 1.4311
+Epoch 10, train loss: 0.4485, val loss: 0.6692
+Epoch 0, train loss: 0.0486, val loss: 0.2578
+Epoch 10, train loss: 0.0213, val loss: 0.0522
+Epoch 20, train loss: 0.0114, val loss: 0.0658
+Epoch 30, train loss: 0.0062, val loss: 0.0536
+Epoch 40, train loss: 0.0064, val loss: 0.0487
+Epoch 0, train loss: 0.0486, val loss: 0.2578
+Epoch 10, train loss: 0.0213, val loss: 0.0522
+Epoch 20, train loss: 0.0114, val loss: 0.0658
+Epoch 30, train loss: 0.0062, val loss: 0.0536
+Epoch 40, train loss: 0.0064, val loss: 0.0487
+Epoch 50, train loss: 0.0063, val loss: 0.0444
+Epoch 0, train loss: 0.0486, val loss: 0.0922
+Epoch 10, train loss: 0.0143, val loss: 0.0711
+Epoch 20, train loss: 0.0066, val loss: 0.0367
+Epoch 30, train loss: 0.0064, val loss: 0.0240
+Epoch 40, train loss: 0.0069, val loss: 0.0405
+Epoch 0, train loss: 0.0486, val loss: 0.0922
+Epoch 10, train loss: 0.0143, val loss: 0.0711
+Epoch 20, train loss: 0.0066, val loss: 0.0367
+Epoch 30, train loss: 0.0064, val loss: 0.0240
+Epoch 40, train loss: 0.0069, val loss: 0.0405
+Inferred coeffs for Canada: [ 1.0883077e+00  1.1979795e+00  7.9281354e-01  5.5302215e-01
+  9.4249648e-01  1.2909504e+00 -2.8964684e+00 -5.8488816e-01
+  1.8364759e-01  8.3484173e-02 -1.3645368e+00 -7.7669783e-03
+  4.2672800e-03 -4.6266532e+00  2.4608350e+00 -2.5193246e-02
+ -1.3894750e+00  9.1851956e-01]
+Epoch 0, train loss: 0.2666, val loss: 0.2457
+Epoch 10, train loss: 0.1208, val loss: 0.2397
+Epoch 20, train loss: 0.1027, val loss: 0.6715
+Epoch 30, train loss: 0.0923, val loss: 0.6258
+Epoch 40, train loss: 0.0897, val loss: 0.4702
+Epoch 0, train loss: 0.2666, val loss: 0.2457
+Epoch 10, train loss: 0.1208, val loss: 0.2397
+Epoch 20, train loss: 0.1027, val loss: 0.6715
+Epoch 30, train loss: 0.0923, val loss: 0.6258
+Epoch 40, train loss: 0.0897, val loss: 0.4702
+Epoch 0, train loss: 0.2666, val loss: 0.3022
+Epoch 10, train loss: 0.1303, val loss: 0.3045
+Epoch 20, train loss: 0.1035, val loss: 0.6832
+Epoch 30, train loss: 0.1077, val loss: 0.7412
+Epoch 0, train loss: 0.2666, val loss: 0.3022
+Epoch 10, train loss: 0.1303, val loss: 0.3045
+Epoch 20, train loss: 0.1035, val loss: 0.6832
+Epoch 30, train loss: 0.1077, val loss: 0.7412
+Inferred coeffs for Hong Kong: [ 1.0906795e+00  1.2046536e+00  7.9202199e-01  5.6779808e-01
+  9.4361579e-01  1.2927761e+00 -2.9004645e+00 -5.9319413e-01
+  1.8311685e-01  8.1173576e-02 -1.3592808e+00 -5.4253084e-03
+  1.9241086e-03 -4.6138515e+00  2.4865768e+00 -2.4005122e-02
+ -1.4254317e+00  8.6173123e-01]
+Epoch 0, train loss: 0.0502, val loss: 0.3149
+Epoch 10, train loss: 0.0496, val loss: 0.1899
+Epoch 20, train loss: 0.0205, val loss: 0.0557
+Epoch 30, train loss: 0.0122, val loss: 0.0767
+Epoch 40, train loss: 0.0119, val loss: 0.0304
+Epoch 0, train loss: 0.0502, val loss: 0.3149
+Epoch 10, train loss: 0.0496, val loss: 0.1899
+Epoch 20, train loss: 0.0205, val loss: 0.0557
+Epoch 30, train loss: 0.0122, val loss: 0.0767
+Epoch 40, train loss: 0.0119, val loss: 0.0304
+Epoch 50, train loss: 0.0118, val loss: 0.0196
+Epoch 0, train loss: 0.0502, val loss: 0.0650
+Epoch 10, train loss: 0.0196, val loss: 0.1010
+Epoch 20, train loss: 0.0130, val loss: 0.0430
+Epoch 30, train loss: 0.0116, val loss: 0.0442
+Epoch 0, train loss: 0.0502, val loss: 0.0650
+Epoch 10, train loss: 0.0196, val loss: 0.1010
+Epoch 20, train loss: 0.0130, val loss: 0.0430
+Epoch 30, train loss: 0.0116, val loss: 0.0442
+Inferred coeffs for Singapore: [ 1.0874026   1.1961828   0.7926906   0.54925424  0.9420983   1.2905803
+ -2.8958068  -0.5827517   0.18389906  0.08395981 -1.3658093  -0.00867113
+  0.0051711  -4.666919    2.4111779  -0.02459113 -1.3794285   0.92064375]
+Epoch 0, train loss: 0.9564, val loss: 1.4311
+Epoch 10, train loss: 0.4485, val loss: 0.6692
+Epoch 20, train loss: 0.1546, val loss: 0.2361
+Epoch 30, train loss: 0.0905, val loss: 0.0791
+Epoch 40, train loss: 0.0860, val loss: 0.0071
+Epoch 0, train loss: 0.9564, val loss: 1.4311
+Epoch 10, train loss: 0.4485, val loss: 0.6692
+Epoch 20, train loss: 0.1546, val loss: 0.2361
+Epoch 30, train loss: 0.0905, val loss: 0.0791
+Epoch 40, train loss: 0.0860, val loss: 0.0071
+Epoch 50, train loss: 0.0715, val loss: 0.1075
+Epoch 0, train loss: 0.9564, val loss: 1.5003
+Epoch 10, train loss: 0.9138, val loss: 1.4237
+Epoch 20, train loss: 0.8697, val loss: 1.3505
+Epoch 30, train loss: 0.8238, val loss: 1.2805
+Epoch 40, train loss: 0.7755, val loss: 1.2136
+Epoch 0, train loss: 0.9564, val loss: 1.5003
+Epoch 10, train loss: 0.9138, val loss: 1.4237
+Epoch 20, train loss: 0.8697, val loss: 1.3505
+Epoch 30, train loss: 0.8238, val loss: 1.2805
+Epoch 40, train loss: 0.7755, val loss: 1.2136
+Epoch 50, train loss: 0.7240, val loss: 1.1488
+Epoch 60, train loss: 0.6688, val loss: 1.0842
+Epoch 70, train loss: 0.6093, val loss: 1.0162
+Epoch 80, train loss: 0.5433, val loss: 0.9379
+Epoch 90, train loss: 0.4702, val loss: 0.8386
+Inferred coeffs for China: [ 0.9292405   1.0342003   0.63966393  0.3542195   0.79332554  1.4338771
+ -2.7034888  -0.4311562   0.288682    0.22944288 -1.5043448  -0.16686401
+  0.16326594 -4.8086076   2.2972336   0.13720527 -1.4705713   0.9184763 ]

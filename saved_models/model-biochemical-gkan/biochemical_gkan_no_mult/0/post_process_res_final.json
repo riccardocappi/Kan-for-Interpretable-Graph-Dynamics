@@ -1,0 +1,18 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(-0.5*x_i*x_j) - 0.5*x_i + 1.0",
+    "black_box_symb": "\\sum_{j}( -0.5001534*x_i*x_j) - 0.4972561*x_i + 0.99856",
+    "black_box_symb_test_MAE": 0.00012602443409074718,
+    "black_box_symb_test_Var": 1.498771576295849e-10,
+    "black_box_symb_test_Std": 1.224243266796207e-05,
+    "black_box_exec_time": 10.790021657943726,
+    "spline_wise_symb_quant": "\\sum_{j}(-0.15*x_i - 0.3*sin(0.97*x_i - 0.61*x_j + 1.38) + 0.22) - 0.5*x_i + 1.0",
+    "spline_wise_symb": "\\sum_{j}( -0.153757868132267*x_i - 0.302134974393477*sin(0.972780513738535*x_i - 0.608675281491655*x_j + 1.38281262164402) + 0.224873464973026) - 0.496973677436001*x_i + 0.998388802027289",
+    "spline_wise_symb_test_MAE": 0.05267626419663429,
+    "spline_wise_symb_test_Var": 9.976109902349688e-05,
+    "spline_wise_symb_test_Std": 0.009988047808430678,
+    "spline_wise_exec_time": 22.310138940811157,
+    "Number of params": 410,
+    "model_test_MAE": 7.585063091634463e-05,
+    "model_test_Var": 1.0755207177248116e-10,
+    "model_test_Std": 1.037073149649923e-05
+}

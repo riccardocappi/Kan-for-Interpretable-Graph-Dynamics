@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(sin(x_j)**9) - 0.35*x_i",
+    "black_box_symb": "\\sum_{j}( sin(x_j)**9) - 0.35217535*x_i",
+    "black_box_symb_test_MAE": 0.02965352808435758,
+    "black_box_symb_test_Var": 1.0540342899099787e-06,
+    "black_box_symb_test_Std": 0.001026661721264594,
+    "black_box_exec_time": 109.19363641738892,
+    "Number of params": 1108,
+    "model_test_MAE": 0.04078273599346479,
+    "model_test_Var": 2.909820504403631e-06,
+    "model_test_Std": 0.0017058195990208435
+}

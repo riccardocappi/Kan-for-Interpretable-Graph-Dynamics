@@ -106,6 +106,7 @@ def make_callable(expr):
         const_value = float(expr)
         return lambda x: torch.full((x.shape[0], 1), const_value, dtype=x.dtype, device=x.device)
 
+    # expr = sympytorch.hide_floats(expr)
     sym_module = sympytorch.SymPyModule(expressions=[expr])
     syms = {str(s) for s in free_syms}
     if {'x_i', 'x_j'} <= syms:
@@ -328,9 +329,9 @@ def valid_symb_model(
             pysr_model = lambda: get_pysr_model(
                 model_selection=param1, 
                 n_iterations=param2,
-                parallelism="serial",
-                random_state = seed,
-                deterministic = True
+                # parallelism="serial",
+                # random_state = seed,
+                # deterministic = True
             )
             _, g_symb, h_symb, _ = fit_black_box_from_kan(
                 n_g_hidden_layers=n_g_hidden_layers,
@@ -423,9 +424,9 @@ def valid_symb_model(
             pysr_model=lambda: get_pysr_model(
                 model_selection=best['model_selection'],
                 n_iterations=best['param'],
-                parallelism="serial",
-                random_state = seed,
-                deterministic = True
+                # parallelism="serial",
+                # random_state = seed,
+                # deterministic = True
             ),
             sample_size=sample_size,
             message_passing=False,
@@ -566,6 +567,8 @@ def post_process_gkan(
     results_dict["spline_wise_symb_test_Var"] = ts_var_sw
     results_dict["spline_wise_symb_test_Std"] = ts_std_sw
     results_dict["spline_wise_exec_time"] = exec_time
+    results_dict["spline_wise_g_symb"] = str(spl_g_symb)
+    results_dict["spline_wise_h_symb"] = str(spl_h_symb)
 
 
     if eval_model:
@@ -761,79 +764,79 @@ if __name__ == '__main__':
     #### IC=1
     """
     
-    model_path_gkan = "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0"
 
-    post_process_gkan(
-        config=bio_config,
-        model_path=model_path_gkan,
-        test_set=BIO,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5"
-    )
+    # post_process_gkan(
+    #     config=bio_config,
+    #     model_path=model_path_gkan,
+    #     test_set=BIO,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
     
-    """#### SNR"""
+    # """#### SNR"""
 
-    model_paths_gkan = [
-        "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-        "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-        "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_20db_2/0"
-    ]
+    # model_paths_gkan = [
+    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_70db_2/0",
+    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_50db_2/0",
+    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_20db_2/0"
+    # ]
 
-    for model_path in model_paths_gkan:
-        print(model_path)
+    # for model_path in model_paths_gkan:
+    #     print(model_path)
 
-        post_process_gkan(
-            config=bio_config,
-            model_path=model_path,
-            test_set=BIO,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            eval_model=True,
-            compute_mult=True
-        )
+    #     post_process_gkan(
+    #         config=bio_config,
+    #         model_path=model_path,
+    #         test_set=BIO,
+    #         device='cuda',
+    #         n_g_hidden_layers=2,
+    #         n_h_hidden_layers=2,
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         eval_model=True,
+    #         compute_mult=True
+    #     )
 
     """### Kuramoto
 
     #### IC=1
     """
 
-    model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
 
-    post_process_gkan(
-        config=kur_config,
-        model_path=model_path_gkan,
-        test_set=KUR,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5"
-    )
+    # post_process_gkan(
+    #     config=kur_config,
+    #     model_path=model_path_gkan,
+    #     test_set=KUR,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
 
     """#### SNR"""
 
     model_paths_gkan = [
-        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_20db/0",
+        # "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_70db_2/0",
+        # "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_50db_2/0",
+        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_20db_2/0",
     ]
 
     for model_path in model_paths_gkan:
@@ -853,7 +856,8 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             eval_model=True,
-            compute_mult=True
+            compute_mult=True,
+            res_file_name="post_process_res.json"
         )
 
     """### Epidemics
@@ -861,562 +865,562 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
 
-    post_process_gkan(
-        config=epid_config,
-        model_path=model_path_gkan,
-        test_set=EPID,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5"
-    )
+    # post_process_gkan(
+    #     config=epid_config,
+    #     model_path=model_path_gkan,
+    #     test_set=EPID,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
 
-    """#### SNR"""
+    # """#### SNR"""
 
-    model_paths_gkan = [
-        "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-        "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-        "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_20db_2/0",
-    ]
+    # model_paths_gkan = [
+    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_70db_2/0",
+    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_50db_2/0",
+    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_20db_2/0",
+    # ]
 
-    for model_path in model_paths_gkan:
-        print(model_path)
-        post_process_gkan(
-            config=epid_config,
-            model_path=model_path,
-            test_set=EPID,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            eval_model=True,
-            compute_mult=True
-        )
+    # for model_path in model_paths_gkan:
+    #     print(model_path)
+    #     post_process_gkan(
+    #         config=epid_config,
+    #         model_path=model_path,
+    #         test_set=EPID,
+    #         device='cuda',
+    #         n_g_hidden_layers=2,
+    #         n_h_hidden_layers=2,
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         eval_model=True,
+    #         compute_mult=True
+    #     )
 
-    """### Population
+    # """### Population
 
-    #### IC=1
-    """
+    # #### IC=1
+    # """
 
-    model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
+    # model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
 
-    post_process_gkan(
-        config=pop_config,
-        model_path=model_path_gkan,
-        test_set=POP,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5"
-    )
+    # post_process_gkan(
+    #     config=pop_config,
+    #     model_path=model_path_gkan,
+    #     test_set=POP,
+    #     device='cuda',
+    #     n_g_hidden_layers=2,
+    #     n_h_hidden_layers=2,
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5"
+    # )
     
 
-    """#### SNR"""
+    # """#### SNR"""
 
-    model_paths_gkan = [
-        "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-        "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-        "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_20db_2/0",
-    ]
+    # model_paths_gkan = [
+    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_70db_2/0",
+    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_50db_2/0",
+    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_20db_2/0",
+    # ]
 
-    for model_path in model_paths_gkan:
-        print(model_path)
-        post_process_gkan(
-            config=pop_config,
-            model_path=model_path,
-            test_set=POP,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            eval_model=True,
-            compute_mult=True
-        )
+    # for model_path in model_paths_gkan:
+    #     print(model_path)
+    #     post_process_gkan(
+    #         config=pop_config,
+    #         model_path=model_path,
+    #         test_set=POP,
+    #         device='cuda',
+    #         n_g_hidden_layers=2,
+    #         n_h_hidden_layers=2,
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         eval_model=True,
+    #         compute_mult=True
+    #     )
 
 
-    """## TSS Errors"""
+    # """## TSS Errors"""
 
-    def get_tss_test_error(
-        text_sympy_mapping_g,
-        text_sympy_mapping_h,
-        row_means,
-        test_set,
-        result_dict,
-        suffix = ''
-    ):
-        g_symb = sp.S(0)
-        h_symb = sp.S(0)
+    # def get_tss_test_error(
+    #     text_sympy_mapping_g,
+    #     text_sympy_mapping_h,
+    #     row_means,
+    #     test_set,
+    #     result_dict,
+    #     suffix = ''
+    # ):
+    #     g_symb = sp.S(0)
+    #     h_symb = sp.S(0)
 
         
-        for symb_g in text_sympy_mapping_g.keys():
-            g_symb += row_means[symb_g] * text_sympy_mapping_g[symb_g]
-        for symb_h in text_sympy_mapping_h.keys():
-            h_symb += row_means[symb_h] * text_sympy_mapping_h[symb_h]
+    #     for symb_g in text_sympy_mapping_g.keys():
+    #         g_symb += row_means[symb_g] * text_sympy_mapping_g[symb_g]
+    #     for symb_h in text_sympy_mapping_h.keys():
+    #         h_symb += row_means[symb_h] * text_sympy_mapping_h[symb_h]
 
 
-        try:
-            test_losses = get_symb_test_error(
-                g_symb=g_symb,
-                h_symb=h_symb,
-                test_set=test_set,
-                message_passing=False,
-                include_time=False,
-                method='dopri5',
-                atol=1e-5,
-                rtol=1e-5,
-                is_symb=True
-            )
+    #     try:
+    #         test_losses = get_symb_test_error(
+    #             g_symb=g_symb,
+    #             h_symb=h_symb,
+    #             test_set=test_set,
+    #             message_passing=False,
+    #             include_time=False,
+    #             method='dopri5',
+    #             atol=1e-5,
+    #             rtol=1e-5,
+    #             is_symb=True
+    #         )
 
-            ts_mean = np.mean(test_losses)
-            ts_var = np.var(test_losses)
-            ts_std = np.std(test_losses)
+    #         ts_mean = np.mean(test_losses)
+    #         ts_var = np.var(test_losses)
+    #         ts_std = np.std(test_losses)
 
-            print(f"Mean Test loss of symbolic formula: {ts_mean}")
-            print(f"Var Test loss of symbolic formula: {ts_var}")
-            print(f"Std Test loss of symbolic formula: {ts_std}")
+    #         print(f"Mean Test loss of symbolic formula: {ts_mean}")
+    #         print(f"Var Test loss of symbolic formula: {ts_var}")
+    #         print(f"Std Test loss of symbolic formula: {ts_std}")
             
-            result_dict[f'tss_test_mae_{suffix}'] = ts_mean
-            result_dict[f'tss_test_var_{suffix}'] = ts_var
-            result_dict[f'tss_test_std_{suffix}'] = ts_std
+    #         result_dict[f'tss_test_mae_{suffix}'] = ts_mean
+    #         result_dict[f'tss_test_var_{suffix}'] = ts_var
+    #         result_dict[f'tss_test_std_{suffix}'] = ts_std
             
-        except AssertionError:
-            print("Evaluation failed !")
-            result_dict[f'error_{suffix}'] = 'Evaluation failed !'
+    #     except AssertionError:
+    #         print("Evaluation failed !")
+    #         result_dict[f'error_{suffix}'] = 'Evaluation failed !'
         
         
 
-    """### KUR"""
-    results_kur = {}
+    # """### KUR"""
+    # results_kur = {}
 
-    df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    text_sympy_mapping_g = {
-        "sinx1jMinusx1i": sp.sin(x_j - x_i)
-    }
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_g = {
+    #     "sinx1jMinusx1i": sp.sin(x_j - x_i)
+    # }
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=KUR,
-        result_dict=results_kur
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=KUR,
+    #     result_dict=results_kur
+    # )
 
-    """#### 70 DB"""
+    # """#### 70 DB"""
 
-    df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0_70_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0_70_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    text_sympy_mapping_g = {
-        "sinx1jMinusx1i": sp.sin(x_j - x_i)
-    }
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_g = {
+    #     "sinx1jMinusx1i": sp.sin(x_j - x_i)
+    # }
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=KUR,
-        result_dict=results_kur,
-        suffix='70db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=KUR,
+    #     result_dict=results_kur,
+    #     suffix='70db'
+    # )
 
-    """#### 50 DB"""
+    # """#### 50 DB"""
 
-    df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0_50_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0_50_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    text_sympy_mapping_g = {
-        "sinx1jMinusx1i": sp.sin(x_j - x_i)
-    }
-    text_sympy_mapping_h = {
-        "fracx1": 1/ x_i
-    }
+    # text_sympy_mapping_g = {
+    #     "sinx1jMinusx1i": sp.sin(x_j - x_i)
+    # }
+    # text_sympy_mapping_h = {
+    #     "fracx1": 1/ x_i
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=KUR,
-        result_dict=results_kur,
-        suffix='50db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=KUR,
+    #     result_dict=results_kur,
+    #     suffix='50db'
+    # )
 
-    """#### 20 DB"""
+    # """#### 20 DB"""
 
-    df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0_20_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Kuramoto-1/results_dim=0_20_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    text_sympy_mapping_g = {
-        "x1iexpx1j": x_i * sp.exp(x_j),
-        "fracx1jMinusx1i": 1/(x_j - x_i),
-        "fracx1ix1j": 1/(x_i * x_j),
-        "x1ifracx1j": x_i / x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "x1iexpx1j": x_i * sp.exp(x_j),
+    #     "fracx1jMinusx1i": 1/(x_j - x_i),
+    #     "fracx1ix1j": 1/(x_i * x_j),
+    #     "x1ifracx1j": x_i / x_j
+    # }
 
-    text_sympy_mapping_h = {}
+    # text_sympy_mapping_h = {}
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=KUR,
-        result_dict=results_kur,
-        suffix='20db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=KUR,
+    #     result_dict=results_kur,
+    #     suffix='20db'
+    # )
     
-    with open("./saved_models_optuna/tss/Kuramoto-1/post_process_res.json", 'w') as file:
-        json.dump(results_kur, file, indent=4)
+    # with open("./saved_models_optuna/tss/Kuramoto-1/post_process_res.json", 'w') as file:
+    #     json.dump(results_kur, file, indent=4)
 
-    """### EPID"""
+    # """### EPID"""
 
-    results_epid = {}
-    x_i, x_j = sp.symbols('x_i x_j')
+    # results_epid = {}
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "expx1jMinusx1i": sp.exp(x_j - x_i)
-    }
+    # text_sympy_mapping_g = {
+    #     "expx1jMinusx1i": sp.exp(x_j - x_i)
+    # }
 
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=EPID,
-        result_dict=results_epid
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=EPID,
+    #     result_dict=results_epid
+    # )
 
-    """#### 70 DB"""
+    # """#### 70 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0_70_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0_70_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-    "expx1jMinusx1i": sp.exp(x_j - x_i)
-    }
+    # text_sympy_mapping_g = {
+    # "expx1jMinusx1i": sp.exp(x_j - x_i)
+    # }
 
-    text_sympy_mapping_h = {
-        "x1x1x1": x_i * x_i * x_i,
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_h = {
+    #     "x1x1x1": x_i * x_i * x_i,
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=EPID,
-        result_dict=results_epid,
-        suffix='70db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=EPID,
+    #     result_dict=results_epid,
+    #     suffix='70db'
+    # )
 
-    """#### 50 DB"""
+    # """#### 50 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0_50_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0_50_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "expx1jMinusx1i": sp.exp(x_j - x_i)
-    }
+    # text_sympy_mapping_g = {
+    #     "expx1jMinusx1i": sp.exp(x_j - x_i)
+    # }
 
-    text_sympy_mapping_h = {
-        "x1x1x1": x_i * x_i * x_i
-    }
+    # text_sympy_mapping_h = {
+    #     "x1x1x1": x_i * x_i * x_i
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=EPID,
-        result_dict=results_epid,
-        suffix='50db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=EPID,
+    #     result_dict=results_epid,
+    #     suffix='50db'
+    # )
 
-    """#### 20 DB"""
+    # """#### 20 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0_20_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Epidemics-1/results_dim=0_20_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "fracx1ix1j": 1/(x_i * x_j),
-        "x1ifracx1j": x_i / x_j,
-        "fracx1j": 1 / x_j,
-        "fracx1jMinusx1i": 1/(x_j - x_i)
-    }
+    # text_sympy_mapping_g = {
+    #     "fracx1ix1j": 1/(x_i * x_j),
+    #     "x1ifracx1j": x_i / x_j,
+    #     "fracx1j": 1 / x_j,
+    #     "fracx1jMinusx1i": 1/(x_j - x_i)
+    # }
 
-    text_sympy_mapping_h = {}
+    # text_sympy_mapping_h = {}
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=EPID,
-        result_dict=results_epid,
-        suffix='20db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=EPID,
+    #     result_dict=results_epid,
+    #     suffix='20db'
+    # )
     
-    with open("./saved_models_optuna/tss/Epidemics-1/post_process_res.json", 'w') as file:
-        json.dump(results_epid, file, indent=4)
+    # with open("./saved_models_optuna/tss/Epidemics-1/post_process_res.json", 'w') as file:
+    #     json.dump(results_epid, file, indent=4)
     
     
 
-    """### BIO"""
+    # """### BIO"""
 
-    results_bio = {}
-    x_i, x_j = sp.symbols('x_i x_j')
+    # results_bio = {}
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    row_means
+    # row_means
 
-    text_sympy_mapping_g = {
-        "x1ix1j": x_i * x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "x1ix1j": x_i * x_j
+    # }
 
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=BIO,
-        result_dict=results_bio
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=BIO,
+    #     result_dict=results_bio
+    # )
 
-    """#### 70 DB"""
+    # """#### 70 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0_70_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0_70_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "x1ix1j": x_i * x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "x1ix1j": x_i * x_j
+    # }
 
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=BIO,
-        result_dict=results_bio,
-        suffix='70db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=BIO,
+    #     result_dict=results_bio,
+    #     suffix='70db'
+    # )
 
-    """#### 50 DB"""
+    # """#### 50 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0_50_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0_50_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "x1ix1j": x_i * x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "x1ix1j": x_i * x_j
+    # }
 
-    text_sympy_mapping_h = {
-        "x1x1": x_i * x_i
-    }
+    # text_sympy_mapping_h = {
+    #     "x1x1": x_i * x_i
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=BIO,
-        result_dict=results_bio,
-        suffix='50db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=BIO,
+    #     result_dict=results_bio,
+    #     suffix='50db'
+    # )
 
-    """#### 20 DB"""
+    # """#### 20 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0_20_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Biochemical-1/results_dim=0_20_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "fracx1ix1j": 1/(x_i * x_j),
-        "x1ifracx1j": x_i / x_j,
-        "fracx1jMinusx1i": 1/(x_j - x_i)
-    }
+    # text_sympy_mapping_g = {
+    #     "fracx1ix1j": 1/(x_i * x_j),
+    #     "x1ifracx1j": x_i / x_j,
+    #     "fracx1jMinusx1i": 1/(x_j - x_i)
+    # }
 
-    text_sympy_mapping_h = {}
+    # text_sympy_mapping_h = {}
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=BIO,
-        result_dict=results_bio,
-        suffix='20db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=BIO,
+    #     result_dict=results_bio,
+    #     suffix='20db'
+    # )
     
-    with open("./saved_models_optuna/tss/Biochemical-1/post_process_res.json", 'w') as file:
-        json.dump(results_bio, file, indent=4)
+    # with open("./saved_models_optuna/tss/Biochemical-1/post_process_res.json", 'w') as file:
+    #     json.dump(results_bio, file, indent=4)
 
-    """### POP"""
+    # """### POP"""
 
-    results_pop = {}
-    x_i, x_j = sp.symbols('x_i x_j')
+    # results_pop = {}
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "sinx1j": sp.sin(x_j),
-        "x1j": x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "sinx1j": sp.sin(x_j),
+    #     "x1j": x_j
+    # }
 
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=POP,
-        result_dict=results_pop
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=POP,
+    #     result_dict=results_pop
+    # )
 
-    """#### 70 DB"""
+    # """#### 70 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0_70_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0_70_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "x1j": x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "x1j": x_j
+    # }
 
-    text_sympy_mapping_h = {
-        "constant": sp.S(1.0)
-    }
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=POP,
-        result_dict=results_pop,
-        suffix='70db'
-    )
+    # text_sympy_mapping_h = {
+    #     "constant": sp.S(1.0)
+    # }
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=POP,
+    #     result_dict=results_pop,
+    #     suffix='70db'
+    # )
 
-    """#### 50 DB"""
+    # """#### 50 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0_50_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0_50_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {
-        "sinx1j": sp.sin(x_j),
-        "x1j": x_j
-    }
+    # text_sympy_mapping_g = {
+    #     "sinx1j": sp.sin(x_j),
+    #     "x1j": x_j
+    # }
 
-    text_sympy_mapping_h = {}
+    # text_sympy_mapping_h = {}
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=POP,
-        result_dict=results_pop,
-        suffix='50db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=POP,
+    #     result_dict=results_pop,
+    #     suffix='50db'
+    # )
 
-    """#### 20 DB"""
+    # """#### 20 DB"""
 
-    x_i, x_j = sp.symbols('x_i x_j')
+    # x_i, x_j = sp.symbols('x_i x_j')
 
-    df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0_20_db.csv", header=None)
-    df.set_index(0, inplace=True)
-    row_means = df.mean(axis=1)
+    # df = pd.read_csv("./saved_models_optuna/tss/Population-1/results_dim=0_20_db.csv", header=None)
+    # df.set_index(0, inplace=True)
+    # row_means = df.mean(axis=1)
 
-    text_sympy_mapping_g = {}
+    # text_sympy_mapping_g = {}
 
-    text_sympy_mapping_h = {
-        "sinx1": sp.sin(x_i),
-        "x1x1": x_i * x_i
-    }
+    # text_sympy_mapping_h = {
+    #     "sinx1": sp.sin(x_i),
+    #     "x1x1": x_i * x_i
+    # }
 
-    get_tss_test_error(
-        text_sympy_mapping_g=text_sympy_mapping_g,
-        text_sympy_mapping_h=text_sympy_mapping_h,
-        row_means=row_means,
-        test_set=POP,
-        result_dict=results_pop,
-        suffix='20db'
-    )
+    # get_tss_test_error(
+    #     text_sympy_mapping_g=text_sympy_mapping_g,
+    #     text_sympy_mapping_h=text_sympy_mapping_h,
+    #     row_means=row_means,
+    #     test_set=POP,
+    #     result_dict=results_pop,
+    #     suffix='20db'
+    # )
     
-    with open("./saved_models_optuna/tss/Population-1/post_process_res.json", 'w') as file:
-        json.dump(results_pop, file, indent=4)
+    # with open("./saved_models_optuna/tss/Population-1/post_process_res.json", 'w') as file:
+    #     json.dump(results_pop, file, indent=4)

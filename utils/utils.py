@@ -585,7 +585,9 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     
     if verbose:
         print("Fitting G_Net...")
-        
+    
+    if fit_orig:
+        print("Fit orig GNet")
     symb_g, exec_time_g = fit_kan(
         pruned_acts,
         pruned_preacts,
@@ -619,6 +621,9 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     if verbose:
         print()
         print("Fitting H_Net...")
+        
+    if fit_orig:
+        print("Fit orig HNet")
     
     symb_h, exec_time_h = fit_kan(
         pruned_acts,

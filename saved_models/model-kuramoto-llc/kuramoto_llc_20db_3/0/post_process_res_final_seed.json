@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(tanh(x_i**2*exp(-x_j))) + 1.79 - 25.48*exp(-Abs(x_i))",
+    "black_box_symb": "\\sum_{j}( tanh(x_i**2*exp(-x_j))) + 1.7894027 - 25.479263*exp(-Abs(x_i))",
+    "black_box_symb_test_MAE": 2.010323723157247,
+    "black_box_symb_test_Var": 0.07287860388389177,
+    "black_box_symb_test_Std": 0.2699603746550441,
+    "black_box_exec_time": 635.6109716892242,
+    "Number of params": 628,
+    "model_test_MAE": 1.4255483945210774,
+    "model_test_Var": 0.00981132910491864,
+    "model_test_Std": 0.09905215345926932
+}

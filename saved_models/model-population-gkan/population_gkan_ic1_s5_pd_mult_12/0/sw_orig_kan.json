@@ -1,0 +1,12 @@
+{
+    "spline_wise_symb_quant": "\\sum_{j}(0.18*(x_j + 0.02)**3) - 0.5*x_i",
+    "spline_wise_symb": "\\sum_{j}( 0.183123904879153*(x_j + 0.0200006644355334)**3) - 0.50008836438213*x_i",
+    "spline_wise_symb_test_MAE": 0.006267187030365069,
+    "spline_wise_symb_test_Var": 6.031203840113186e-07,
+    "spline_wise_symb_test_Std": 0.0007766082564661019,
+    "spline_wise_exec_time": 11.889969825744629,
+    "Number of params": 294,
+    "model_test_MAE": 0.00026198988295315456,
+    "model_test_Var": 2.1526992571854367e-09,
+    "model_test_Std": 4.639719018631879e-05
+}

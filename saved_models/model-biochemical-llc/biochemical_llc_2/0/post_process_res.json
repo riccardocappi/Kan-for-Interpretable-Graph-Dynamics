@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(-0.5*x_i*x_j) - 0.5*x_i + 1",
+    "black_box_symb": "\\sum_{j}( -0.49927354*x_i*x_j) - 0.50050193*x_i + 1",
+    "black_box_symb_test_MAE": 0.00014416437140122676,
+    "black_box_symb_test_Var": 6.089843222107333e-10,
+    "black_box_symb_test_Std": 2.467760770842128e-05,
+    "black_box_exec_time": 18.197916746139526,
+    "Number of params": 3780,
+    "model_test_MAE": 0.00018182010777915517,
+    "model_test_Var": 1.4177396538314576e-11,
+    "model_test_Std": 3.7652883738585783e-06
+}

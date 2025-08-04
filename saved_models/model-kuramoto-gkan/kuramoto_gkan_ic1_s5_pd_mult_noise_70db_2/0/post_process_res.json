@@ -1,0 +1,18 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(-0.47*sin(x_i - x_j)) + 2.01",
+    "black_box_symb": "\\sum_{j}( -0.471852867593792*sin(x_i - x_j)) - 3.8709102e-5*x_i + 2.0120368",
+    "black_box_symb_test_MAE": 0.017865416904290516,
+    "black_box_symb_test_Var": 1.7123937381641504e-06,
+    "black_box_symb_test_Std": 0.0013085846316399068,
+    "black_box_exec_time": 31.532373428344727,
+    "spline_wise_symb_quant": "\\sum_{j}(-0.49*sin(1.0*x_i - 1.01*x_j + 0.1)) + 2.01",
+    "spline_wise_symb": "\\sum_{j}( -0.486802400327466*sin(0.998858651007906*x_i - 1.01408730932334*x_j + 0.103638304390335)) + 2.01187250858545",
+    "spline_wise_symb_test_MAE": 0.034088511019945145,
+    "spline_wise_symb_test_Var": 4.1799475128399356e-05,
+    "spline_wise_symb_test_Std": 0.006465251358485558,
+    "spline_wise_exec_time": 6.2867430448532104,
+    "Number of params": 138,
+    "model_test_MAE": 0.03685015129546324,
+    "model_test_Var": 7.464270905152173e-05,
+    "model_test_Std": 0.00863960120905599
+}
