@@ -155,6 +155,6 @@ The search space dictionary can be accessed in the Experiment class with `self.s
 
 
 ## Results
-IMPORTANT!! The plots.ipynb file won't run since it needs to upload the saved results from the experiments. Unfortunately, such files were to heavy to be uploaded for submission. Hence, if you want to replicate the plots, you will need to run from scratch all the experiments and modify file paths in the notebook cells.
+IMPORTANT!! The plots.ipynb file, along with ALL the post processing files, won't run since they need to upload the saved results from the experiments. Unfortunately, such files were to heavy to be uploaded for submission. Hence, if you want to replicate the plots and post process results, you will need to run from scratch all the experiments and modify file paths in the notebook cells and respective python files.
 
 
