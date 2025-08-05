@@ -154,4 +154,7 @@ The search space of the hyper-parameters. Mandatory hyper-parameters are:
 The search space dictionary can be accessed in the Experiment class with `self.search_space`
 
 
+## Results
+IMPORTANT!! The plots.ipynb file won't run since it needs to upload the saved results from the experiments. Unfortunately, such files were to heavy to be uploaded for submission. Hence, if you want to replicate the plots, you will need to run from scratch all the experiments and modify file paths in the notebook cells.
+
 
