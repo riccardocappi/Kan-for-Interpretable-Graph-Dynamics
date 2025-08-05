@@ -13,3 +13,4 @@ optuna_journal_storage.log
 README.md
 outputs
 test_kan.ipynb
+saved_models_optuna
