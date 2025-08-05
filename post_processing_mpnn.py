@@ -233,9 +233,9 @@ def valid_symb_model(
         pysr_model = lambda: get_pysr_model(
             model_selection=param1, 
             n_iterations=param2,
-            parallelism="serial",
-            random_state = seed,
-            deterministic = True
+            # parallelism="serial",
+            # random_state = seed,
+            # deterministic = True
         )
         _, g_symb, h_symb, _ = fit_mpnn(
             device=device,
@@ -270,9 +270,9 @@ def valid_symb_model(
         pysr_model=lambda: get_pysr_model(
             model_selection=best['model_selection'],
             n_iterations=best['param'],
-            parallelism="serial",
-            random_state = seed,
-            deterministic = True
+            # parallelism="serial",
+            # random_state = seed,
+            # deterministic = True
         ),
         sample_size=sample_size,
         message_passing=False,
@@ -565,7 +565,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final_seed.json"
+        res_file_name="post_process_res_new.json"
     )
 
     """#### SNR"""
@@ -597,7 +597,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final_seed.json"
+            res_file_name="post_process_res_new.json"
         )
 
     """### Kuramoto
@@ -621,7 +621,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final_seed.json"
+        res_file_name="post_process_res_new.json"
     )
 
     """#### SNR"""
@@ -654,7 +654,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final_seed.json"
+            res_file_name="post_process_res_new.json"
         )
 
     """### Epidemics
@@ -679,7 +679,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final_seed.json"
+        res_file_name="post_process_res_new.json"
     )
 
     """#### SNR"""
@@ -711,7 +711,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final_seed.json"
+            res_file_name="post_process_res_new.json"
         )
 
     """### Population
@@ -735,7 +735,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_final_seed.json"
+        res_file_name="post_process_res_new.json"
     )
 
     """#### SNR"""
@@ -767,5 +767,5 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_final_seed.json"
+            res_file_name="post_process_res_new.json"
         )

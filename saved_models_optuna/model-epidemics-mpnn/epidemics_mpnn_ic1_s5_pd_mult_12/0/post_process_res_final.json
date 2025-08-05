@@ -1,12 +1,12 @@
 {
-    "black_box_symb_quant": "\\sum_{j}(x_j*(0.5 - 0.5*x_i)) - 0.5*x_i",
-    "black_box_symb": "\\sum_{j}( x_j*(0.496414113264731 - 0.495870391380583*x_i)) - 0.49904868*x_i",
-    "black_box_symb_test_MAE": 0.0008190123092693588,
-    "black_box_symb_test_Var": 3.3345339064883337e-09,
-    "black_box_symb_test_Std": 5.7745423251443344e-05,
-    "black_box_exec_time": 26.981180667877197,
+    "black_box_symb_quant": "\\sum_{j}(0.5*x_j*(1 - x_i)) - 0.5*x_i",
+    "black_box_symb": "\\sum_{j}( 0.49761972*x_j*(1 - x_i)) - 0.49904963*x_i",
+    "black_box_symb_test_MAE": 0.0007285978257035216,
+    "black_box_symb_test_Var": 1.3702096402157124e-09,
+    "black_box_symb_test_Std": 3.7016342880080854e-05,
+    "black_box_exec_time": 52.11503446102142,
     "Number of params": 5090,
-    "model_test_MAE": 0.0007204274297691882,
-    "model_test_Var": 1.2718073703107071e-08,
-    "model_test_Std": 0.00011277443727683624
+    "model_test_MAE": 0.0007212451115871469,
+    "model_test_Var": 1.276419140150629e-08,
+    "model_test_Std": 0.00011297872101199539
 }
