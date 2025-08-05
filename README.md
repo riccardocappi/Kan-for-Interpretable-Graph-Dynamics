@@ -153,8 +153,5 @@ The search space of the hyper-parameters. Mandatory hyper-parameters are:
 
 The search space dictionary can be accessed in the Experiment class with `self.search_space`
 
-## Results
-To look at the results presented in the Paper, please refer to the notebooks `post_processing.ipynb` and `post_processing_mpnn.ipynb`
-
 
 
