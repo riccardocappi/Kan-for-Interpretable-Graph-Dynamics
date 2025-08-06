@@ -37,7 +37,7 @@ def get_symb_model(model_type, device):
             b = 2.4648788 
             c = -0.0039747115
 
-            g_symb = sympytorch.SymPyModule(expressions=[sp.Min(sp.Max(sp.exp(c * x_j), 1e-6), 1e6)])
+            g_symb = sympytorch.SymPyModule(expressions=[c * sp.exp(x_j)]) 
             h_symb = sympytorch.SymPyModule(expressions=[a * x_i + b])
             
             g_symb = symb_wrapper(g_symb, is_self_interaction=False)
