@@ -21,6 +21,8 @@ class MPNN(MessagePassing):
         self.h_net = h_net
         self.message_passing = message_passing
         self.include_time = include_time
+        self.h_out = None
+        self.g_out = None
         
     
     def forward(self, x, edge_index, edge_attr, t):     
@@ -40,5 +42,10 @@ class MPNN(MessagePassing):
         if self.message_passing:
             out = self.h_net(torch.cat([x, aggr_out, t_expanded], dim=-1))
         else:
-            out = self.h_net(torch.cat([x, t_expanded], dim=-1)) + aggr_out            
+            out = self.h_net(torch.cat([x, t_expanded], dim=-1))
+            self.h_out = out
+            self.g_out = aggr_out
+            out = out +  + aggr_out  
+            
+                  
         return out

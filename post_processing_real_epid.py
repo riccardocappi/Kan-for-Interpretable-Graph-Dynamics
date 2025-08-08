@@ -104,10 +104,6 @@ def get_symb_model(model_type, device):
             b = 7.130
             expr1 = b * (1 / (1 + sp.exp(- (x_j - x_i))))
             expr2 = a * x_i
-            # a = 2.8960925732791423
-            # b = -0.08586779838500642
-            # expr1 = b * x_i * sp.sin(x_j)
-            # expr2 = a * x_i
             
             g_symb = sympytorch.SymPyModule(expressions=[expr1])
             h_symb = sympytorch.SymPyModule(expressions=[expr2])
@@ -120,7 +116,7 @@ def get_symb_model(model_type, device):
                 h = h_symb,
                 message_passing=False,
                 include_time=False,
-                integration_method='rk4',
+                integration_method='euler',
                 eval=False,
                 all_t=True
             )
