@@ -45,7 +45,7 @@ class MPNN(MessagePassing):
             out = self.h_net(torch.cat([x, t_expanded], dim=-1))
             self.h_out = out
             self.g_out = aggr_out
-            out = out +  + aggr_out  
+            out = out + aggr_out  
             
                   
         return out
