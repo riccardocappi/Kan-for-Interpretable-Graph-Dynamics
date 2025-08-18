@@ -1,0 +1,73 @@
+adjoint: true
+atol: 1.0e-05
+criterion: MAE
+data_folder: ./data_ic1_deriv
+device: cuda:0
+epochs: 1000
+history: 1
+horizon: 15
+in_dim: 1
+include_time: false
+input_range:
+- 0
+- 1
+integration_kwargs:
+  B: 0.5
+  F: 1.0
+  R: 0.5
+log: 10
+message_passing: false
+method: dopri5
+model_name: model-biochemical-mpnn
+model_type: MPNN
+n_iter: 1
+name: Biochemical
+num_samples: -1
+opt: Adam
+patience: 200
+predict_deriv: true
+preprocess_data: false
+pytorch_seed: 0
+rtol: 0.001
+save_cache_data: true
+search_space:
+  af_g_net:
+  - relu
+  - softplus
+  - tanh
+  af_h_net:
+  - relu
+  - softplus
+  - tanh
+  batch_size:
+  - 16
+  - 32
+  - 64
+  drop_p_g_net:
+  - 0.0001
+  - 0.5
+  drop_p_h_net:
+  - 0.0001
+  - 0.5
+  hidden_dims_g_net:
+  - 8
+  - 64
+  hidden_dims_h_net:
+  - 8
+  - 64
+  lr:
+  - 0.0005
+  - 0.05
+  n_hidden_layers_g_net:
+  - 1
+  - 2
+  n_hidden_layers_h_net:
+  - 1
+  - 2
+seed: 42
+storage: journal
+stride: 1
+t_eval_steps: 2000
+t_span:
+- 0
+- 1

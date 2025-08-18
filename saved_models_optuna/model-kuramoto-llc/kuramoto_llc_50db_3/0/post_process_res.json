@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(-0.38*sin(x_i - x_j)) - tanh(x_i) + 3.01",
+    "black_box_symb": "\\sum_{j}( -0.37563252*sin(x_i - x_j)) - tanh(x_i) + 3.0148878",
+    "black_box_symb_test_MAE": 0.0833062082529068,
+    "black_box_symb_test_Var": 6.854906054021281e-05,
+    "black_box_symb_test_Std": 0.008279436003751271,
+    "black_box_exec_time": 23.867788076400757,
+    "Number of params": 3932,
+    "model_test_MAE": 0.09744829436143239,
+    "model_test_Var": 4.4281633869985226e-05,
+    "model_test_Std": 0.006654444670292573
+}

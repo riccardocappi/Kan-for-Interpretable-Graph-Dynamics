@@ -1,0 +1,14 @@
+{
+    "tss_test_mae_": 0.00029117241501808167,
+    "tss_test_var_": 4.4434753406930564e-10,
+    "tss_test_std_": 2.1079552511125697e-05,
+    "tss_test_mae_70db": 0.0021191818717246256,
+    "tss_test_var_70db": 2.269309859505237e-08,
+    "tss_test_std_70db": 0.00015064228687540682,
+    "tss_test_mae_50db": 0.558358391125997,
+    "tss_test_var_50db": 0.0024888551943536502,
+    "tss_test_std_50db": 0.049888427459217934,
+    "tss_test_mae_20db": NaN,
+    "tss_test_var_20db": NaN,
+    "tss_test_std_20db": NaN
+}

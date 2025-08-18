@@ -1,0 +1,22 @@
+{
+  "lr": 0.016209250959521342,
+  "lamb": 1,
+  "batch_size": 64,
+  "use_orig_reg": true,
+  "lamb_g_net": 0.02084735139091132,
+  "lamb_h_net": 0.0008612751735833832,
+  "grid_size_g_net": 10,
+  "spline_order_g_net": 2,
+  "range_limit_g_net": 5,
+  "mu_1_g_net": 0.9,
+  "mu_2_g_net": 0.4,
+  "n_hidden_layers_g_net": 1,
+  "hidden_dim_g_net": 4,
+  "grid_size_h_net": 8,
+  "spline_order_h_net": 3,
+  "range_limit_h_net": 4,
+  "mu_1_h_net": 0.30000000000000004,
+  "mu_2_h_net": 0.5,
+  "n_hidden_layers_h_net": 1,
+  "hidden_dim_h_net": 2
+}

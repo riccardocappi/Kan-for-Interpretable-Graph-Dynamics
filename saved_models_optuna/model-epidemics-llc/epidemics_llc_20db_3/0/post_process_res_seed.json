@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(0.39 - log(log(x_i + 1) + 1)) + sin(sin(0.31*x_i) + 0.51)",
+    "black_box_symb": "\\sum_{j}( 0.39207765 - log(log(x_i + 1) + 1)) + sin(sin(0.31015566*x_i) + 0.50730896)",
+    "black_box_symb_test_MAE": 0.11584556599458058,
+    "black_box_symb_test_Var": 0.0008469333256883163,
+    "black_box_symb_test_Std": 0.02910211892093626,
+    "black_box_exec_time": 122.493692278862,
+    "Number of params": 1620,
+    "model_test_MAE": 0.1308130919933319,
+    "model_test_Var": 0.0008354974171621935,
+    "model_test_Std": 0.028904972187535374
+}

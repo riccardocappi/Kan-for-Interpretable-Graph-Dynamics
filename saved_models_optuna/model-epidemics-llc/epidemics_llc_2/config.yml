@@ -1,0 +1,97 @@
+adjoint: true
+atol: 1.0e-05
+criterion: MAE
+data_folder: ./data_ic1_deriv
+device: cuda:1
+epochs: 1000
+history: 1
+horizon: 15
+in_dim: 1
+include_time: false
+input_range:
+- 0
+- 1
+integration_kwargs:
+  B: 0.5
+  R: 0.5
+log: 1
+message_passing: false
+method: dopri5
+model_name: model-epidemics-llc
+model_type: LLC
+n_iter: 1
+name: Epidemics
+num_samples: -1
+opt: Adam
+patience: 200
+predict_deriv: true
+preprocess_data: false
+pytorch_seed: 0
+rtol: 0.001
+save_cache_data: true
+search_space:
+  af_g0:
+  - relu
+  - softplus
+  - tanh
+  af_g1:
+  - relu
+  - softplus
+  - tanh
+  af_g2:
+  - relu
+  - softplus
+  - tanh
+  af_h_net:
+  - relu
+  - softplus
+  - tanh
+  batch_size:
+  - 16
+  - 32
+  - 64
+  drop_p_g0:
+  - 0.0
+  drop_p_g1:
+  - 0.0
+  drop_p_g2:
+  - 0.0
+  drop_p_h_net:
+  - 0.0
+  hidden_dims_g0:
+  - 8
+  - 64
+  hidden_dims_g1:
+  - 8
+  - 64
+  hidden_dims_g2:
+  - 8
+  - 64
+  hidden_dims_h_net:
+  - 8
+  - 64
+  lamb:
+  - 0.0
+  - 0.01
+  lr:
+  - 0.0005
+  - 0.05
+  n_hidden_layers_g0:
+  - 1
+  - 2
+  n_hidden_layers_g1:
+  - 1
+  - 2
+  n_hidden_layers_g2:
+  - 1
+  - 2
+  n_hidden_layers_h_net:
+  - 1
+  - 2
+seed: 42
+storage: journal
+stride: 1
+t_eval_steps: 2000
+t_span:
+- 0
+- 2

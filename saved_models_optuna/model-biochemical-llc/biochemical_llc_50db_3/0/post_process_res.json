@@ -1,0 +1,12 @@
+{
+    "black_box_symb_quant": "\\sum_{j}(-0.48*x_i*x_j) - log(x_i + 1) + 1.18",
+    "black_box_symb": "\\sum_{j}( -0.47658035*x_i*x_j) - log(x_i + 1) + 1.1789674",
+    "black_box_symb_test_MAE": 0.01177167147397995,
+    "black_box_symb_test_Var": 2.1691428891794373e-07,
+    "black_box_symb_test_Std": 0.0004657405811371216,
+    "black_box_exec_time": 31.158680200576782,
+    "Number of params": 7924,
+    "model_test_MAE": 0.010549546219408512,
+    "model_test_Var": 2.8427186608628863e-06,
+    "model_test_Std": 0.0016860363759014473
+}

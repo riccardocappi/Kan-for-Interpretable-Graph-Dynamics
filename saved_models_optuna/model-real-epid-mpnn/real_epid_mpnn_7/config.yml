@@ -1,0 +1,59 @@
+criterion: MAE
+data_folder: ./data_real_epid
+device: cuda:0
+epochs: 1000
+in_dim: 1
+include_time: false
+log: 10
+message_passing: false
+model_name: model-real-epid-mpnn
+model_type: MPNN
+name: RealEpid
+num_samples: -1
+opt: Adam
+patience: 300
+predict_deriv: true
+preprocess_data: false
+pytorch_seed: 0
+save_cache_data: true
+scale: true
+scale_range:
+- -1
+- 1
+search_space:
+  af_g_net:
+  - relu
+  - softplus
+  - tanh
+  af_h_net:
+  - relu
+  - softplus
+  - tanh
+  batch_size:
+  - 16
+  - 32
+  - 64
+  drop_p_g_net:
+  - 0.0001
+  - 0.5
+  drop_p_h_net:
+  - 0.0001
+  - 0.5
+  hidden_dims_g_net:
+  - 8
+  - 64
+  hidden_dims_h_net:
+  - 8
+  - 64
+  lr:
+  - 0.0005
+  - 0.05
+  n_hidden_layers_g_net:
+  - 1
+  - 2
+  n_hidden_layers_h_net:
+  - 1
+  - 2
+seed: 42
+storage: journal
+stride: 1

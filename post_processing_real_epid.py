@@ -116,7 +116,7 @@ def get_symb_model(model_type, device):
                 h = h_symb,
                 message_passing=False,
                 include_time=False,
-                integration_method='euler',
+                integration_method='rk4',
                 eval=False,
                 all_t=True
             )
