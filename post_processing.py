@@ -163,7 +163,7 @@ def get_symb_test_error(g_symb, h_symb, test_set, message_passing=False, include
 
 
 
-def get_test_set(dynamics, device='cpu', input_range=(0, 1), t_span = (0, 1), **integration_kwargs):
+def get_test_set(dynamics, device='cuda', input_range=(0, 1), t_span = (0, 1), **integration_kwargs):
     seeds = [12345, 67890, 111213]
 
     graphs = [
@@ -189,7 +189,7 @@ def get_test_set(dynamics, device='cpu', input_range=(0, 1), t_span = (0, 1), **
 
 
 
-def integrate_test_set(graph, dynamics, seed=12345, device='cpu', input_range = (0, 1), t_span = (0, 1), **integration_kwargs):
+def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range = (0, 1), t_span = (0, 1), **integration_kwargs):
     # graph = nx.barabasi_albert_graph(100, 3, seed=seed)
     edge_index = from_networkx(graph).edge_index
     edge_index = edge_index.to(torch.device(device))
@@ -218,7 +218,7 @@ def integrate_test_set(graph, dynamics, seed=12345, device='cpu', input_range = 
 
 
 def build_model_from_file(model_path, message_passing, include_time, method='dopri5', adjoint=False, atol=1e-5, rtol=1e-5,
-                          compute_mult=True, device='cpu'):
+                          compute_mult=True, device='cuda'):
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/gkan/state_dict.pth"
 
@@ -282,7 +282,7 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
 def valid_symb_model(
     config,
     model_path_gkan,
-    device='cpu',
+    device='cuda',
     atol=1e-5,
     rtol=1e-5,
     method='dopri5',
@@ -469,7 +469,7 @@ def post_process_gkan(
     config,
     model_path,
     test_set,
-    device='cpu',
+    device='cuda',
     sample_size=10000,
     message_passing=False,
     include_time=False,
@@ -480,7 +480,7 @@ def post_process_gkan(
     inverse_scale=False,
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res_repr_cpu.json',
+    res_file_name = 'post_process_res_repr_cuda.json',
     compute_mult = True,
     grid_orig = None,
     skip_bb = False,
@@ -643,7 +643,7 @@ if __name__ == '__main__':
 
     KUR = get_test_set(
         dynamics=kur_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=kur_config['input_range'],
         **kur_config['integration_kwargs']
     )
@@ -674,7 +674,7 @@ if __name__ == '__main__':
 
     EPID = get_test_set(
         dynamics=epid_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=epid_config['input_range'],
         **epid_config['integration_kwargs']
     )
@@ -706,7 +706,7 @@ if __name__ == '__main__':
 
     POP = get_test_set(
         dynamics=pop_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=pop_config['input_range'],
         **pop_config['integration_kwargs']
     )
@@ -737,7 +737,7 @@ if __name__ == '__main__':
 
     BIO = get_test_set(
         dynamics=bio_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=bio_config['input_range'],
         **bio_config['integration_kwargs']
     )
@@ -776,7 +776,7 @@ if __name__ == '__main__':
         config=bio_config,
         model_path=model_path_gkan,
         test_set=BIO,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -800,7 +800,7 @@ if __name__ == '__main__':
             config=bio_config,
             model_path=model_path,
             test_set=BIO,
-            device='cpu',
+            device='cuda',
             sample_size=10000,
             message_passing=False,
             include_time=False,
@@ -822,7 +822,7 @@ if __name__ == '__main__':
         config=kur_config,
         model_path=model_path_gkan,
         test_set=KUR,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -846,7 +846,7 @@ if __name__ == '__main__':
             config=kur_config,
             model_path=model_path,
             test_set=KUR,
-            device='cpu',
+            device='cuda',
             sample_size=10000,
             message_passing=False,
             include_time=False,
@@ -868,7 +868,7 @@ if __name__ == '__main__':
         config=epid_config,
         model_path=model_path_gkan,
         test_set=EPID,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -891,7 +891,7 @@ if __name__ == '__main__':
             config=epid_config,
             model_path=model_path,
             test_set=EPID,
-            device='cpu',
+            device='cuda',
             sample_size=10000,
             message_passing=False,
             include_time=False,
@@ -913,7 +913,7 @@ if __name__ == '__main__':
         config=pop_config,
         model_path=model_path_gkan,
         test_set=POP,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -937,7 +937,7 @@ if __name__ == '__main__':
             config=pop_config,
             model_path=model_path,
             test_set=POP,
-            device='cpu',
+            device='cuda',
             sample_size=10000,
             message_passing=False,
             include_time=False,

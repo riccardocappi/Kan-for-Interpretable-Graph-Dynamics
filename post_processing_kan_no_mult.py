@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     KUR = get_test_set(
         dynamics=kur_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=kur_config['input_range'],
         **kur_config['integration_kwargs']
     )
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     EPID = get_test_set(
         dynamics=epid_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=epid_config['input_range'],
         **epid_config['integration_kwargs']
     )
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
     POP = get_test_set(
         dynamics=pop_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=pop_config['input_range'],
         **pop_config['integration_kwargs']
     )
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
     BIO = get_test_set(
         dynamics=bio_config['name'],
-        device='cpu',
+        device='cuda',
         input_range=bio_config['input_range'],
         **bio_config['integration_kwargs']
     )
@@ -151,7 +151,7 @@ if __name__ == '__main__':
         config=bio_config,
         model_path="./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_no_mult/0",
         test_set=BIO,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cpu.json"
+        res_file_name="post_process_res_cuda.json"
     )
     
     # ------------------------------------------------------------------
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         config=kur_config,
         model_path="./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_no_mult/0",
         test_set=KUR,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -177,7 +177,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cpu.json"
+        res_file_name="post_process_res_cuda.json"
     )
     
     # ------------------------------------------------------------------
@@ -188,7 +188,7 @@ if __name__ == '__main__':
         config=kur_config,
         model_path="./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_no_mult/0",
         test_set=EPID,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cpu.json"
+        res_file_name="post_process_res_cuda.json"
     )
     
     #------------------------------------------------------------------
@@ -207,7 +207,7 @@ if __name__ == '__main__':
         config=kur_config,
         model_path="./saved_models_optuna/model-population-gkan/population_gkan_no_mult/0",
         test_set=POP,
-        device='cpu',
+        device='cuda',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -215,7 +215,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cpu.json"
+        res_file_name="post_process_res_cuda.json"
     )
     
     # ------------------------------------------------------------------
