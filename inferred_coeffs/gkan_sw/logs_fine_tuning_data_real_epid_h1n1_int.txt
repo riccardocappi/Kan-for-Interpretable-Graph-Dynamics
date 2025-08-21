@@ -1,0 +1,523 @@
+
+Epoch 0, train loss: 0.1363, val loss: 0.0169
+Epoch 10, train loss: 0.0479, val loss: 0.0593
+Epoch 20, train loss: 0.0147, val loss: 0.1630
+Epoch 30, train loss: 0.0109, val loss: 0.0237
+Epoch 40, train loss: 0.0099, val loss: 0.0842
+Epoch 0, train loss: 0.1363, val loss: 0.0169
+Epoch 10, train loss: 0.0479, val loss: 0.0593
+Epoch 20, train loss: 0.0147, val loss: 0.1630
+Epoch 30, train loss: 0.0109, val loss: 0.0237
+Epoch 40, train loss: 0.0099, val loss: 0.0842
+Epoch 50, train loss: 0.0215, val loss: 0.0431
+Epoch 0, train loss: 0.1363, val loss: 0.4061
+Epoch 10, train loss: 0.0099, val loss: 0.0735
+Epoch 20, train loss: 0.0184, val loss: 0.0841
+Epoch 30, train loss: 0.0105, val loss: 0.0332
+Epoch 40, train loss: 0.0099, val loss: 0.0257
+Epoch 0, train loss: 0.1363, val loss: 0.4061
+Epoch 10, train loss: 0.0099, val loss: 0.0735
+Epoch 20, train loss: 0.0184, val loss: 0.0841
+Epoch 30, train loss: 0.0105, val loss: 0.0332
+Epoch 40, train loss: 0.0099, val loss: 0.0257
+Epoch 50, train loss: 0.0107, val loss: 0.0481
+Inferred coeffs for Canada: [ 1.0934122e+00  1.2004094e+00  8.0090511e-01  5.2829087e-01
+  9.5038384e-01  1.2803806e+00 -2.8838966e+00 -5.8633840e-01
+  1.9349898e-01  7.5801253e-02 -1.3595909e+00 -2.6490628e-03
+ -8.5222675e-04 -4.5053687e+00  2.3885448e+00 -2.7015029e-02
+ -1.3862554e+00  8.4256369e-01]
+Epoch 0, train loss: 0.0385, val loss: 0.3753
+Epoch 10, train loss: 0.0334, val loss: 0.0890
+Epoch 20, train loss: 0.0101, val loss: 0.1009
+Epoch 30, train loss: 0.0022, val loss: 0.0239
+Epoch 0, train loss: 0.0385, val loss: 0.3753
+Epoch 10, train loss: 0.0334, val loss: 0.0890
+Epoch 20, train loss: 0.0101, val loss: 0.1009
+Epoch 30, train loss: 0.0022, val loss: 0.0239
+Epoch 0, train loss: 0.0385, val loss: 0.1095
+Epoch 10, train loss: 0.0075, val loss: 0.0510
+Epoch 20, train loss: 0.0043, val loss: 0.0392
+Epoch 30, train loss: 0.0023, val loss: 0.0266
+Epoch 0, train loss: 0.0385, val loss: 0.1095
+Epoch 10, train loss: 0.0075, val loss: 0.0510
+Epoch 20, train loss: 0.0043, val loss: 0.0392
+Epoch 30, train loss: 0.0023, val loss: 0.0266
+Inferred coeffs for United Kingdom: [ 1.0880121   1.1992843   0.7913174   0.5596288   0.94142693  1.2929792
+ -2.8991733  -0.5867636   0.18264107  0.08358081 -1.3636721  -0.00809405
+  0.00459283 -4.565041    2.447157   -0.02137141 -1.4057398   0.85572314]
+Epoch 0, train loss: 0.0393, val loss: 0.3810
+Epoch 10, train loss: 0.0752, val loss: 0.3107
+Epoch 20, train loss: 0.0405, val loss: 0.1740
+Epoch 30, train loss: 0.0225, val loss: 0.0733
+Epoch 40, train loss: 0.0124, val loss: 0.0350
+Epoch 0, train loss: 0.0393, val loss: 0.3810
+Epoch 10, train loss: 0.0752, val loss: 0.3107
+Epoch 20, train loss: 0.0405, val loss: 0.1740
+Epoch 30, train loss: 0.0225, val loss: 0.0733
+Epoch 40, train loss: 0.0124, val loss: 0.0350
+Epoch 50, train loss: 0.0125, val loss: 0.0676
+Epoch 60, train loss: 0.0075, val loss: 0.0236
+Epoch 70, train loss: 0.0072, val loss: 0.0188
+Epoch 80, train loss: 0.0130, val loss: 0.0773
+Epoch 90, train loss: 0.0203, val loss: 0.0449
+Epoch 0, train loss: 0.0393, val loss: 0.0595
+Epoch 10, train loss: 0.0069, val loss: 0.0017
+Epoch 20, train loss: 0.0083, val loss: 0.0244
+Epoch 30, train loss: 0.0078, val loss: 0.0258
+Epoch 40, train loss: 0.0071, val loss: 0.0236
+Epoch 0, train loss: 0.0393, val loss: 0.0595
+Epoch 10, train loss: 0.0069, val loss: 0.0017
+Epoch 20, train loss: 0.0083, val loss: 0.0244
+Epoch 30, train loss: 0.0078, val loss: 0.0258
+Epoch 40, train loss: 0.0071, val loss: 0.0236
+Epoch 50, train loss: 0.0068, val loss: 0.0198
+Inferred coeffs for Spain: [ 1.0867494   1.1886606   0.79708576  0.52228826  0.9423454   1.2849932
+ -2.8868697  -0.57211065  0.18949513  0.08372939 -1.3709917  -0.00933102
+  0.00582974 -4.4495583   2.3293977  -0.0203539  -1.3383952   0.7963313 ]
+Epoch 0, train loss: 0.0179, val loss: 0.3331
+Epoch 10, train loss: 0.0551, val loss: 0.1848
+Epoch 20, train loss: 0.0165, val loss: 0.0428
+Epoch 30, train loss: 0.0030, val loss: 0.0695
+Epoch 40, train loss: 0.0014, val loss: 0.0218
+Epoch 0, train loss: 0.0179, val loss: 0.3331
+Epoch 10, train loss: 0.0551, val loss: 0.1848
+Epoch 20, train loss: 0.0165, val loss: 0.0428
+Epoch 30, train loss: 0.0030, val loss: 0.0695
+Epoch 40, train loss: 0.0014, val loss: 0.0218
+Epoch 50, train loss: 0.0097, val loss: 0.0175
+Epoch 60, train loss: 0.0078, val loss: 0.0299
+Epoch 70, train loss: 0.0044, val loss: 0.0030
+Epoch 0, train loss: 0.0179, val loss: 0.0318
+Epoch 10, train loss: 0.0026, val loss: 0.0019
+Epoch 20, train loss: 0.0014, val loss: 0.0102
+Epoch 30, train loss: 0.0015, val loss: 0.0118
+Epoch 0, train loss: 0.0179, val loss: 0.0318
+Epoch 10, train loss: 0.0026, val loss: 0.0019
+Epoch 20, train loss: 0.0014, val loss: 0.0102
+Epoch 30, train loss: 0.0015, val loss: 0.0118
+Inferred coeffs for Greece: [ 1.0865786   1.2005163   0.7879468   0.5717576   0.9395236   1.2968447
+ -2.904514   -0.58904386  0.17903684  0.08527666 -1.3634071  -0.00952601
+  0.00602481 -4.6090226   2.4910686  -0.01990484 -1.4210434   0.869434  ]
+Epoch 0, train loss: 0.0169, val loss: 0.3179
+Epoch 10, train loss: 0.0556, val loss: 0.1823
+Epoch 20, train loss: 0.0193, val loss: 0.0483
+Epoch 30, train loss: 0.0070, val loss: 0.0596
+Epoch 40, train loss: 0.0037, val loss: 0.0102
+Epoch 0, train loss: 0.0169, val loss: 0.3179
+Epoch 10, train loss: 0.0556, val loss: 0.1823
+Epoch 20, train loss: 0.0193, val loss: 0.0483
+Epoch 30, train loss: 0.0070, val loss: 0.0596
+Epoch 40, train loss: 0.0037, val loss: 0.0102
+Epoch 50, train loss: 0.0062, val loss: 0.0311
+Epoch 60, train loss: 0.0063, val loss: 0.0078
+Epoch 70, train loss: 0.0039, val loss: 0.0246
+Epoch 80, train loss: 0.0028, val loss: 0.0033
+Epoch 0, train loss: 0.0169, val loss: 0.0340
+Epoch 10, train loss: 0.0020, val loss: 0.0032
+Epoch 20, train loss: 0.0016, val loss: 0.0141
+Epoch 30, train loss: 0.0015, val loss: 0.0134
+Epoch 0, train loss: 0.0169, val loss: 0.0340
+Epoch 10, train loss: 0.0020, val loss: 0.0032
+Epoch 20, train loss: 0.0016, val loss: 0.0141
+Epoch 30, train loss: 0.0015, val loss: 0.0134
+Inferred coeffs for Guatemala: [ 1.0866698   1.2006403   0.7880159   0.5717808   0.93960935  1.2967795
+ -2.9044657  -0.5891799   0.17911148  0.08518153 -1.3632917  -0.0094349
+  0.0059337  -4.609449    2.4915009  -0.01999543 -1.4213994   0.8697647 ]
+Epoch 0, train loss: 0.5350, val loss: 0.8065
+Epoch 10, train loss: 0.1182, val loss: 0.7326
+Epoch 20, train loss: 0.1043, val loss: 0.6955
+Epoch 30, train loss: 0.1029, val loss: 0.6365
+Epoch 0, train loss: 0.5350, val loss: 0.8065
+Epoch 10, train loss: 0.1182, val loss: 0.7326
+Epoch 20, train loss: 0.1043, val loss: 0.6955
+Epoch 30, train loss: 0.1029, val loss: 0.6365
+Epoch 0, train loss: 0.5350, val loss: 1.2377
+Epoch 10, train loss: 0.4080, val loss: 0.7461
+Epoch 20, train loss: 0.2608, val loss: 0.1197
+Epoch 30, train loss: 0.1230, val loss: 0.4327
+Epoch 40, train loss: 0.1087, val loss: 0.6915
+Epoch 0, train loss: 0.5350, val loss: 1.2377
+Epoch 10, train loss: 0.4080, val loss: 0.7461
+Epoch 20, train loss: 0.2608, val loss: 0.1197
+Epoch 30, train loss: 0.1230, val loss: 0.4327
+Epoch 40, train loss: 0.1087, val loss: 0.6915
+Epoch 50, train loss: 0.1112, val loss: 0.7627
+Inferred coeffs for Mexico: [ 1.1070582   1.22121     0.8082426   0.552454    0.95989686  1.2766414
+ -2.8844428  -0.6098071   0.19931161  0.06484803 -1.342817    0.01095265
+ -0.01445385 -4.609203    2.490878   -0.04037762 -1.4426907   0.8909354 ]
+Epoch 0, train loss: 0.0403, val loss: 0.2793
+Epoch 10, train loss: 0.0594, val loss: 0.2432
+Epoch 20, train loss: 0.0312, val loss: 0.1292
+Epoch 30, train loss: 0.0265, val loss: 0.0673
+Epoch 40, train loss: 0.0037, val loss: 0.0358
+Epoch 0, train loss: 0.0403, val loss: 0.2793
+Epoch 10, train loss: 0.0594, val loss: 0.2432
+Epoch 20, train loss: 0.0312, val loss: 0.1292
+Epoch 30, train loss: 0.0265, val loss: 0.0673
+Epoch 40, train loss: 0.0037, val loss: 0.0358
+Epoch 50, train loss: 0.0035, val loss: 0.0399
+Epoch 60, train loss: 0.0066, val loss: 0.0033
+Epoch 70, train loss: 0.0050, val loss: 0.0482
+Epoch 80, train loss: 0.0042, val loss: 0.0416
+Epoch 90, train loss: 0.0243, val loss: 0.0525
+Epoch 0, train loss: 0.0403, val loss: 0.0788
+Epoch 10, train loss: 0.0064, val loss: 0.0166
+Epoch 20, train loss: 0.0062, val loss: 0.0285
+Epoch 30, train loss: 0.0046, val loss: 0.0240
+Epoch 40, train loss: 0.0039, val loss: 0.0193
+Epoch 0, train loss: 0.0403, val loss: 0.0788
+Epoch 10, train loss: 0.0064, val loss: 0.0166
+Epoch 20, train loss: 0.0062, val loss: 0.0285
+Epoch 30, train loss: 0.0046, val loss: 0.0240
+Epoch 40, train loss: 0.0039, val loss: 0.0193
+Inferred coeffs for Panama: [ 1.0882653e+00  1.1926627e+00  7.9656649e-01  5.3269714e-01
+  9.4371575e-01  1.2861534e+00 -2.8889940e+00 -5.7728297e-01
+  1.8690616e-01  8.3787017e-02 -1.3684609e+00 -7.7985409e-03
+  4.2972951e-03 -4.5810061e+00  2.4629142e+00 -2.1828035e-02
+ -1.3516313e+00  8.0799752e-01]
+Epoch 0, train loss: 0.0197, val loss: 0.3229
+Epoch 10, train loss: 0.0529, val loss: 0.1836
+Epoch 20, train loss: 0.0160, val loss: 0.0474
+Epoch 30, train loss: 0.0033, val loss: 0.0619
+Epoch 40, train loss: 0.0009, val loss: 0.0109
+Epoch 0, train loss: 0.0197, val loss: 0.3229
+Epoch 10, train loss: 0.0529, val loss: 0.1836
+Epoch 20, train loss: 0.0160, val loss: 0.0474
+Epoch 30, train loss: 0.0033, val loss: 0.0619
+Epoch 40, train loss: 0.0009, val loss: 0.0109
+Epoch 50, train loss: 0.0054, val loss: 0.0016
+Epoch 60, train loss: 0.0015, val loss: 0.0630
+Epoch 70, train loss: 0.0160, val loss: 0.0361
+Epoch 0, train loss: 0.0197, val loss: 0.0329
+Epoch 10, train loss: 0.0030, val loss: 0.0108
+Epoch 20, train loss: 0.0024, val loss: 0.0016
+Epoch 30, train loss: 0.0016, val loss: 0.0057
+Epoch 0, train loss: 0.0197, val loss: 0.0329
+Epoch 10, train loss: 0.0030, val loss: 0.0108
+Epoch 20, train loss: 0.0024, val loss: 0.0016
+Epoch 30, train loss: 0.0016, val loss: 0.0057
+Inferred coeffs for Costa Rica: [ 1.086617    1.2005717   0.7879735   0.57177955  0.9395591   1.29682
+ -2.9044983  -0.5891057   0.17906632  0.08523638 -1.3633564  -0.00948767
+  0.00598647 -4.6093183   2.491368   -0.01994294 -1.421218    0.86959594]
+Epoch 0, train loss: 0.0175, val loss: 0.3262
+Epoch 10, train loss: 0.0550, val loss: 0.1879
+Epoch 20, train loss: 0.0184, val loss: 0.0522
+Epoch 30, train loss: 0.0058, val loss: 0.0567
+Epoch 40, train loss: 0.0025, val loss: 0.0024
+Epoch 0, train loss: 0.0175, val loss: 0.3262
+Epoch 10, train loss: 0.0550, val loss: 0.1879
+Epoch 20, train loss: 0.0184, val loss: 0.0522
+Epoch 30, train loss: 0.0058, val loss: 0.0567
+Epoch 40, train loss: 0.0025, val loss: 0.0024
+Epoch 50, train loss: 0.0083, val loss: 0.0083
+Epoch 60, train loss: 0.0137, val loss: 0.0526
+Epoch 70, train loss: 0.0127, val loss: 0.0293
+Epoch 80, train loss: 0.0061, val loss: 0.0280
+Epoch 0, train loss: 0.0175, val loss: 0.0287
+Epoch 10, train loss: 0.0022, val loss: 0.0047
+Epoch 20, train loss: 0.0022, val loss: 0.0014
+Epoch 30, train loss: 0.0020, val loss: 0.0012
+Epoch 40, train loss: 0.0018, val loss: 0.0029
+Epoch 0, train loss: 0.0175, val loss: 0.0287
+Epoch 10, train loss: 0.0022, val loss: 0.0047
+Epoch 20, train loss: 0.0022, val loss: 0.0014
+Epoch 30, train loss: 0.0020, val loss: 0.0012
+Epoch 40, train loss: 0.0018, val loss: 0.0029
+Inferred coeffs for El Salvador: [ 1.0871934   1.1921868   0.79479426  0.5380388   0.942056    1.2885439
+ -2.8915303  -0.5770966   0.1843983   0.0856448  -1.3695457  -0.00887534
+  0.00537409 -4.592313    2.4740767  -0.02073119 -1.3506415   0.8059697 ]
+Epoch 0, train loss: 0.0853, val loss: 0.2284
+Epoch 10, train loss: 0.0377, val loss: 0.0662
+Epoch 20, train loss: 0.0218, val loss: 0.0250
+Epoch 30, train loss: 0.0217, val loss: 0.0624
+Epoch 0, train loss: 0.0853, val loss: 0.2284
+Epoch 10, train loss: 0.0377, val loss: 0.0662
+Epoch 20, train loss: 0.0218, val loss: 0.0250
+Epoch 30, train loss: 0.0217, val loss: 0.0624
+Epoch 0, train loss: 0.0853, val loss: 0.1654
+Epoch 10, train loss: 0.0317, val loss: 0.1577
+Epoch 20, train loss: 0.0221, val loss: 0.0295
+Epoch 30, train loss: 0.0230, val loss: 0.0774
+Epoch 0, train loss: 0.0853, val loss: 0.1654
+Epoch 10, train loss: 0.0317, val loss: 0.1577
+Epoch 20, train loss: 0.0221, val loss: 0.0295
+Epoch 30, train loss: 0.0230, val loss: 0.0774
+Inferred coeffs for Japan: [ 1.0898149e+00  1.2021641e+00  7.9240775e-01  5.6176221e-01
+  9.4325364e-01  1.2919099e+00 -2.8988237e+00 -5.9011275e-01
+  1.8374863e-01  8.1711411e-02 -1.3610554e+00 -6.2863301e-03
+  2.7851157e-03 -4.5924287e+00  2.4747252e+00 -2.3178231e-02
+ -1.4145246e+00  8.6423689e-01]
+Epoch 0, train loss: 0.0456, val loss: 0.1512
+Epoch 10, train loss: 0.0153, val loss: 0.1495
+Epoch 20, train loss: 0.0121, val loss: 0.0367
+Epoch 30, train loss: 0.0134, val loss: 0.1030
+Epoch 0, train loss: 0.0456, val loss: 0.1512
+Epoch 10, train loss: 0.0153, val loss: 0.1495
+Epoch 20, train loss: 0.0121, val loss: 0.0367
+Epoch 30, train loss: 0.0134, val loss: 0.1030
+Epoch 0, train loss: 0.0456, val loss: 0.2044
+Epoch 10, train loss: 0.0146, val loss: 0.0533
+Epoch 20, train loss: 0.0147, val loss: 0.1108
+Epoch 30, train loss: 0.0132, val loss: 0.0422
+Epoch 0, train loss: 0.0456, val loss: 0.2044
+Epoch 10, train loss: 0.0146, val loss: 0.0533
+Epoch 20, train loss: 0.0147, val loss: 0.1108
+Epoch 30, train loss: 0.0132, val loss: 0.0422
+Inferred coeffs for Philippines: [ 1.0913565e+00  1.2036728e+00  7.9390687e-01  5.6054395e-01
+  9.4478524e-01  1.2905097e+00 -2.8972754e+00 -5.9158230e-01
+  1.8478510e-01  8.0557168e-02 -1.3597572e+00 -4.7464808e-03
+  1.2452680e-03 -4.6042786e+00  2.4863656e+00 -2.4705019e-02
+ -1.4147196e+00  8.6421084e-01]
+Epoch 0, train loss: 0.0311, val loss: 0.2205
+Epoch 10, train loss: 0.0484, val loss: 0.0869
+Epoch 20, train loss: 0.0232, val loss: 0.0434
+Epoch 30, train loss: 0.0159, val loss: 0.1376
+Epoch 40, train loss: 0.0107, val loss: 0.0569
+Epoch 0, train loss: 0.0311, val loss: 0.2205
+Epoch 10, train loss: 0.0484, val loss: 0.0869
+Epoch 20, train loss: 0.0232, val loss: 0.0434
+Epoch 30, train loss: 0.0159, val loss: 0.1376
+Epoch 40, train loss: 0.0107, val loss: 0.0569
+Epoch 0, train loss: 0.0311, val loss: 0.1367
+Epoch 10, train loss: 0.0099, val loss: 0.0741
+Epoch 20, train loss: 0.0100, val loss: 0.0591
+Epoch 30, train loss: 0.0100, val loss: 0.0709
+Epoch 0, train loss: 0.0311, val loss: 0.1367
+Epoch 10, train loss: 0.0099, val loss: 0.0741
+Epoch 20, train loss: 0.0100, val loss: 0.0591
+Epoch 30, train loss: 0.0100, val loss: 0.0709
+Inferred coeffs for Argentina: [ 1.0900754e+00  1.1991410e+00  7.9486740e-01  5.5000025e-01
+  9.4413161e-01  1.2890648e+00 -2.8941085e+00 -5.8577526e-01
+  1.8527651e-01  8.2147829e-02 -1.3634475e+00 -6.0233376e-03
+  2.5221056e-03 -4.5949316e+00  2.4768765e+00 -2.3473119e-02
+ -1.3891165e+00  8.4063733e-01]
+Epoch 0, train loss: 0.0163, val loss: 0.3473
+Epoch 10, train loss: 0.0568, val loss: 0.1962
+Epoch 20, train loss: 0.0180, val loss: 0.0538
+Epoch 30, train loss: 0.0066, val loss: 0.0534
+Epoch 40, train loss: 0.0050, val loss: 0.0046
+Epoch 0, train loss: 0.0163, val loss: 0.3473
+Epoch 10, train loss: 0.0568, val loss: 0.1962
+Epoch 20, train loss: 0.0180, val loss: 0.0538
+Epoch 30, train loss: 0.0066, val loss: 0.0534
+Epoch 40, train loss: 0.0050, val loss: 0.0046
+Epoch 50, train loss: 0.0050, val loss: 0.0295
+Epoch 60, train loss: 0.0131, val loss: 0.0541
+Epoch 70, train loss: 0.0125, val loss: 0.0155
+Epoch 80, train loss: 0.0114, val loss: 0.0077
+Epoch 90, train loss: 0.0079, val loss: 0.0243
+Epoch 0, train loss: 0.0163, val loss: 0.0213
+Epoch 10, train loss: 0.0017, val loss: 0.0060
+Epoch 20, train loss: 0.0012, val loss: 0.0086
+Epoch 30, train loss: 0.0009, val loss: 0.0020
+Epoch 40, train loss: 0.0008, val loss: 0.0011
+Epoch 0, train loss: 0.0163, val loss: 0.0213
+Epoch 10, train loss: 0.0017, val loss: 0.0060
+Epoch 20, train loss: 0.0012, val loss: 0.0086
+Epoch 30, train loss: 0.0009, val loss: 0.0020
+Epoch 40, train loss: 0.0008, val loss: 0.0011
+Inferred coeffs for Brazil: [ 1.0870423   1.1899819   0.7961363   0.5300045   0.9423173   1.2868232
+ -2.888768   -0.5738608   0.18561521  0.08590919 -1.3712951  -0.00903085
+  0.00552958 -4.5547338   2.4357917  -0.02058853 -1.333284    0.7897759 ]
+Epoch 0, train loss: 0.2806, val loss: 0.8303
+Epoch 10, train loss: 0.0936, val loss: 0.2274
+Epoch 20, train loss: 0.0780, val loss: 0.1769
+Epoch 30, train loss: 0.0692, val loss: 0.0879
+Epoch 40, train loss: 0.0679, val loss: 0.0304
+Epoch 0, train loss: 0.2806, val loss: 0.8303
+Epoch 10, train loss: 0.0936, val loss: 0.2274
+Epoch 20, train loss: 0.0780, val loss: 0.1769
+Epoch 30, train loss: 0.0692, val loss: 0.0879
+Epoch 40, train loss: 0.0679, val loss: 0.0304
+Epoch 0, train loss: 0.2806, val loss: 1.1845
+Epoch 10, train loss: 0.1729, val loss: 0.7827
+Epoch 20, train loss: 0.1013, val loss: 0.2956
+Epoch 30, train loss: 0.0697, val loss: 0.1022
+Epoch 40, train loss: 0.0705, val loss: 0.0711
+Epoch 0, train loss: 0.2806, val loss: 1.1845
+Epoch 10, train loss: 0.1729, val loss: 0.7827
+Epoch 20, train loss: 0.1013, val loss: 0.2956
+Epoch 30, train loss: 0.0697, val loss: 0.1022
+Epoch 40, train loss: 0.0705, val loss: 0.0711
+Epoch 50, train loss: 0.0691, val loss: 0.0557
+Epoch 60, train loss: 0.0679, val loss: 0.0279
+Epoch 70, train loss: 0.0679, val loss: 0.0460
+Epoch 80, train loss: 0.0676, val loss: 0.0342
+Inferred coeffs for Chile: [ 1.1107469   1.2253541   0.81139714  0.5514965   0.96317595  1.2739607
+ -2.8819492  -0.61397606  0.20131674  0.06239761 -1.3397236   0.01462933
+ -0.01813049 -4.612229    2.4917512  -0.04399003 -1.4487337   0.89367414]
+Epoch 0, train loss: 0.0252, val loss: 0.3130
+Epoch 10, train loss: 0.0473, val loss: 0.1772
+Epoch 20, train loss: 0.0292, val loss: 0.1600
+Epoch 30, train loss: 0.0081, val loss: 0.0738
+Epoch 40, train loss: 0.0221, val loss: 0.0385
+Epoch 0, train loss: 0.0252, val loss: 0.3130
+Epoch 10, train loss: 0.0473, val loss: 0.1772
+Epoch 20, train loss: 0.0292, val loss: 0.1600
+Epoch 30, train loss: 0.0081, val loss: 0.0738
+Epoch 40, train loss: 0.0221, val loss: 0.0385
+Epoch 0, train loss: 0.0252, val loss: 0.0391
+Epoch 10, train loss: 0.0065, val loss: 0.0142
+Epoch 20, train loss: 0.0018, val loss: 0.0005
+Epoch 30, train loss: 0.0022, val loss: 0.0007
+Epoch 40, train loss: 0.0022, val loss: 0.0059
+Epoch 0, train loss: 0.0252, val loss: 0.0391
+Epoch 10, train loss: 0.0065, val loss: 0.0142
+Epoch 20, train loss: 0.0018, val loss: 0.0005
+Epoch 30, train loss: 0.0022, val loss: 0.0007
+Epoch 40, train loss: 0.0022, val loss: 0.0059
+Epoch 50, train loss: 0.0019, val loss: 0.0111
+Inferred coeffs for Ecuador: [ 1.0868202   1.2006974   0.78822964  0.5712971   0.939777    1.2965521
+ -2.9041917  -0.58920354  0.17931405  0.08503817 -1.3632079  -0.00928437
+  0.00578317 -4.6093254   2.491373   -0.02014744 -1.4208379   0.86927444]
+Epoch 0, train loss: 0.0273, val loss: 0.2945
+Epoch 10, train loss: 0.0454, val loss: 0.1544
+Epoch 20, train loss: 0.0336, val loss: 0.1760
+Epoch 30, train loss: 0.0239, val loss: 0.0056
+Epoch 40, train loss: 0.0050, val loss: 0.0196
+Epoch 0, train loss: 0.0273, val loss: 0.2945
+Epoch 10, train loss: 0.0454, val loss: 0.1544
+Epoch 20, train loss: 0.0336, val loss: 0.1760
+Epoch 30, train loss: 0.0239, val loss: 0.0056
+Epoch 40, train loss: 0.0050, val loss: 0.0196
+Epoch 50, train loss: 0.0032, val loss: 0.0011
+Epoch 60, train loss: 0.0064, val loss: 0.0269
+Epoch 70, train loss: 0.0041, val loss: 0.0033
+Epoch 80, train loss: 0.0069, val loss: 0.0285
+Epoch 90, train loss: 0.0045, val loss: 0.0041
+Epoch 0, train loss: 0.0273, val loss: 0.0621
+Epoch 10, train loss: 0.0049, val loss: 0.0203
+Epoch 20, train loss: 0.0025, val loss: 0.0082
+Epoch 30, train loss: 0.0020, val loss: 0.0024
+Epoch 40, train loss: 0.0018, val loss: 0.0111
+Epoch 0, train loss: 0.0273, val loss: 0.0621
+Epoch 10, train loss: 0.0049, val loss: 0.0203
+Epoch 20, train loss: 0.0025, val loss: 0.0082
+Epoch 30, train loss: 0.0020, val loss: 0.0024
+Epoch 40, train loss: 0.0018, val loss: 0.0111
+Epoch 50, train loss: 0.0014, val loss: 0.0073
+Inferred coeffs for Peru: [ 1.0874592   1.2013434   0.78886354  0.57068443  0.9404151   1.2959193
+ -2.9035618  -0.58985215  0.17994742  0.0843997  -1.3625646  -0.00864549
+  0.00514429 -4.6090384   2.491084   -0.02078617 -1.4215266   0.8699575 ]
+Epoch 0, train loss: 0.0185, val loss: 0.2316
+Epoch 10, train loss: 0.0546, val loss: 0.0775
+Epoch 20, train loss: 0.0289, val loss: 0.0126
+Epoch 30, train loss: 0.0325, val loss: 0.0111
+Epoch 0, train loss: 0.0185, val loss: 0.2316
+Epoch 10, train loss: 0.0546, val loss: 0.0775
+Epoch 20, train loss: 0.0289, val loss: 0.0126
+Epoch 30, train loss: 0.0325, val loss: 0.0111
+Epoch 0, train loss: 0.0185, val loss: 0.1395
+Epoch 10, train loss: 0.0091, val loss: 0.1377
+Epoch 20, train loss: 0.0060, val loss: 0.1330
+Epoch 30, train loss: 0.0041, val loss: 0.1211
+Epoch 0, train loss: 0.0185, val loss: 0.1395
+Epoch 10, train loss: 0.0091, val loss: 0.1377
+Epoch 20, train loss: 0.0060, val loss: 0.1330
+Epoch 30, train loss: 0.0041, val loss: 0.1211
+Inferred coeffs for Thailand: [ 1.0894108e+00  1.2010274e+00  7.9241574e-01  5.6005806e-01
+  9.4283193e-01  1.2919816e+00 -2.8983161e+00 -5.8863229e-01
+  1.8328148e-01  8.2549058e-02 -1.3622314e+00 -6.6926158e-03
+  3.1914008e-03 -4.5926499e+00  2.4746573e+00 -2.2763466e-02
+ -1.4077132e+00  8.5752094e-01]
+Epoch 0, train loss: 0.0151, val loss: 0.3389
+Epoch 10, train loss: 0.0577, val loss: 0.1929
+Epoch 20, train loss: 0.0196, val loss: 0.0522
+Epoch 30, train loss: 0.0064, val loss: 0.0594
+Epoch 40, train loss: 0.0033, val loss: 0.0074
+Epoch 0, train loss: 0.0151, val loss: 0.3389
+Epoch 10, train loss: 0.0577, val loss: 0.1929
+Epoch 20, train loss: 0.0196, val loss: 0.0522
+Epoch 30, train loss: 0.0064, val loss: 0.0594
+Epoch 40, train loss: 0.0033, val loss: 0.0074
+Epoch 50, train loss: 0.0158, val loss: 0.0793
+Epoch 60, train loss: 0.0156, val loss: 0.0232
+Epoch 0, train loss: 0.0151, val loss: 0.0240
+Epoch 10, train loss: 0.0022, val loss: 0.0033
+Epoch 20, train loss: 0.0008, val loss: 0.0132
+Epoch 30, train loss: 0.0008, val loss: 0.0080
+Epoch 40, train loss: 0.0007, val loss: 0.0092
+Epoch 0, train loss: 0.0151, val loss: 0.0240
+Epoch 10, train loss: 0.0022, val loss: 0.0033
+Epoch 20, train loss: 0.0008, val loss: 0.0132
+Epoch 30, train loss: 0.0008, val loss: 0.0080
+Epoch 40, train loss: 0.0007, val loss: 0.0092
+Inferred coeffs for Malaysia: [ 1.0864096   1.2003429   0.7877805   0.5719117   0.93935525  1.2970105
+ -2.9046776  -0.58886904  0.17887028  0.08544593 -1.3635794  -0.00969511
+  0.0061939  -4.609106    2.4911528  -0.01973566 -1.4208499   0.86923915]
+Epoch 0, train loss: 0.1082, val loss: 0.1281
+Epoch 10, train loss: 0.0672, val loss: 0.2291
+Epoch 20, train loss: 0.0546, val loss: 0.2371
+Epoch 30, train loss: 0.0432, val loss: 0.1043
+Epoch 40, train loss: 0.0391, val loss: 0.0109
+Epoch 0, train loss: 0.1082, val loss: 0.1281
+Epoch 10, train loss: 0.0672, val loss: 0.2291
+Epoch 20, train loss: 0.0546, val loss: 0.2371
+Epoch 30, train loss: 0.0432, val loss: 0.1043
+Epoch 40, train loss: 0.0391, val loss: 0.0109
+Epoch 50, train loss: 0.0386, val loss: 0.0346
+Epoch 0, train loss: 0.1082, val loss: 0.4896
+Epoch 10, train loss: 0.0452, val loss: 0.1133
+Epoch 20, train loss: 0.0385, val loss: 0.0304
+Epoch 30, train loss: 0.0406, val loss: 0.0747
+Epoch 40, train loss: 0.0393, val loss: 0.0035
+Epoch 0, train loss: 0.1082, val loss: 0.4896
+Epoch 10, train loss: 0.0452, val loss: 0.1133
+Epoch 20, train loss: 0.0385, val loss: 0.0304
+Epoch 30, train loss: 0.0406, val loss: 0.0747
+Epoch 40, train loss: 0.0393, val loss: 0.0035
+Epoch 50, train loss: 0.0384, val loss: 0.0428
+Epoch 60, train loss: 0.0380, val loss: 0.0259
+Inferred coeffs for Australia: [ 1.0974497e+00  1.2115221e+00  7.9868031e-01  5.6174886e-01
+  9.5041841e-01  1.2861862e+00 -2.8938313e+00 -6.0009402e-01
+  1.8936057e-01  7.4728310e-02 -1.3526167e+00  1.3425596e-03
+ -4.8437584e-03 -4.6073227e+00  2.4894009e+00 -3.0759806e-02
+ -1.4318992e+00  8.7992728e-01]
+Epoch 0, train loss: 0.0383, val loss: 0.2385
+Epoch 10, train loss: 0.0501, val loss: 0.0628
+Epoch 20, train loss: 0.0237, val loss: 0.0710
+Epoch 30, train loss: 0.0139, val loss: 0.1013
+Epoch 40, train loss: 0.0107, val loss: 0.0649
+Epoch 0, train loss: 0.0383, val loss: 0.2385
+Epoch 10, train loss: 0.0501, val loss: 0.0628
+Epoch 20, train loss: 0.0237, val loss: 0.0710
+Epoch 30, train loss: 0.0139, val loss: 0.1013
+Epoch 40, train loss: 0.0107, val loss: 0.0649
+Epoch 0, train loss: 0.0383, val loss: 0.1645
+Epoch 10, train loss: 0.0089, val loss: 0.0834
+Epoch 20, train loss: 0.0091, val loss: 0.0564
+Epoch 30, train loss: 0.0086, val loss: 0.0908
+Epoch 0, train loss: 0.0383, val loss: 0.1645
+Epoch 10, train loss: 0.0089, val loss: 0.0834
+Epoch 20, train loss: 0.0091, val loss: 0.0564
+Epoch 30, train loss: 0.0086, val loss: 0.0908
+Inferred coeffs for China: [ 1.0900626e+00  1.1990566e+00  7.9497904e-01  5.4915380e-01
+  9.4417268e-01  1.2888292e+00 -2.8939059e+00 -5.8566582e-01
+  1.8576738e-01  8.1829093e-02 -1.3633289e+00 -6.0400036e-03
+  2.5387716e-03 -4.5549645e+00  2.4368453e+00 -2.3457136e-02
+ -1.3900508e+00  8.4155917e-01]
+Epoch 0, train loss: 0.7957, val loss: 1.6657
+Epoch 10, train loss: 0.2675, val loss: 0.6914
+Epoch 20, train loss: 0.1695, val loss: 0.0759
+Epoch 30, train loss: 0.1404, val loss: 0.3967
+Epoch 40, train loss: 0.1338, val loss: 0.2474
+Epoch 0, train loss: 0.7957, val loss: 1.6657
+Epoch 10, train loss: 0.2675, val loss: 0.6914
+Epoch 20, train loss: 0.1695, val loss: 0.0759
+Epoch 30, train loss: 0.1404, val loss: 0.3967
+Epoch 40, train loss: 0.1338, val loss: 0.2474
+Epoch 0, train loss: 0.7957, val loss: 2.2331
+Epoch 10, train loss: 0.6286, val loss: 1.5811
+Epoch 20, train loss: 0.4400, val loss: 0.7695
+Epoch 30, train loss: 0.2596, val loss: 0.1841
+Epoch 40, train loss: 0.1490, val loss: 0.1883
+Epoch 0, train loss: 0.7957, val loss: 2.2331
+Epoch 10, train loss: 0.6286, val loss: 1.5811
+Epoch 20, train loss: 0.4400, val loss: 0.7695
+Epoch 30, train loss: 0.2596, val loss: 0.1841
+Epoch 40, train loss: 0.1490, val loss: 0.1883
+Epoch 50, train loss: 0.1355, val loss: 0.3655
+Epoch 60, train loss: 0.1369, val loss: 0.4220
+Inferred coeffs for United States: [ 1.1164303   1.222116    0.82918125  0.46403977  0.9863804   1.2446576
+ -2.822668   -0.61593133  0.22394393  0.04536904 -1.3261055   0.02004129
+ -0.02367587 -4.504503    2.5894804  -0.05051628 -1.3971231   0.903933  ]

@@ -28,7 +28,7 @@ from utils.utils import save_logs
 
 def get_symb_model(model_type, device):
     if model_type == "GKAN":
-        model_path = "./saved_models_optuna/model-real-epid-gkan/real_epid_gkan_7/0"
+        model_path = "./inferred_coeffs/gkan"
     
         def build_symb_gkan():
             x_i, x_j = sp.symbols('x_i x_j')
@@ -61,7 +61,7 @@ def get_symb_model(model_type, device):
         return model_path, build_symb_gkan
     
     elif model_type == "MPNN":
-        model_path = "./saved_models_optuna/model-real-epid-mpnn/real_epid_mpnn_7/0"
+        model_path = "./inferred_coeffs/mpnn"
 
         def build_symb_mpnn_to_opt():
             x_i, x_j = sp.symbols('x_i x_j')
@@ -96,7 +96,7 @@ def get_symb_model(model_type, device):
             return symb_model
         return model_path, build_symb_mpnn_to_opt
     elif model_type == "TSS":
-        model_path = "./saved_models_optuna/tss/real_epid_covid"
+        model_path = "./inferred_coeffs/tpsindy"
         def build_symb_model_tss_to_opt():
             x_i, x_j = sp.symbols('x_i x_j')    
 
@@ -128,7 +128,7 @@ def get_symb_model(model_type, device):
     
         return model_path, build_symb_model_tss_to_opt
     elif model_type == "LLC":
-        model_path = "./saved_models_optuna/model-real-epid-llc/real_epid_llc_3/0"
+        model_path = "./inferred_coeffs/llc"
         def build_symb_llc_to_opt():
             x_i, x_j = sp.symbols('x_i x_j')    
 
@@ -161,7 +161,7 @@ def get_symb_model(model_type, device):
         return model_path, build_symb_llc_to_opt
     
     elif model_type == 'SW':
-        model_path = "./saved_models_optuna/model-real-epid-gkan/real_epid_gkan_7/0"
+        model_path = "./inferred_coeffs/gkan_sw"
         def build_symb_sw_to_opt():
             x_i, x_j = sp.symbols('x_i x_j')
             a = 0.00793399829034096
@@ -271,6 +271,7 @@ def fit_param_per_country_gd(
     results_df = pd.DataFrame()
     lr_grid = [1e-2, 1e-3]
     epochs_grid = [50, 100]
+    os.makedirs(model_path, exist_ok=True)
     logs_file = f"{model_path}/logs_fine_tuning_{data.root}.txt"
 
     for country_name, node in countries_dict.items():
