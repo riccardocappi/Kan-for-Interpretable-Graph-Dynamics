@@ -163,7 +163,7 @@ def get_symb_test_error(g_symb, h_symb, test_set, message_passing=False, include
 
 
 
-def get_test_set(dynamics, device='cuda', input_range=(0, 1), t_span = (0, 1), **integration_kwargs):
+def get_test_set(dynamics, device='cpu', input_range=(0, 1), t_span = (0, 1), **integration_kwargs):
     seeds = [12345, 67890, 111213]
 
     graphs = [
@@ -189,7 +189,7 @@ def get_test_set(dynamics, device='cuda', input_range=(0, 1), t_span = (0, 1), *
 
 
 
-def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range = (0, 1), t_span = (0, 1), **integration_kwargs):
+def integrate_test_set(graph, dynamics, seed=12345, device='cpu', input_range = (0, 1), t_span = (0, 1), **integration_kwargs):
     # graph = nx.barabasi_albert_graph(100, 3, seed=seed)
     edge_index = from_networkx(graph).edge_index
     edge_index = edge_index.to(torch.device(device))
@@ -218,7 +218,7 @@ def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range =
 
 
 def build_model_from_file(model_path, message_passing, include_time, method='dopri5', adjoint=False, atol=1e-5, rtol=1e-5,
-                          compute_mult=True):
+                          compute_mult=True, device='cpu'):
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/gkan/state_dict.pth"
 
@@ -233,7 +233,7 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
         grid_range=[-best_hyperparams['range_limit_g_net'], best_hyperparams['range_limit_g_net']],
         mu_1=best_hyperparams['mu_1_g_net'],
         mu_2=best_hyperparams['mu_2_g_net'],
-        device='cuda',
+        device=device,
         compute_mult=compute_mult,
         store_act=True
     )
@@ -250,7 +250,7 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
         grid_range=[-best_hyperparams['range_limit_h_net'], best_hyperparams['range_limit_h_net']],
         mu_1=best_hyperparams['mu_1_h_net'],
         mu_2=best_hyperparams['mu_2_h_net'],
-        device='cuda',
+        device=device,
         compute_mult=compute_mult,
         store_act=True
     )
@@ -273,8 +273,8 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
         rtol=rtol
     )
 
-    model = model.to(torch.device('cuda'))
-    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device('cuda')))
+    model = model.to(torch.device(device))
+    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device(device)))
 
     return model
 
@@ -282,13 +282,13 @@ def build_model_from_file(model_path, message_passing, include_time, method='dop
 def valid_symb_model(
     config,
     model_path_gkan,
-    device='cuda',
+    device='cpu',
     atol=1e-5,
     rtol=1e-5,
     method='dopri5',
     black_box_fitting=True,
-    n_g_hidden_layers=2,
-    n_h_hidden_layers=2,
+    depth_g=2,
+    depth_h=2,
     sample_size=10000,
     grid_orig = None
 ):
@@ -334,8 +334,8 @@ def valid_symb_model(
                 # deterministic = True
             )
             _, g_symb, h_symb, _ = fit_black_box_from_kan(
-                n_g_hidden_layers=n_g_hidden_layers,
-                n_h_hidden_layers=n_h_hidden_layers,
+                depth_g=depth_g,
+                depth_h=depth_h,
                 device=device,
                 model_path=model_path_gkan,
                 pysr_model=pysr_model,
@@ -349,8 +349,8 @@ def valid_symb_model(
             if not is_orig:
                 print(f"Fitting symbolic model with {param1}, theta {param2} and cutting threshold {param3}")
                 _, g_symb, h_symb, _ = fit_model(
-                    n_g_hidden_layers=n_g_hidden_layers,
-                    n_h_hidden_layers=n_h_hidden_layers,
+                    depth_g=depth_g,
+                    depth_h=depth_h,
                     model_path=model_path_gkan,
                     theta=param2,
                     message_passing=False,
@@ -363,8 +363,8 @@ def valid_symb_model(
             else:
                 print(f"Fitting symbolic model with {param1}, theta {param2} and ws {param3}")
                 _, g_symb, h_symb, _ = fit_model(
-                    n_g_hidden_layers=n_g_hidden_layers,
-                    n_h_hidden_layers=n_h_hidden_layers,
+                    depth_g=depth_g,
+                    depth_h=depth_h,
                     model_path=model_path_gkan,
                     theta=param2,
                     message_passing=False,
@@ -417,8 +417,8 @@ def valid_symb_model(
     if black_box_fitting:
         gkan_symb, symb_g, symb_h, exec_time = fit_black_box_from_kan(
             model_path=model_path_gkan,
-            n_g_hidden_layers=n_g_hidden_layers,
-            n_h_hidden_layers=n_h_hidden_layers,
+            depth_g=depth_g,
+            depth_h=depth_h,
             device=device,
             theta=-np.inf,
             pysr_model=lambda: get_pysr_model(
@@ -437,8 +437,8 @@ def valid_symb_model(
         if grid_orig == None:
             gkan_symb, symb_g, symb_h, exec_time = fit_model(
                 model_path=model_path_gkan,
-                n_g_hidden_layers=n_g_hidden_layers,
-                n_h_hidden_layers=n_h_hidden_layers,
+                depth_g=depth_g,
+                depth_h=depth_h,
                 theta=best['theta'],
                 message_passing=False,
                 include_time=False,
@@ -450,8 +450,8 @@ def valid_symb_model(
         else:
             gkan_symb, symb_g, symb_h, exec_time = fit_model(
                 model_path=model_path_gkan,
-                n_g_hidden_layers=n_g_hidden_layers,
-                n_h_hidden_layers=n_h_hidden_layers,
+                depth_g=depth_g,
+                depth_h=depth_h,
                 theta=best['theta'],
                 message_passing=False,
                 include_time=False,
@@ -469,9 +469,7 @@ def post_process_gkan(
     config,
     model_path,
     test_set,
-    device='cuda',
-    n_g_hidden_layers=2,
-    n_h_hidden_layers=2,
+    device='cpu',
     sample_size=10000,
     message_passing=False,
     include_time=False,
@@ -482,7 +480,7 @@ def post_process_gkan(
     inverse_scale=False,
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res_new.json',
+    res_file_name = 'post_process_res_repr_cpu.json',
     compute_mult = True,
     grid_orig = None,
     skip_bb = False,
@@ -519,6 +517,13 @@ def post_process_gkan(
             print("Evaluation failed!")
             return np.inf, np.inf, np.inf
 
+    best_params_file = f"{model_path}/best_params.json"
+    with open(best_params_file, 'r') as f:
+        best_hyperparams = json.load(f)
+    
+    depth_g = best_hyperparams.get('n_hidden_layers_g_net', 1) + 1
+    depth_h = best_hyperparams.get('n_hidden_layers_h_net', 1) + 1
+
     if not skip_bb:
         print("Black-Box fitting \n")
         bb_symb, bb_g_symb, bb_h_symb, exec_time = valid_symb_model(
@@ -529,8 +534,8 @@ def post_process_gkan(
             rtol=rtol,
             method=method,
             black_box_fitting=True,
-            n_g_hidden_layers=n_g_hidden_layers,
-            n_h_hidden_layers=n_h_hidden_layers,
+            depth_g=depth_g,
+            depth_h=depth_h,
             sample_size = sample_size
         )
 
@@ -553,8 +558,8 @@ def post_process_gkan(
         rtol=rtol,
         method=method,
         black_box_fitting=False,
-        n_g_hidden_layers=n_g_hidden_layers,
-        n_h_hidden_layers=n_h_hidden_layers,
+        depth_g=depth_g,
+        depth_h=depth_h,
         sample_size = sample_size,
         grid_orig=grid_orig
     )
@@ -637,7 +642,7 @@ if __name__ == '__main__':
 
     KUR = get_test_set(
         dynamics=kur_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=kur_config['input_range'],
         **kur_config['integration_kwargs']
     )
@@ -668,7 +673,7 @@ if __name__ == '__main__':
 
     EPID = get_test_set(
         dynamics=epid_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=epid_config['input_range'],
         **epid_config['integration_kwargs']
     )
@@ -700,7 +705,7 @@ if __name__ == '__main__':
 
     POP = get_test_set(
         dynamics=pop_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=pop_config['input_range'],
         **pop_config['integration_kwargs']
     )
@@ -731,7 +736,7 @@ if __name__ == '__main__':
 
     BIO = get_test_set(
         dynamics=bio_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=bio_config['input_range'],
         **bio_config['integration_kwargs']
     )
@@ -770,9 +775,7 @@ if __name__ == '__main__':
         config=bio_config,
         model_path=model_path_gkan,
         test_set=BIO,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -796,9 +799,7 @@ if __name__ == '__main__':
             config=bio_config,
             model_path=model_path,
             test_set=BIO,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
+            device='cpu',
             sample_size=10000,
             message_passing=False,
             include_time=False,
@@ -820,9 +821,7 @@ if __name__ == '__main__':
         config=kur_config,
         model_path=model_path_gkan,
         test_set=KUR,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -846,9 +845,7 @@ if __name__ == '__main__':
             config=kur_config,
             model_path=model_path,
             test_set=KUR,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
+            device='cpu',
             sample_size=10000,
             message_passing=False,
             include_time=False,
@@ -856,8 +853,7 @@ if __name__ == '__main__':
             rtol=1e-5,
             method="dopri5",
             eval_model=True,
-            compute_mult=True,
-            res_file_name="post_process_res.json"
+            compute_mult=True
         )
 
     """### Epidemics
@@ -871,9 +867,7 @@ if __name__ == '__main__':
         config=epid_config,
         model_path=model_path_gkan,
         test_set=EPID,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -896,9 +890,7 @@ if __name__ == '__main__':
             config=epid_config,
             model_path=model_path,
             test_set=EPID,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
+            device='cpu',
             sample_size=10000,
             message_passing=False,
             include_time=False,
@@ -920,9 +912,7 @@ if __name__ == '__main__':
         config=pop_config,
         model_path=model_path_gkan,
         test_set=POP,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -946,9 +936,7 @@ if __name__ == '__main__':
             config=pop_config,
             model_path=model_path,
             test_set=POP,
-            device='cuda',
-            n_g_hidden_layers=2,
-            n_h_hidden_layers=2,
+            device='cpu',
             sample_size=10000,
             message_passing=False,
             include_time=False,

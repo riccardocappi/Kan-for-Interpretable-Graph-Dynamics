@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     KUR = get_test_set(
         dynamics=kur_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=kur_config['input_range'],
         **kur_config['integration_kwargs']
     )
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     EPID = get_test_set(
         dynamics=epid_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=epid_config['input_range'],
         **epid_config['integration_kwargs']
     )
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     POP = get_test_set(
         dynamics=pop_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=pop_config['input_range'],
         **pop_config['integration_kwargs']
     )
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     BIO = get_test_set(
         dynamics=bio_config['name'],
-        device='cuda',
+        device='cpu',
         input_range=bio_config['input_range'],
         **bio_config['integration_kwargs']
     )
@@ -154,9 +154,7 @@ if __name__ == '__main__':
         config=bio_config,
         model_path="./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_12/0",
         test_set=BIO,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -166,47 +164,17 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_new.json"
+        res_file_name="sw_orig_kan_cpu.json"
     )
     
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_ic1_s5_pd_mult_noise_20db_2/0"
-    # ]
-
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
-
-    #     post_process_gkan(
-    #         config=bio_config,
-    #         model_path=model_path,
-    #         test_set=BIO,
-    #         device='cuda',
-    #         n_g_hidden_layers=2,
-    #         n_h_hidden_layers=2,
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True,
-    #         grid_orig=grid_orig,
-    #         skip_bb=True,
-    #         res_file_name="sw_orig_kan_final_new.json"
-    #     )
-    #     # ------------------------------------------------------------------
+    
         
     # # KUR ------------------------------------------------------------------
     post_process_gkan(
         config=kur_config,
         model_path="./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0",
         test_set=KUR,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -216,48 +184,16 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_final_new.json"
+        res_file_name="sw_orig_kan_cpu.json"
     )
     
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-    #     "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-    #     "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_20db_2/0",
-    # ]
-
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
-
-    #     post_process_gkan(
-    #         config=kur_config,
-    #         model_path=model_path,
-    #         test_set=KUR,
-    #         device='cuda',
-    #         n_g_hidden_layers=2,
-    #         n_h_hidden_layers=2,
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True,
-    #         grid_orig=grid_orig,
-    #         skip_bb=True,
-    #         res_file_name="sw_orig_kan_final_new.json"
-    #     )
-        
-    # # ------------------------------------------------------------------
     
     # # EPID ------------------------------------------------------------------
     post_process_gkan(
         config=epid_config,
         model_path="./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0",
         test_set=EPID,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -267,47 +203,16 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_final_new.json"
+        res_file_name="sw_orig_kan_cpu.json"
     )
     
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_20db_2/0",
-    # ]
-
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
-    #     post_process_gkan(
-    #         config=epid_config,
-    #         model_path=model_path,
-    #         test_set=EPID,
-    #         device='cuda',
-    #         n_g_hidden_layers=2,
-    #         n_h_hidden_layers=2,
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True,
-    #         grid_orig=grid_orig,
-    #         skip_bb=True,
-    #         res_file_name="sw_orig_kan_final_new.json"
-    #     )
-    
-    # ------------------------------------------------------------------
     
     # POP ------------------------------------------------------------------
     post_process_gkan(
         config=pop_config,
         model_path="./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0",
         test_set=POP,
-        device='cuda',
-        n_g_hidden_layers=2,
-        n_h_hidden_layers=2,
+        device='cpu',
         sample_size=10000,
         message_passing=False,
         include_time=False,
@@ -317,37 +222,7 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_final_new.json"
+        res_file_name="sw_orig_kan_cpu.json"
     )
-    
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_70db_2/0",
-    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_50db_2/0",
-    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_20db_2/0",
-    # ]
-
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
-    #     post_process_gkan(
-    #         config=pop_config,
-    #         model_path=model_path,
-    #         test_set=POP,
-    #         device='cuda',
-    #         n_g_hidden_layers=2,
-    #         n_h_hidden_layers=2,
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True,
-    #         grid_orig=grid_orig,
-    #         skip_bb=True,
-    #         res_file_name="sw_orig_kan_final_new.json"
-    #     ) 
-    
-    # ------------------------------------------------------------------
     
     

@@ -577,10 +577,10 @@ def get_kan_arch(n_layers, model_path):
     return acts, preacts, masks_mult
 
 
-def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1,
+def fit_model(depth_h, depth_g, model_path, theta=0.1, message_passing=True, include_time=False, seed=42, sample_size=-1,
               sort_by='score', verbose=False, cut_threshold = 1e-3, alpha_grid = None, fit_orig=False, **kwargs):
     # G_net
-    cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
+    cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=depth_g, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta, verbose=verbose)    
     
     if verbose:
@@ -606,7 +606,7 @@ def fit_model(n_h_hidden_layers, n_g_hidden_layers, model_path, theta=0.1, messa
     
     symb_g = symb_g[0]  # Univariate functions
     # H_Net
-    cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
+    cache_acts, cache_preacts, cache_masks_mult = get_kan_arch(n_layers=depth_h, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts, pruned_masks_mult = pruning(cache_acts, cache_preacts, cache_masks_mult, theta=theta, verbose=verbose)
     
     aggr_term = sp.Symbol(r'\sum_{j}( ' + str(symb_g) + ')')
@@ -723,8 +723,8 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
 
 def fit_black_box_from_kan(
     model_path, 
-    n_g_hidden_layers, 
-    n_h_hidden_layers, 
+    depth_g, 
+    depth_h, 
     device='cpu', 
     theta=0.1, 
     pysr_model = None, 
@@ -734,7 +734,7 @@ def fit_black_box_from_kan(
     verbose=False
     ):
     #G_Net
-    cache_acts, cache_preacts, cached_masks_mult = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
+    cache_acts, cache_preacts, cached_masks_mult = get_kan_arch(n_layers=depth_g, model_path=f'{model_path}/g_net')
     pruned_acts, pruned_preacts, _ = pruning(cache_acts, cache_preacts, cached_masks_mult, theta=theta, verbose=verbose)
 
     input = pruned_preacts[0]
@@ -759,7 +759,7 @@ def fit_black_box_from_kan(
     top_5_eqs_g.to_csv(f"{save_path}/top_5_equations_g.csv")
 
     #H_Net
-    cache_acts, cache_preacts, cached_masks_mult = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
+    cache_acts, cache_preacts, cached_masks_mult = get_kan_arch(n_layers=depth_h, model_path=f'{model_path}/h_net')
     pruned_acts, pruned_preacts, _ = pruning(cache_acts, cache_preacts, cached_masks_mult, theta=theta, verbose=verbose)
 
     input = pruned_preacts[0]
@@ -822,233 +822,3 @@ def quantise(expr, quantise_to=0.01, is_removing=False):
         return expr.func(*[quantise(arg, quantise_to, is_removing) for arg in expr.args])
     
                 
-# def top_down_fitting(
-#         symb_in,
-#         pruned_acts,
-#         pruned_preacts,
-#         pruned_mask_mult,
-#         saving_path,
-#         pysr_model=None,
-#         sample_size=-1,
-#         neuron_level = False
-# ):
-    
-#     func_hierarchy = defaultdict(dict)
-#     for index, l_post in enumerate(reversed(range(len(pruned_acts)))): # Starting from last layer
-#         black_box_input = pruned_preacts[0]
-#         symb_xs=symb_in
-#         for l_prev in range(l_post, len(pruned_acts)):
-#             symb_neurons = []
-#             mask_mult = pruned_mask_mult[l_prev]
-#             for j in range(pruned_acts[l_prev].shape[1]):
-#                 if neuron_level:
-#                     symb_neuron_j,_ = fit_black_box(
-#                         black_box_input,
-#                         pruned_acts[l_prev].sum(dim=2)[:, j].unsqueeze(-1),
-#                         symb_xs=symb_xs,
-#                         pysr_model=pysr_model,
-#                         sample_size=sample_size
-#                 )
-#                 else:
-#                     symb_neuron_j = 0 if not mask_mult[j] else 1
-#                     for i in range(pruned_acts[l_prev].shape[2]):
-#                         input_spline = black_box_input if (l_post == l_prev and l_prev > 0)  else black_box_input[:, i].unsqueeze(-1)
-#                         symb_xs_spline = symb_xs if (l_post == l_prev and l_prev > 0) else [symb_xs[i]]
-#                         black_box_spline, _ = fit_black_box(
-#                             cached_input=input_spline,
-#                             cached_output=pruned_acts[l_prev][:, j, i].unsqueeze(-1),
-#                             symb_xs=symb_xs_spline,
-#                             pysr_model=pysr_model,
-#                             sample_size=sample_size
-#                         )
-#                         if not mask_mult[j]:
-#                             symb_neuron_j += black_box_spline
-#                         else:
-#                             symb_neuron_j *= black_box_spline
-                            
-#                         func_hierarchy[f"f_{index}"][f"spline_{l_prev}_{j}_{i}"] = str(black_box_spline)
-                        
-#                 symb_neurons.append(symb_neuron_j)
-#                 func_hierarchy[f"f_{index}"][f"neuron_{l_prev}_{j}"] = str(symb_neuron_j)
-                
-#             black_box_input = pruned_acts[l_prev].sum(dim=2)
-#             symb_xs = symb_neurons
-            
-#     with open(saving_path, "w") as f:
-#             json.dump(func_hierarchy, f)
-            
-    
-    
-                
-   
-# def hierarchical_symb_fitting(
-#     model_path,
-#     theta=0.1,
-#     n_g_hidden_layers = 2,
-#     n_h_hidden_layers = 2,
-#     pysr_model = None,
-#     sample_size=-1,
-#     message_passing=False,
-#     include_time=False,
-#     neuron_level=True
-# ):
-    
-#     cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_g_hidden_layers, model_path=f'{model_path}/g_net')
-#     pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
-#     file_name = 'spline_top_down.json' if not neuron_level else 'neuron_top_down.json'
-#     saving_path = f"{model_path}/g_net"
-#     os.makedirs(saving_path, exist_ok=True)
-    
-    
-#     top_down_fitting(
-#         symb_in=[sp.Symbol('x_i'), sp.Symbol('x_j')],
-#         pruned_acts=pruned_acts,
-#         pruned_preacts=pruned_preacts,
-#         pruned_mask_mult=pruned_mask_mult,
-#         pysr_model=pysr_model,
-#         sample_size=sample_size,
-#         neuron_level=neuron_level,
-#         saving_path=f"{saving_path}/{file_name}"
-#     )
-    
-#     cache_acts, cache_preacts, cache_mult_mask = get_kan_arch(n_layers=n_h_hidden_layers, model_path=f'{model_path}/h_net')
-#     pruned_acts, pruned_preacts, pruned_mask_mult = pruning(cache_acts, cache_preacts, cache_mult_mask, theta=theta)
-#     saving_path = f"{model_path}/h_net" 
-#     os.makedirs(saving_path, exist_ok=True)
-    
-#     if message_passing:
-#         symb_h_in = [sp.Symbol('x_i'), sp.Symbol('AGGR')]
-#     else:
-#         symb_h_in = [sp.Symbol('x_i')]
-        
-#     if include_time:
-#         symb_h_in += [sp.Symbol('t')]
-    
-#     top_down_fitting(
-#         symb_in=symb_h_in,
-#         pruned_acts=pruned_acts,
-#         pruned_preacts=pruned_preacts,
-#         pruned_mask_mult=pruned_mask_mult,
-#         pysr_model=pysr_model,
-#         sample_size=sample_size,
-#         neuron_level=neuron_level,
-#         saving_path=f"{saving_path}/{file_name}"
-#     )
-    
-
-
-    # # Create symbolic feature library
-# def build_symbolic_library(x_dim):
-#     x_syms = [sp.Symbol(f'x{i}') for i in range(x_dim)]
-
-#     exprs = []  # constant term
-#     for i in range(x_dim):
-#         exprs += [0, x_syms[i], x_syms[i]**2, sp.sin(x_syms[i]), sp.cos(x_syms[i]), sp.exp(x_syms[i]), sp.log(sp.Abs(x_syms[i]) + 1e-5)]
-#     if x_dim == 2:
-#         x0, x1 = x_syms
-#         exprs += [x0 * x1, sp.sin(x0 - x1), sp.cos(x0 - x1), (1 - x0) * x1, (1 - x1) * x0, (x0 + x1) / 2, (x0 - x1) / 2]
-    
-#     return exprs
-
-
-# def evaluate_library(exprs, x_np):
-#     x_dim = x_np.shape[1]
-#     x_syms = sp.symbols([f'x{i}' for i in range(x_dim)])  # (x0, x1, ..., xd)
-    
-#     funcs = [sp.lambdify(x_syms, expr, modules='numpy') for expr in exprs]
-
-#     X_cols = []
-#     for f in funcs:
-#         try:
-#             values = f(*x_np.T)
-#             values = np.atleast_1d(values)
-#             if values.shape[0] == 1:
-#                 # Broadcast constant term
-#                 values = np.full(x_np.shape[0], values.item())
-#             X_cols.append(values)
-#         except Exception as e:
-#             print(f"Failed to evaluate function: {f}. Error: {e}")
-#             # Fallback: column of zeros
-#             X_cols.append(np.zeros(x_np.shape[0]))
-
-#     return np.column_stack(X_cols)
-
-
-# def fit_sindy_like(x, y, gamma=0.01):
-#     x_np = x
-#     if x_np.ndim == 1:
-#         x_np = x_np[:, None]
-#     y_np = y
-    
-#     exprs = build_symbolic_library(x_np.shape[1])
-#     Theta = evaluate_library(exprs, x_np)
-
-#     # Lasso for sparsity
-#     model = Lasso(alpha=gamma, fit_intercept=False, max_iter=10000)
-#     model.fit(Theta, y_np)
-    
-#     # Build symbolic expression
-#     expr = sum(coef * term for coef, term in zip(model.coef_, exprs) if abs(coef) > 1e-2)
-#     if expr == 0:
-#         expr = sp.sympify(0)
-
-#     return expr
-
-
-# def fit_acts_sindy(x, y, sample_size=-1, seed=42, gamma=0.01):
-#     rng = np.random.default_rng(seed)  
-#     if sample_size > 0 and sample_size < len(x):
-#         indices = rng.choice(len(x), sample_size, replace=False)
-#         x_sampled = x[indices]
-#         y_sampled = y[indices]
-#     else:
-#         x_sampled = x
-#         y_sampled = y
-
-#     return fit_sindy_like(x_sampled, y_sampled, gamma=gamma)
-
-
-# def fix_symbolic(layer:KANLayer, i, j, func):
-#     """
-#     Fix KAN spline to symbolic function
-#     """
-#     layer.symbolic_functions[j][i] = func
-#     layer.layer_mask.data[j][i] = 0
-#     layer.symb_mask.data[j][i] = 1
-                
-                
-# def automatic_fix_symbolic_kan(symb_functions_file, in_dim=1, device='cuda'):
-#     """
-#     Automatically fix all the KAN splines to the respective symbolic functions
-#     """
-    
-#     # TODO: fix this taking into account mult_mask
-#     with open(symb_functions_file, "r") as f:
-#         all_functions = json.load(f)
-    
-#     hidden_layers = [in_dim]
-#     # Loop over layers
-#     layer_keys = sorted(all_functions.keys(), key=int)
-#     for layer_key in layer_keys:
-#         layer = all_functions[layer_key]
-#         num_nodes = len(layer)
-#         hidden_layers.append(num_nodes)
-    
-#     if hidden_layers[-1] == 0:
-#         return lambda x: 0 * x[:, 0].unsqueeze(-1)
-    
-#     kan_placeholder = KAN(
-#         layers_hidden=hidden_layers,
-#         store_act=True,
-#         compute_symbolic=True,
-#         device=device
-#     )
-    
-#     for l, layer in enumerate(kan_placeholder.layers):
-#         symb_layer = all_functions[f"{l}"]
-#         for j in range(layer.out_features):
-#             for i in range(layer.in_features):
-#                 str_func =  symb_layer[f"{j}"][f"{i}"]
-#                 symb_func = sp.lambdify(sp.Symbol('x0'), sp.sympify(str_func))
-#                 fix_symbolic(layer, i, j, symb_func)
-#     return kan_placeholder
