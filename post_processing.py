@@ -587,6 +587,7 @@ def post_process_gkan(
             adjoint=adjoint,
             atol=atol,
             rtol=rtol,
+            device=device,
             compute_mult=compute_mult
         )
 
