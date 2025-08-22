@@ -18,7 +18,7 @@ def set_pytorch_seed(seed=42):
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
     random.seed(seed)
-    torch.use_deterministic_algorithms(True)
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 
 def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, snr_db=-1, denoise=False):

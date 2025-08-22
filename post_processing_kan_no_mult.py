@@ -16,7 +16,7 @@ def set_pytorch_seed(seed=42):
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
     random.seed(seed)
-    torch.use_deterministic_algorithms(True)
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 
 if __name__ == '__main__':
