@@ -1,5 +1,10 @@
 # GKAN-ODE
 
+## Description
+Repository of the paper [Unveiling the Actual Performance of Neural-based Models for
+Equation Discovery on Graph Dynamical Systems](https://arxiv.org/pdf/2508.18173)
+
+
 ## Code organization
 The pipeline logic is described by the `Experiments` class and it includes three components:
 - Pre-processing.
