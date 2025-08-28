@@ -27,9 +27,10 @@ def get_data_loader(
     return train_loader, valid_loader
         
 
-def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False):
+def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False, device='cuda'):
     y_pred, y_true = None, None
     if pred_deriv:
+        batch_data = batch_data.to(device)
         if scaler is not None:
             batch_data.x = scaler.transform(batch_data.x)
         y_pred = model(batch_data)
@@ -38,6 +39,7 @@ def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False):
         y_pred = []
         y_true = []
         for snapshot in batch_data:
+            snapshot = snapshot.to(device)
             if scaler is not None:
                 snapshot.x = scaler.transform(snapshot.x)
                 snapshot.y = scaler.transform(snapshot.y)
@@ -51,7 +53,7 @@ def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False):
     return y_pred, y_true
 
 
-def eval_model(model:ODEBlock, valid_loader, criterion, scaler = None, inverse_scale = True, pred_deriv=False):
+def eval_model(model:ODEBlock, valid_loader, criterion, scaler = None, inverse_scale = True, pred_deriv=False, device='cuda'):
     """
     Evaluates the model
     """
@@ -60,7 +62,7 @@ def eval_model(model:ODEBlock, valid_loader, criterion, scaler = None, inverse_s
     y_true = []
     with torch.no_grad():
         for batch_data in valid_loader:
-            y_pred_batch, y_true_batch = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv)
+            y_pred_batch, y_true_batch = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv, device=device)
             y_pred.append(y_pred_batch)
             y_true.append(y_true_batch)
         
@@ -90,7 +92,8 @@ def fit(model:ODEBlock,
         save_updates=True,
         batch_size=-1,
         scaler = None,
-        pred_deriv=False
+        pred_deriv=False,
+        device='cuda'
         ):
     """
     Training process
@@ -137,7 +140,7 @@ def fit(model:ODEBlock,
         global running_training_loss, running_tot_loss
         optimizer.zero_grad()
         
-        y_pred, y_true = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv)
+        y_pred, y_true = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv, device=device)
         training_loss = criterion(y_pred, y_true)
         running_training_loss = running_training_loss + training_loss.item()
         reg = model.regularization_loss(reg_loss_metrics)
@@ -168,7 +171,8 @@ def fit(model:ODEBlock,
             criterion=criterion,
             scaler=scaler, 
             inverse_scale=False,
-            pred_deriv=pred_deriv
+            pred_deriv=pred_deriv,
+            device=device
         )
         
         results['train_loss'].append(running_training_loss / count)
