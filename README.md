@@ -158,6 +158,17 @@ The search space of the hyper-parameters. Mandatory hyper-parameters are:
 
 The search space dictionary can be accessed in the Experiment class with `self.search_space`
 
+## Citation
+If you find this code useful, please cite us
+```
+@article{cappi2025unveiling,
+  title={Unveiling the Actual Performance of Neural-based Models for Equation Discovery on Graph Dynamical Systems},
+  author={Cappi, Riccardo and Frazzetto, Paolo and Navarin, Nicol{\`o} and Sperduti, Alessandro},
+  journal={arXiv preprint arXiv:2508.18173},
+  year={2025}
+}
+```
+
 
 ## Results
 IMPORTANT!! The plots.ipynb file, along with ALL the post processing files, won't run since they need to upload the saved results from the experiments. Unfortunately, such files were to heavy to be uploaded for submission. Hence, if you want to replicate the plots and post process results, you will need to run from scratch all the experiments and modify file paths in the notebook cells and respective python files.
