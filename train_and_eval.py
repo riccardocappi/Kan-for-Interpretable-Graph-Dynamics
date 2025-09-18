@@ -53,23 +53,30 @@ def get_predictions(model:ODEBlock, batch_data, scaler=None, pred_deriv=False, d
     return y_pred, y_true
 
 
+def get_pred_batch(model:ODEBlock, loader, scaler=None, pred_deriv=False, device='cuda'):
+    y_pred= []
+    y_true = []
+    for batch_data in loader:
+        y_pred_batch, y_true_batch = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv, device=device)
+        y_pred.append(y_pred_batch)
+        y_true.append(y_true_batch)
+        
+    y_pred = torch.cat(y_pred, dim=0)
+    y_true = torch.cat(y_true, dim=0)
+    
+    return y_pred, y_true
+
+
+
 def eval_model(model:ODEBlock, valid_loader, criterion, scaler = None, inverse_scale = True, pred_deriv=False, device='cuda'):
     """
     Evaluates the model
     """
     model.eval()
-    y_pred= []
-    y_true = []
     with torch.no_grad():
-        for batch_data in valid_loader:
-            y_pred_batch, y_true_batch = get_predictions(model, batch_data, scaler=scaler, pred_deriv=pred_deriv, device=device)
-            y_pred.append(y_pred_batch)
-            y_true.append(y_true_batch)
+        y_pred, y_true = get_pred_batch(model, valid_loader, scaler=scaler, pred_deriv=pred_deriv, device=device)
         
-        y_pred = torch.cat(y_pred, dim=0)
-        y_true = torch.cat(y_true, dim=0)
-        
-        if scaler is not None and inverse_scale and not pred_deriv:
+        if (scaler is not None) and (inverse_scale) and (not pred_deriv):
             y_pred = scaler.inverse_transform(y_pred)
             y_true = scaler.inverse_transform(y_true)
         

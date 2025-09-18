@@ -31,9 +31,10 @@ from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
-from train_and_eval import eval_model
+from train_and_eval import get_pred_batch
 import sympytorch
 import itertools
+from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 storage = JournalStorage(JournalFileBackend("optuna_journal_storage.log"))
 
@@ -53,7 +54,6 @@ def set_pytorch_seed(seed=42):
 
 from models.utils.MPNN import MPNN
 from models.baseline.MPNN_ODE import MPNN_ODE
-from train_and_eval import eval_model
 from datasets.SyntheticData import SyntheticData
 from sympy import symbols, sin, summation, simplify
 import networkx as nx
@@ -119,9 +119,9 @@ def make_callable(expr):
         raise ValueError(f"Unexpected symbols in expression: {free_syms}")
 
 
-def get_symb_test_error(g_symb, h_symb, test_set, message_passing=False, include_time=False, atol=1e-5, rtol=1e-5, scaler = None, inverse_scale=False, method='scipy_solver',
-                        is_symb = True):
-
+def get_test_pred(g_symb, h_symb, test_set, message_passing=False, include_time=False, atol=1e-5, rtol=1e-5, method='scipy_solver',
+                        is_symb = True, device='cuda'):
+    
     if is_symb:
         if isinstance(g_symb, int):
             g_symb = sp.sympify(g_symb)
@@ -132,33 +132,68 @@ def get_symb_test_error(g_symb, h_symb, test_set, message_passing=False, include
         g_symb = make_callable(g_symb)
         h_symb = make_callable(h_symb)
 
+    symb = get_model(
+        g=g_symb,
+        h=h_symb,
+        message_passing=message_passing,
+        include_time=include_time,
+        atol=atol,
+        rtol=rtol,
+        integration_method=method
+    )
+    symb = symb.to(torch.device(device))
+    
+    symb = symb.eval()
+    
+    y_pred = []
+    y_true = []
+    
+    with torch.no_grad():
+        for ts in test_set:
+            collate_fn = lambda samples_list: samples_list
+            test_loader = DataLoader(ts, batch_size=len(ts), shuffle=True, collate_fn=collate_fn)
+            
+            y_pred_batch, y_true_batch = get_pred_batch(
+                model=symb,
+                loader=test_loader,
+                pred_deriv=False,
+                device=device,
+                scaler=None
+            )
+            y_pred.append(y_pred_batch)
+            y_true.append(y_true_batch)
+    
+    return y_pred, y_true
+
+
+def get_list_test_errors(y_pred, y_true, criterion = mean_absolute_error):
     test_losses = []
-
-    for ts in test_set:
-        symb = get_model(
-            g=g_symb,
-            h=h_symb,
-            message_passing=message_passing,
-            include_time=include_time,
-            atol=atol,
-            rtol=rtol,
-            integration_method=method
-        )
-
-        collate_fn = lambda samples_list: samples_list
-        test_loader = DataLoader(ts, batch_size=len(ts), shuffle=True, collate_fn=collate_fn)
-
-        test_loss = eval_model(
-            model=symb,
-            valid_loader=test_loader,
-            criterion=torch.nn.L1Loss(),
-            scaler=scaler,
-            inverse_scale=inverse_scale,
-            pred_deriv=False
-        )
-
+    
+    for yp, yt in zip(y_pred, y_true):
+        test_loss = criterion(yt.detach().cpu().numpy().flatten(), yp.detach().cpu().numpy().flatten())
         test_losses.append(test_loss)
+        
+    return test_losses
 
+
+def get_symb_test_error(g_symb, h_symb, test_set, message_passing=False, include_time=False, atol=1e-5, rtol=1e-5, method='scipy_solver',
+                        is_symb = True, device = 'cuda', criterion = mean_absolute_error):
+    
+    y_pred_test, y_true_test = get_test_pred(
+        g_symb=g_symb,
+        h_symb=h_symb,
+        test_set=test_set,
+        message_passing=message_passing,
+        include_time=include_time,
+        atol=atol,
+        rtol=rtol,
+        method=method,
+        is_symb=is_symb,        
+        device=device
+    )
+    
+    test_losses = get_list_test_errors(y_pred_test, y_true_test, criterion=criterion)
+        
     return test_losses
 
 
@@ -318,7 +353,8 @@ def valid_symb_model(
             method=method,
             atol=atol,
             rtol=rtol,
-            is_symb=is_symb
+            is_symb=is_symb,
+            device=device
         )
         return errs[0]
 
@@ -476,8 +512,6 @@ def post_process_gkan(
     atol=1e-5,
     rtol=1e-5,
     method='dopri5',
-    scaler=None,
-    inverse_scale=False,
     adjoint=True,
     eval_model=True,
     res_file_name = 'post_process_res_repr_cuda.json',
@@ -488,9 +522,11 @@ def post_process_gkan(
 
     results_dict = {}
 
-    def print_symb_error(g_symb, h_symb, txt="symbolic formula", is_symb=True):
+    def get_avg_test_error(g_symb, h_symb, is_symb=True):
         try:
-            test_losses_symb = get_symb_test_error(
+            res = {}
+            
+            y_pred_test, y_true_test = get_test_pred(
                 g_symb=g_symb,
                 h_symb=h_symb,
                 test_set=test_set,
@@ -499,23 +535,29 @@ def post_process_gkan(
                 atol=atol,
                 rtol=rtol,
                 method=method,
-                scaler=scaler,
-                inverse_scale=inverse_scale,
-                is_symb=is_symb
+                is_symb=is_symb,
+                device=device
             )
+            
+            test_losses_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=mean_absolute_error)
+            test_mse_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=mean_squared_error)
+            test_rmse_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=root_mean_squared_error)
+            
+            res["MAE"] = (np.mean(test_losses_symb), np.var(test_losses_symb), np.std(test_losses_symb))
+            res["MSE"] = (np.mean(test_mse_symb), np.var(test_mse_symb), np.std(test_mse_symb))
+            res["RMSE"] = (np.mean(test_rmse_symb), np.var(test_rmse_symb), np.std(test_rmse_symb))
+            # print(f"Mean Test loss of {txt}: {ts_mean}")
+            # print(f"Var Test loss of {txt}: {ts_var}")
+            # print(f"Std Test loss of {txt}: {ts_std}")
 
-            ts_mean = np.mean(test_losses_symb)
-            ts_var = np.var(test_losses_symb)
-            ts_std = np.std(test_losses_symb)
-
-            print(f"Mean Test loss of {txt}: {ts_mean}")
-            print(f"Var Test loss of {txt}: {ts_var}")
-            print(f"Std Test loss of {txt}: {ts_std}")
-
-            return ts_mean, ts_var, ts_std
+            return res
         except AssertionError:
             print("Evaluation failed!")
-            return np.inf, np.inf, np.inf
+            return {
+                "MAE": (np.inf, np.inf, np.inf),
+                "MSE": (np.inf, np.inf, np.inf),
+                "RMSE": (np.inf, np.inf, np.inf)
+            }
 
     best_params_file = f"{model_path}/best_params.json"
     with open(best_params_file, 'r') as f:
@@ -540,13 +582,22 @@ def post_process_gkan(
         )
 
         print(latex(quantise(bb_symb)))
-        ts_mean_bb, ts_var_bb, ts_std_bb = print_symb_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
-
+        res = get_avg_test_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
+        
         results_dict["black_box_symb_quant"] = str(quantise(bb_symb))
         results_dict["black_box_symb"] = str(bb_symb)
-        results_dict["black_box_symb_test_MAE"] = ts_mean_bb
-        results_dict["black_box_symb_test_Var"] = ts_var_bb
-        results_dict["black_box_symb_test_Std"] = ts_std_bb
+        results_dict["black_box_symb_test_MAE"] = res["MAE"][0]
+        results_dict["black_box_symb_test_Var"] = res["MAE"][1]
+        results_dict["black_box_symb_test_Std"] = res["MAE"][2]
+        
+        results_dict["black_box_symb_test_MSE"] = res["MSE"][0]
+        results_dict["black_box_symb_test_MSE_Var"] = res["MSE"][1]
+        results_dict["black_box_symb_test_MSE_Std"] = res["MSE"][2]
+        
+        results_dict["black_box_symb_test_RMSE"] = res["RMSE"][0]
+        results_dict["black_box_symb_test_RMSE_Var"] = res["RMSE"][1]
+        results_dict["black_box_symb_test_RMSE_Std"] = res["RMSE"][2]
+        
         results_dict["black_box_exec_time"] = exec_time
 
     print("Spline-wise fitting\n")
@@ -564,16 +615,25 @@ def post_process_gkan(
         grid_orig=grid_orig
     )
     print(latex(quantise(spline_symb)))
-    ts_mean_sw, ts_var_sw, ts_std_sw = print_symb_error(g_symb=spl_g_symb, h_symb=spl_h_symb)
+    res_sw = get_avg_test_error(g_symb=spl_g_symb, h_symb=spl_h_symb)
 
     results_dict["spline_wise_symb_quant"] = str(quantise(spline_symb))
     results_dict["spline_wise_symb"] = str(spline_symb)
-    results_dict["spline_wise_symb_test_MAE"] = ts_mean_sw
-    results_dict["spline_wise_symb_test_Var"] = ts_var_sw
-    results_dict["spline_wise_symb_test_Std"] = ts_std_sw
     results_dict["spline_wise_exec_time"] = exec_time
     results_dict["spline_wise_g_symb"] = str(spl_g_symb)
     results_dict["spline_wise_h_symb"] = str(spl_h_symb)
+    
+    results_dict["spline_wise_symb_test_MAE"] = res_sw["MAE"][0]
+    results_dict["spline_wise_symb_test_Var"] = res_sw["MAE"][1]
+    results_dict["spline_wise_symb_test_Std"] = res_sw["MAE"][2]
+    
+    results_dict["spline_wise_symb_test_MSE"] = res_sw["MSE"][0]
+    results_dict["spline_wise_symb_test_MSE_Var"] = res_sw["MSE"][1]
+    results_dict["spline_wise_symb_test_MSE_Std"] = res_sw["MSE"][2]
+    
+    results_dict["spline_wise_symb_test_RMSE"] = res_sw["RMSE"][0]
+    results_dict["spline_wise_symb_test_RMSE_Var"] = res_sw["RMSE"][1]
+    results_dict["spline_wise_symb_test_RMSE_Std"] = res_sw["RMSE"][2]
 
 
     if eval_model:
@@ -596,16 +656,23 @@ def post_process_gkan(
         results_dict["Number of params"] = tot_params
 
         best_model = best_model.eval()
-        ts_mean_model, ts_var_model, ts_std_model = print_symb_error(
+        res_model = get_avg_test_error(
             g_symb=best_model.conv.model.g_net,
             h_symb=best_model.conv.model.h_net,
-            txt="best model",
             is_symb=False
         )
 
-        results_dict["model_test_MAE"] = ts_mean_model
-        results_dict["model_test_Var"] = ts_var_model
-        results_dict["model_test_Std"] = ts_std_model
+        results_dict["model_test_MAE"] = res_model["MAE"][0]
+        results_dict["model_test_Var"] = res_model["MAE"][1]
+        results_dict["model_test_Std"] = res_model["MAE"][2]
+        
+        results_dict["model_test_MSE"] = res_model["MSE"][0]
+        results_dict["model_test_MSE_Var"] = res_model["MSE"][1]
+        results_dict["model_test_MSE_Std"] = res_model["MSE"][2]
+        
+        results_dict["model_test_RMSE"] = res_model["RMSE"][0]
+        results_dict["model_test_RMSE_Var"] = res_model["RMSE"][1]
+        results_dict["model_test_RMSE_Std"] = res_model["RMSE"][2]
 
     with open(f"{model_path}/{res_file_name}", 'w') as file:
         json.dump(results_dict, file, indent=4)

@@ -60,7 +60,8 @@ from torch.utils.data import DataLoader
 
 from sympy import latex
 from torch.utils.data import DataLoader
-from post_processing import get_model, make_callable, get_symb_test_error, get_test_set, integrate_test_set, plot_predictions
+from post_processing import get_model, make_callable, get_symb_test_error, get_test_set, integrate_test_set, plot_predictions, get_list_test_errors, get_test_pred
+from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 
 def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
@@ -294,8 +295,6 @@ def post_process_mpnn(
     atol=1e-5,
     rtol=1e-5,
     method='dopri5',
-    scaler=None,
-    inverse_scale=False,
     adjoint=True,
     eval_model=True,
     model_type="MPNN",
@@ -304,9 +303,11 @@ def post_process_mpnn(
     
     results_dict = {}
     
-    def print_symb_error(g_symb, h_symb, txt="symbolic formula", is_symb=True):
+    def get_avg_test_error(g_symb, h_symb, is_symb=True):
         try:
-            test_losses_symb = get_symb_test_error(
+            res = {}
+            
+            y_pred_test, y_true_test = get_test_pred(
                 g_symb=g_symb,
                 h_symb=h_symb,
                 test_set=test_set,
@@ -315,23 +316,29 @@ def post_process_mpnn(
                 atol=atol,
                 rtol=rtol,
                 method=method,
-                scaler=scaler,
-                inverse_scale=inverse_scale,
-                is_symb=is_symb
+                is_symb=is_symb,
+                device=device
             )
+            
+            test_losses_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=mean_absolute_error)
+            test_mse_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=mean_squared_error)
+            test_rmse_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=root_mean_squared_error)
+            
+            res["MAE"] = (np.mean(test_losses_symb), np.var(test_losses_symb), np.std(test_losses_symb))
+            res["MSE"] = (np.mean(test_mse_symb), np.var(test_mse_symb), np.std(test_mse_symb))
+            res["RMSE"] = (np.mean(test_rmse_symb), np.var(test_rmse_symb), np.std(test_rmse_symb))
+            # print(f"Mean Test loss of {txt}: {ts_mean}")
+            # print(f"Var Test loss of {txt}: {ts_var}")
+            # print(f"Std Test loss of {txt}: {ts_std}")
 
-            ts_mean = np.mean(test_losses_symb)
-            ts_var = np.var(test_losses_symb)
-            ts_std = np.std(test_losses_symb)
-            
-            print(f"Mean Test loss of {txt}: {ts_mean}")
-            print(f"Var Test loss of {txt}: {ts_var}")
-            print(f"Std Test loss of {txt}: {ts_std}")
-            
-            return ts_mean, ts_var, ts_std
+            return res
         except AssertionError:
             print("Evaluation failed!")
-            return np.inf, np.inf, np.inf
+            return {
+                "MAE": (np.inf, np.inf, np.inf),
+                "MSE": (np.inf, np.inf, np.inf),
+                "RMSE": (np.inf, np.inf, np.inf)
+            }
         
     
     print("Black-Box fitting \n")
@@ -346,14 +353,23 @@ def post_process_mpnn(
     )
     
     print(latex(quantise(bb_symb)))
-    ts_mean_bb, ts_var_bb, ts_std_bb = print_symb_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
+    res_bb = get_avg_test_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
     
     results_dict["black_box_symb_quant"] = str(quantise(bb_symb))
     results_dict["black_box_symb"] = str(bb_symb)
-    results_dict["black_box_symb_test_MAE"] = ts_mean_bb
-    results_dict["black_box_symb_test_Var"] = ts_var_bb
-    results_dict["black_box_symb_test_Std"] = ts_std_bb
     results_dict["black_box_exec_time"] = exec_time
+    
+    results_dict["black_box_symb_test_MAE"] = res_bb["MAE"][0]
+    results_dict["black_box_symb_test_Var"] = res_bb["MAE"][1]
+    results_dict["black_box_symb_test_Std"] = res_bb["MAE"][2]
+    
+    results_dict["black_box_symb_test_MSE"] = res_bb["MSE"][0]
+    results_dict["black_box_symb_test_MSE_Var"] = res_bb["MSE"][1]
+    results_dict["black_box_symb_test_MSE_Std"] = res_bb["MSE"][2]
+    
+    results_dict["black_box_symb_test_RMSE"] = res_bb["RMSE"][0]
+    results_dict["black_box_symb_test_RMSE_Var"] = res_bb["RMSE"][1]
+    results_dict["black_box_symb_test_RMSE_Std"] = res_bb["RMSE"][2]
     
     if eval_model:
         print("Evaluate raw model\n")
@@ -386,16 +402,23 @@ def post_process_mpnn(
         results_dict["Number of params"] = tot_params
 
         best_model = best_model.eval()
-        ts_mean_model, ts_var_model, ts_std_model = print_symb_error(
+        res_model = get_avg_test_error(
             g_symb=best_model.conv.model.g_net,
             h_symb=best_model.conv.model.h_net,
-            txt="best model",
             is_symb=False
         )
         
-        results_dict["model_test_MAE"] = ts_mean_model
-        results_dict["model_test_Var"] = ts_var_model
-        results_dict["model_test_Std"] = ts_std_model
+        results_dict["model_test_MAE"] = res_model["MAE"][0]
+        results_dict["model_test_Var"] = res_model["MAE"][1]
+        results_dict["model_test_Std"] = res_model["MAE"][2]
+        
+        results_dict["model_test_MSE"] = res_model["MSE"][0]
+        results_dict["model_test_MSE_Var"] = res_model["MSE"][1]
+        results_dict["model_test_MSE_Std"] = res_model["MSE"][2]
+        
+        results_dict["model_test_RMSE"] = res_model["RMSE"][0]
+        results_dict["model_test_RMSE_Var"] = res_model["RMSE"][1]
+        results_dict["model_test_RMSE_Std"] = res_model["RMSE"][2]
     
     with open(f"{model_path}/{res_file_name}", 'w') as file:
         json.dump(results_dict, file, indent=4)   
