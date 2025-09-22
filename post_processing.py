@@ -365,9 +365,9 @@ def valid_symb_model(
             pysr_model = lambda: get_pysr_model(
                 model_selection=param1, 
                 n_iterations=param2,
-                parallelism="serial",
-                random_state = seed,
-                deterministic = True
+                # parallelism="serial",
+                # random_state = seed,
+                # deterministic = True
             )
             _, g_symb, h_symb, _ = fit_black_box_from_kan(
                 depth_g=depth_g,
@@ -460,9 +460,9 @@ def valid_symb_model(
             pysr_model=lambda: get_pysr_model(
                 model_selection=best['model_selection'],
                 n_iterations=best['param'],
-                parallelism="serial",
-                random_state = seed,
-                deterministic = True
+                # parallelism="serial",
+                # random_state = seed,
+                # deterministic = True
             ),
             sample_size=sample_size,
             message_passing=False,
