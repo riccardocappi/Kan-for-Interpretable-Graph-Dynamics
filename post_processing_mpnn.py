@@ -298,7 +298,7 @@ def post_process_mpnn(
     adjoint=True,
     eval_model=True,
     model_type="MPNN",
-    res_file_name="post_process_res.json"
+    res_file_name="post_process_res_more_metrics.json"
 ):
     
     results_dict = {}
@@ -587,8 +587,7 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_new.json"
+        model_type="LLC" if is_llc else "MPNN"
     )
 
     """#### SNR"""
@@ -619,8 +618,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_new.json"
+            model_type="LLC" if is_llc else "MPNN"
         )
 
     """### Kuramoto
@@ -643,8 +641,7 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_new.json"
+        model_type="LLC" if is_llc else "MPNN"
     )
 
     """#### SNR"""
@@ -676,8 +673,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_new.json"
+            model_type="LLC" if is_llc else "MPNN"
         )
 
     """### Epidemics
@@ -701,8 +697,7 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_new.json"
+        model_type="LLC" if is_llc else "MPNN"
     )
 
     """#### SNR"""
@@ -733,8 +728,7 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_new.json"
+            model_type="LLC" if is_llc else "MPNN"
         )
 
     """### Population
@@ -757,8 +751,7 @@ if __name__ == '__main__':
         atol=1e-5,
         rtol=1e-5,
         method="dopri5",
-        model_type="LLC" if is_llc else "MPNN",
-        res_file_name="post_process_res_new.json"
+        model_type="LLC" if is_llc else "MPNN"
     )
 
     """#### SNR"""
@@ -789,6 +782,5 @@ if __name__ == '__main__':
             atol=1e-5,
             rtol=1e-5,
             method="dopri5",
-            model_type="LLC" if is_llc else "MPNN",
-            res_file_name="post_process_res_new.json"
+            model_type="LLC" if is_llc else "MPNN"
         )

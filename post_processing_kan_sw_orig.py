@@ -164,7 +164,7 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_cuda.json"
+        res_file_name="sw_orig_kan_more_metrics.json"
     )
     
     
@@ -184,7 +184,7 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_cuda.json"
+        res_file_name="sw_orig_kan_more_metrics.json"
     )
     
     
@@ -203,7 +203,7 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_cuda.json"
+        res_file_name="sw_orig_kan_more_metrics.json"
     )
     
     
@@ -222,7 +222,7 @@ if __name__ == '__main__':
         compute_mult=True,
         grid_orig=grid_orig,
         skip_bb=True,
-        res_file_name="sw_orig_kan_cuda.json"
+        res_file_name="sw_orig_kan_more_metrics.json"
     )
     
     

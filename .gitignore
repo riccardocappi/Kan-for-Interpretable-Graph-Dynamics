@@ -15,3 +15,4 @@ outputs
 test_kan.ipynb
 saved_models_optuna
 cuda_installer*
+scripts

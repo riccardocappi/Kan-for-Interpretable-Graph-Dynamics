@@ -159,7 +159,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cuda.json"
+        res_file_name="post_process_res_more_metrics_seed.json"
     )
     
     # ------------------------------------------------------------------
@@ -177,7 +177,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cuda.json"
+        res_file_name="post_process_res_more_metrics_seed.json"
     )
     
     # ------------------------------------------------------------------
@@ -196,7 +196,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cuda.json"
+        res_file_name="post_process_res_more_metrics_seed.json"
     )
     
     #------------------------------------------------------------------
@@ -215,7 +215,7 @@ if __name__ == '__main__':
         rtol=1e-5,
         method="dopri5",
         compute_mult=False,
-        res_file_name="post_process_res_cuda.json"
+        res_file_name="post_process_res_more_metrics_seed.json"
     )
     
     # ------------------------------------------------------------------
