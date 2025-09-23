@@ -49,7 +49,10 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.stride = stride
         self.predict_deriv = predict_deriv
         super().__init__(root)
-        self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(self.processed_paths[0])
+        self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(
+            self.processed_paths[0],
+            map_location=torch.device(device)
+        )
         
         
     @property
