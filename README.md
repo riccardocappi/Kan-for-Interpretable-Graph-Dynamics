@@ -117,11 +117,6 @@ The first set of arguments that must be present in the config file is the follow
 - `include_time`: 
   If `True`, includes the time variable as part of the input features
 
-- `horizon`: 
-  Number of future steps the model attempts to predict during training.
-
-- `history`: 
-  Number of past time steps provided as input to the model.
 
 - `preprocess_data`: 
   If `True`, applies preprocessing steps
@@ -148,8 +143,7 @@ The first set of arguments that must be present in the config file is the follow
 ### Hyper-parameter search space
 The search space of the hyper-parameters. Mandatory hyper-parameters are:
 - `lr`: Learning rate
-- `batch_size`: Size of the sliding window
-- `stride`: Stride of the sliding windows
+- `batch_size`: Batch size
 
 The search space dictionary can be accessed in the Experiment class with `self.search_space`
 
