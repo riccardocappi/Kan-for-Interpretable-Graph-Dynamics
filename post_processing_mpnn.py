@@ -64,7 +64,7 @@ from post_processing import get_model, make_callable, get_symb_test_error, get_t
 from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 
-def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
+def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5, device="cuda"):
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/mpnn/state_dict.pth"
     with open(best_params_file, 'r') as f:
@@ -111,13 +111,13 @@ def build_model_from_file_mpnn(model_path, message_passing=False, include_time=F
         rtol=rtol
     )
     
-    model = model.to(torch.device('cuda'))
-    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device('cuda')))
+    model = model.to(torch.device(device))
+    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device(device)))
     
     return model
 
 
-def build_model_from_file_llc(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
+def build_model_from_file_llc(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5, device='cuda'):
 
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/llc/state_dict.pth"
@@ -184,8 +184,8 @@ def build_model_from_file_llc(model_path, message_passing=False, include_time=Fa
         rtol=rtol
     )
 
-    model = model.to(torch.device('cuda'))
-    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device('cuda')))
+    model = model.to(torch.device(device))
+    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device(device)))
 
     return model
 
