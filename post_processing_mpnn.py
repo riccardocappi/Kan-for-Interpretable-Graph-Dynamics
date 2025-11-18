@@ -61,7 +61,7 @@ from post_processing import get_model, make_callable, get_symb_test_error, get_t
 from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 
-def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
+def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5, device="cuda"):
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/mpnn/state_dict.pth"
     with open(best_params_file, 'r') as f:
@@ -108,13 +108,13 @@ def build_model_from_file_mpnn(model_path, message_passing=False, include_time=F
         rtol=rtol
     )
     
-    model = model.to(torch.device('cuda'))
-    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device('cuda')))
+    model = model.to(torch.device(device))
+    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device(device)))
     
     return model
 
 
-def build_model_from_file_llc(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5):
+def build_model_from_file_llc(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5, device='cuda'):
 
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/llc/state_dict.pth"
@@ -181,8 +181,8 @@ def build_model_from_file_llc(model_path, message_passing=False, include_time=Fa
         rtol=rtol
     )
 
-    model = model.to(torch.device('cuda'))
-    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device('cuda')))
+    model = model.to(torch.device(device))
+    model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device(device)))
 
     return model
 
@@ -569,23 +569,23 @@ if __name__ == '__main__':
 
     #### IC=1
     """
-    if not is_llc:
-        model_path_mpnn = './saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_12/0'
-    else: model_path_mpnn = './saved_models_optuna/model-biochemical-llc/biochemical_llc_2/0'
+    # if not is_llc:
+    #     model_path_mpnn = './saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_12/0'
+    # else: model_path_mpnn = './saved_models_optuna/model-biochemical-llc/biochemical_llc_2/0'
     
-    post_process_mpnn(
-        config=bio_config,
-        model_path=model_path_mpnn,
-        test_set=BIO,
-        device='cuda',
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5",
-        model_type="LLC" if is_llc else "MPNN"
-    )
+    # post_process_mpnn(
+    #     config=bio_config,
+    #     model_path=model_path_mpnn,
+    #     test_set=BIO,
+    #     device='cuda',
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5",
+    #     model_type="LLC" if is_llc else "MPNN"
+    # )
 
     """#### SNR"""
     if is_llc:
@@ -596,9 +596,9 @@ if __name__ == '__main__':
         ]
     else:
         model_paths = [
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
         ]
 
     for model_path in model_paths:
@@ -622,24 +622,24 @@ if __name__ == '__main__':
 
     #### IC=1
     """
-    if is_llc:
-        model_path_mpnn = './saved_models_optuna/model-kuramoto-llc/kuramoto_llc_2/0'
-    else:
-        model_path_mpnn = './saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_12/0'
+    # if is_llc:
+    #     model_path_mpnn = './saved_models_optuna/model-kuramoto-llc/kuramoto_llc_2/0'
+    # else:
+    #     model_path_mpnn = './saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_12/0'
 
-    post_process_mpnn(
-        config=kur_config,
-        model_path=model_path_mpnn,
-        test_set=KUR,
-        device='cuda',
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5",
-        model_type="LLC" if is_llc else "MPNN"
-    )
+    # post_process_mpnn(
+    #     config=kur_config,
+    #     model_path=model_path_mpnn,
+    #     test_set=KUR,
+    #     device='cuda',
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5",
+    #     model_type="LLC" if is_llc else "MPNN"
+    # )
 
     """#### SNR"""
 
@@ -651,9 +651,9 @@ if __name__ == '__main__':
         ]
     else:
         model_paths = [
-            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
-            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
-            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
         ]
 
     for model_path in model_paths:
@@ -678,24 +678,24 @@ if __name__ == '__main__':
     #### IC=1
     """
 
-    if is_llc:
-        model_path_mpnn = './saved_models_optuna/model-epidemics-llc/epidemics_llc_2/0'
-    else:
-        model_path_mpnn = './saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_12/0'
+    # if is_llc:
+    #     model_path_mpnn = './saved_models_optuna/model-epidemics-llc/epidemics_llc_2/0'
+    # else:
+    #     model_path_mpnn = './saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_12/0'
 
-    post_process_mpnn(
-        config=epid_config,
-        model_path=model_path_mpnn,
-        test_set=EPID,
-        device='cuda',
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5",
-        model_type="LLC" if is_llc else "MPNN"
-    )
+    # post_process_mpnn(
+    #     config=epid_config,
+    #     model_path=model_path_mpnn,
+    #     test_set=EPID,
+    #     device='cuda',
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5",
+    #     model_type="LLC" if is_llc else "MPNN"
+    # )
 
     """#### SNR"""
 
@@ -707,9 +707,9 @@ if __name__ == '__main__':
         ]
     else:
         model_paths = [
-            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
-            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
-            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
         ]
 
     for model_path in model_paths:
@@ -732,24 +732,24 @@ if __name__ == '__main__':
 
     #### IC=1
     """
-    if is_llc:
-        model_path_mpnn = './saved_models_optuna/model-population-llc/population_llc_2/0'
-    else:
-        model_path_mpnn = './saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_12/0'
+    # if is_llc:
+    #     model_path_mpnn = './saved_models_optuna/model-population-llc/population_llc_2/0'
+    # else:
+    #     model_path_mpnn = './saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_12/0'
 
-    post_process_mpnn(
-        config=pop_config,
-        model_path=model_path_mpnn,
-        test_set=POP,
-        device='cuda',
-        sample_size=10000,
-        message_passing=False,
-        include_time=False,
-        atol=1e-5,
-        rtol=1e-5,
-        method="dopri5",
-        model_type="LLC" if is_llc else "MPNN"
-    )
+    # post_process_mpnn(
+    #     config=pop_config,
+    #     model_path=model_path_mpnn,
+    #     test_set=POP,
+    #     device='cuda',
+    #     sample_size=10000,
+    #     message_passing=False,
+    #     include_time=False,
+    #     atol=1e-5,
+    #     rtol=1e-5,
+    #     method="dopri5",
+    #     model_type="LLC" if is_llc else "MPNN"
+    # )
 
     """#### SNR"""
 
@@ -761,9 +761,9 @@ if __name__ == '__main__':
         ]
     else:
         model_paths = [
-            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_70db_2/0",
-            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_50db_2/0",
-            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_20db_2/0"
+            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
         ]
 
     for model_path in model_paths:

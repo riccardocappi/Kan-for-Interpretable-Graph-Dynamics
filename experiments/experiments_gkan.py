@@ -18,10 +18,11 @@ class ExperimentsGKAN(Experiments):
         process_id=0,
         snr_db = -1,
         denoise=False,
+        deriv_method = "five_point",
         **kwargs
     ):
         super().__init__(config, n_trials, model_selection_method, study_name=study_name, process_id=process_id, 
-                         snr_db=snr_db, denoise=denoise, **kwargs)
+                         snr_db=snr_db, denoise=denoise, deriv_method=deriv_method, **kwargs)
 
         self.h_net_suffix = 'h_net'
         self.g_net_suffix = 'g_net'
