@@ -33,7 +33,8 @@ class Experiments(ABC):
                  study_name='example',
                  process_id=0,
                  snr_db = -1,
-                 denoise=False
+                 denoise=False,
+                 deriv_method = "five_point"
                  ):
         
         super().__init__()
@@ -75,6 +76,7 @@ class Experiments(ABC):
                 predict_deriv=self.predict_deriv,
                 snr_db=self.snr_db,
                 denoise=denoise,
+                deriv_method=deriv_method,
                 **config.get('integration_kwargs', {})
             )
         elif config['name'] == 'RealEpid':
@@ -91,7 +93,8 @@ class Experiments(ABC):
                 history=self.history,
                 horizon=self.horizon,
                 stride=config.get('stride', 1),
-                denoise=False
+                denoise=False,
+                deriv_method=deriv_method
             )
         else:
             raise NotImplementedError()

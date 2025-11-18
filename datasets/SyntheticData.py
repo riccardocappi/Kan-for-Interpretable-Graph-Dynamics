@@ -37,6 +37,7 @@ class SyntheticData(SpatioTemporalGraph):
         predict_deriv=False,
         snr_db = -1,
         denoise=False,
+        deriv_method = "five_point",
         **integration_kwargs
     ):  
         
@@ -61,7 +62,8 @@ class SyntheticData(SpatioTemporalGraph):
             history=history,
             stride=stride,
             predict_deriv=predict_deriv,
-            denoise=denoise
+            denoise=denoise,
+            deriv_method=deriv_method
         )
     
     

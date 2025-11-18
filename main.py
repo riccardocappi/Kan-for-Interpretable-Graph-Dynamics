@@ -21,7 +21,7 @@ def set_pytorch_seed(seed=42):
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
-def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, snr_db=-1, denoise=False):
+def run(config_path, n_trials=10, method='optuna', study_name='example', process_id=0, snr_db=-1, denoise=False, deriv_method="five_point"):
     config = load_config(config_path)   # Load yml config file 
     
     set_pytorch_seed(seed=config["pytorch_seed"])   # Set seed
@@ -30,13 +30,13 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
            
     if model_type == 'GKAN':
         exp = ExperimentsGKAN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db,
-                              denoise=denoise)
+                              denoise=denoise, deriv_method=deriv_method)
     elif model_type == 'MPNN':
         exp = ExperimentsMPNN(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db,
-                              denoise=denoise)
+                              denoise=denoise, deriv_method=deriv_method)
     elif model_type == "LLC":
         exp = ExperimentsLLC(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db, 
-                             denoise=denoise)
+                             denoise=denoise, deriv_method=deriv_method)
     else:
         raise ValueError('Unknown model type')
     
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--process_id', type=int, default=0, help='ID for the running process')
     parser.add_argument('--snr_db', type=int, default=-1, help='Signal to noise ratio in decibel')
     parser.add_argument('--denoise', default=False, action='store_true', help='Denoise data')
-    
+    parser.add_argument('--deriv_method', default='five_point', help='Deriv approximation method')
     
     args = parser.parse_args()
     

@@ -511,7 +511,7 @@ def post_process_gkan(
     method='dopri5',
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res_more_metrics.json',
+    res_file_name = 'post_process_res_more_metrics_2.json',
     compute_mult = True,
     grid_orig = None,
     skip_bb = False,

@@ -16,9 +16,10 @@ class ExperimentsLLC(Experiments):
         process_id=0, 
         snr_db=-1,
         denoise=False,
+        deriv_method = "five_point",
         **kwargs
     ):
-        super().__init__(config, n_trials, model_selection_method, study_name, process_id, snr_db, denoise, **kwargs)
+        super().__init__(config, n_trials, model_selection_method, study_name, process_id, snr_db, denoise, deriv_method=deriv_method, **kwargs)
         self.g_net_suffix = "g0"
         self.h_net_suffix = "h_net"
     

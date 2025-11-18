@@ -25,7 +25,8 @@ class RealEpidemics(SpatioTemporalGraph):
         scale=False,
         scale_range = (-5, 5),
         infection_data = "./data/RealEpidemics/infected_numbers_covid.csv",
-        inf_threshold = 500
+        inf_threshold = 500,
+        deriv_method = "five_point"
     ):
         self.train_perc = train_perc
         self.scale = scale
@@ -42,7 +43,8 @@ class RealEpidemics(SpatioTemporalGraph):
             horizon=horizon, 
             stride=stride,
             predict_deriv=predict_deriv,
-            denoise=denoise
+            denoise=denoise,
+            deriv_method=deriv_method
         )
     
     

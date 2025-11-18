@@ -36,7 +36,8 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         horizon = 15,
         stride=24,
         predict_deriv=False,
-        denoise=False
+        denoise=False,
+        deriv_method="five_point"
     ):
         self.name = name
         self.num_samples = n_samples
@@ -48,6 +49,9 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         self.denoise = denoise
         self.stride = stride
         self.predict_deriv = predict_deriv
+        self.deriv_method = deriv_method
+        if self.deriv_method != "five_point":
+            self.name = self.name + "_no_five_point"
         super().__init__(root)
         self.data, self.slices, self.raw_data_sampled, self.t_sampled = torch.load(
             self.processed_paths[0],
@@ -85,7 +89,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         data = []
         
         for ic in range(raw_data.size(0)):
-            first_derivatives = self.compute_five_point_fd(raw_data[ic], time)
+            first_derivatives = self.compute_derivative(raw_data[ic], time)
             
             for ts in range(0, raw_data.size(1) - total_seq_len + 1, self.stride):
                 idx_input = slice(ts, ts + input_length)
@@ -121,6 +125,33 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
     @abstractmethod
     def get_raw_data(self):
         raise NotImplementedError()
+    
+    
+    def compute_derivative(self, raw_data, time):
+        if self.deriv_method == "five_point":
+            return self.compute_five_point_fd(raw_data, time)
+        elif self.deriv_method == "finite_diff":
+            return self.compute_central_fd(raw_data, time)
+        else:
+            raise ValueError(f"Unknown derivative method: {self.deriv_method}")
+    
+    
+    def compute_central_fd(self, raw_data, time):
+        delta_t = time[0, 1] - time[0, 0]
+        delta_t = delta_t.item()
+
+        # T, _, _ = raw_data.shape
+        derivative = torch.zeros_like(raw_data)
+
+        # central diff for interior
+        derivative[1:-1] = (raw_data[2:] - raw_data[:-2]) / (2 * delta_t)
+
+        # forward/backward for boundaries
+        derivative[0] = (raw_data[1] - raw_data[0]) / delta_t
+        derivative[-1] = (raw_data[-1] - raw_data[-2]) / delta_t
+
+        return derivative
+    
     
     
     def compute_five_point_fd(self, raw_data, time):
