@@ -1,6 +1,6 @@
 from .Experiments import Experiments
 from models.utils.MPNN import MPNN
-from models.baseline.MPNN_ODE import MPNN_ODE
+from models.baseline.MLP_ODE import MLP_ODE
 import torch
 import torch.nn.functional as F
 from models.utils.MLP import MLP
@@ -52,17 +52,11 @@ class ExperimentsMLP(Experiments):
         
         hidden_layers = [hidden_dims for _ in range(n_hidden_layers)]
         
-        message_passing = self.config.get("message_passing", True)
         include_time = self.config.get("include_time", False)
         time_dim = 1 if include_time else 0
         
         in_dim = self.config.get('in_dim', 1)        
-        if net_suffix == self.g_net_suffix:
-            in_dim_ = 2 * in_dim
-        elif (net_suffix == self.h_net_suffix) and message_passing:
-            in_dim_ = 2 * in_dim + time_dim # Temporal component
-        else:
-            in_dim_ = in_dim + time_dim
+        in_dim_ = in_dim + time_dim
         
         hidden_layers = [in_dim_] + hidden_layers + [in_dim]
         
@@ -105,7 +99,7 @@ class ExperimentsMLP(Experiments):
             exploit_graph_struct=False
         )
         
-        model = MPNN_ODE(
+        model = MLP_ODE(
             conv = net,
             model_path=f'{self.model_path}/mpnn',
             adjoint=self.config.get('adjoint', False),

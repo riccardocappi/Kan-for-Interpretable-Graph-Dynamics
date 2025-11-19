@@ -32,7 +32,7 @@ class MLP_ODE(ODEBlock):
 
     def reset_params(self):
         """Reset all linear layers in the MLP."""
-        for layer in self.conv.model.h_net:
+        for layer in self.conv.model.h_net.layers:
             layer.reset_parameters()
 
     def regularization_loss(self, reg_loss_metrics):

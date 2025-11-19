@@ -6,6 +6,7 @@ from utils.utils import load_config
 from experiments.experiments_gkan import ExperimentsGKAN
 from experiments.experiments_mpnn import ExperimentsMPNN
 from experiments.experiments_llc import ExperimentsLLC
+from experiments.experiments_mlp import ExperimentsMLP
 import torch
 import numpy as np
 import random
@@ -36,6 +37,9 @@ def run(config_path, n_trials=10, method='optuna', study_name='example', process
                               denoise=denoise, deriv_method=deriv_method)
     elif model_type == "LLC":
         exp = ExperimentsLLC(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db, 
+                             denoise=denoise, deriv_method=deriv_method)
+    elif model_type == "MLP":
+        exp = ExperimentsMLP(config, n_trials, method, study_name=study_name, process_id=process_id, snr_db=snr_db, 
                              denoise=denoise, deriv_method=deriv_method)
     else:
         raise ValueError('Unknown model type')
