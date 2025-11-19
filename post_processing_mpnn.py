@@ -590,15 +590,15 @@ if __name__ == '__main__':
     """#### SNR"""
     if is_llc:
         model_paths = [
-            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3/0",
-            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3/0",
-            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3/0"
+            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3_denoise/0",
+            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3_denoise/0",
+            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3_denoise/0"
         ]
     else:
         model_paths = [
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
+            # "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_den_true_70db/0",
+            # "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_den_true_50db/0",
+            # "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_den_true_20db/0"
         ]
 
     for model_path in model_paths:
@@ -645,9 +645,9 @@ if __name__ == '__main__':
 
     if is_llc:
         model_paths = [
-            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_70db_3/0",
-            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_50db_3/0",
-            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_20db_3/0"
+            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_70db_3_denoise/0",
+            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_50db_3_denoise/0",
+            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_20db_3_denoise/0"
         ]
     else:
         model_paths = [
@@ -701,9 +701,9 @@ if __name__ == '__main__':
 
     if is_llc:
         model_paths = [
-            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_70db_3/0",
-            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_50db_3/0",
-            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_20db_3/0"
+            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_70db_3_denoise/0",
+            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_50db_3_denoise/0",
+            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_20db_3_denoise/0"
         ]
     else:
         model_paths = [
@@ -755,9 +755,9 @@ if __name__ == '__main__':
 
     if is_llc:
         model_paths = [
-            "./saved_models_optuna/model-population-llc/population_llc_70db_3/0",
-            "./saved_models_optuna/model-population-llc/population_llc_50db_3/0",
-            "./saved_models_optuna/model-population-llc/population_llc_20db_3/0"
+            "./saved_models_optuna/model-population-llc/population_llc_70db_3_denoise/0",
+            "./saved_models_optuna/model-population-llc/population_llc_50db_3_denoise/0",
+            "./saved_models_optuna/model-population-llc/population_llc_20db_3_denoise/0"
         ]
     else:
         model_paths = [

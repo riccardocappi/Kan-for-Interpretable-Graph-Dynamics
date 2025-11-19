@@ -56,7 +56,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    run(args.config, args.n_trials, args.method, args.study_name, args.process_id, args.snr_db, args.denoise)
+    run(args.config, args.n_trials, args.method, args.study_name, args.process_id, args.snr_db, args.denoise, deriv_method=args.deriv_method)
     
     
     

@@ -670,22 +670,25 @@ def fit_black_box(cached_input, cached_output, symb_xs, pysr_model = None, sampl
 
 
 
-def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False, verbose=False):
-    # G_Net
-    cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
-    cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
-    if verbose:
-        print("Fitting G_Net...")
+def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, message_passing=True, include_time=False, verbose=False, exploit_graph_struct = True):
+    if exploit_graph_struct:
+        # G_Net
+        cached_input = torch.load(f'{model_path}/g_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
+        cached_output = torch.load(f'{model_path}/g_net/cached_data/cached_output', weights_only=False, map_location=torch.device(device))
+        if verbose:
+            print("Fitting G_Net...")
+            
+        symb_g, top_5_eqs_g, exec_time_g = fit_black_box(
+            cached_input, cached_output, 
+            symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
+            pysr_model=pysr_model,
+            sample_size=sample_size,
+            verbose=verbose
+        )
         
-    symb_g, top_5_eqs_g, exec_time_g = fit_black_box(
-        cached_input, cached_output, 
-        symb_xs=[sp.Symbol('x_i'), sp.Symbol('x_j')], 
-        pysr_model=pysr_model,
-        sample_size=sample_size,
-        verbose=verbose
-    )
-    
-    top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
+        top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
+    else:
+        symb_g = sp.S(0.)
     
     # H_Net
     cached_input = torch.load(f'{model_path}/h_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))

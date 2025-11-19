@@ -14,7 +14,8 @@ class MPNN(MessagePassing):
         h_net: Union[KAN, MLP, Callable, Q_self],
         aggr = "add",
         message_passing=True,
-        include_time = False
+        include_time = False,
+        exploit_graph_struct = True
         ):
         super().__init__(aggr=aggr)
         self.g_net = g_net
@@ -23,10 +24,17 @@ class MPNN(MessagePassing):
         self.include_time = include_time
         self.h_out = None
         self.g_out = None
+        self.exploit_graph_struct = exploit_graph_struct
+        
+        assert exploit_graph_struct or (not message_passing)
         
     
-    def forward(self, x, edge_index, edge_attr, t):     
-        return self.propagate(edge_index, x=x, t=t, edge_attr=edge_attr)
+    def forward(self, x, edge_index, edge_attr, t):
+        if self.exploit_graph_struct:
+            return self.propagate(edge_index, x=x, t=t, edge_attr=edge_attr)
+        else:
+            t_expanded = t.expand(x.size(0), 1) if self.include_time else torch.tensor([], device=t.device)
+            return self.h_net(torch.cat([x, t_expanded], dim=-1))
     
     
     def message(self, x_i, x_j, edge_attr):
