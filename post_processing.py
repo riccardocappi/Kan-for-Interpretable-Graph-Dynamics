@@ -51,6 +51,7 @@ def set_pytorch_seed(seed=42):
 
 from models.utils.MPNN import MPNN
 from models.baseline.MPNN_ODE import MPNN_ODE
+from models.baseline.MLP_ODE import MLP_ODE
 from datasets.SyntheticData import SyntheticData
 from sympy import symbols, sin, summation, simplify
 import networkx as nx
@@ -72,24 +73,37 @@ from sympy import latex
 from torch.utils.data import DataLoader
 
 def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e-5, integration_method = 'scipy_solver',
-              eval=True, options = {}, all_t = False):
+              eval=True, options = {}, all_t = False, exploit_graph=True):
     conv = MPNN(
         g_net = g,
         h_net = h,
         message_passing=message_passing,
-        include_time=include_time
+        include_time=include_time,
+        exploit_graph_struct=exploit_graph
     )
 
-    symb = MPNN_ODE(
-        conv=conv,
-        model_path="./saved_models_optuna/tmp_symb",
-        adjoint=True,
-        integration_method=integration_method,
-        atol=atol,
-        rtol=rtol,
-        options = options,
-        all_t=all_t
-    )
+    if exploit_graph:
+        symb = MPNN_ODE(
+            conv=conv,
+            model_path="./saved_models_optuna/tmp_symb",
+            adjoint=True,
+            integration_method=integration_method,
+            atol=atol,
+            rtol=rtol,
+            options = options,
+            all_t=all_t
+        )
+    else:
+        symb = MLP_ODE(
+            conv=conv,
+            model_path="./saved_models_optuna/tmp_symb",
+            adjoint=True,
+            integration_method=integration_method,
+            atol=atol,
+            rtol=rtol,
+            options = options,
+            all_t=all_t
+        )
 
     if eval:
         symb = symb.eval()
@@ -117,7 +131,7 @@ def make_callable(expr):
 
 
 def get_test_pred(g_symb, h_symb, test_set, message_passing=False, include_time=False, atol=1e-5, rtol=1e-5, method='scipy_solver',
-                        is_symb = True, device='cuda'):
+                        is_symb = True, device='cuda', exploit_graph = True):
     
     if is_symb:
         if isinstance(g_symb, int):
@@ -136,7 +150,8 @@ def get_test_pred(g_symb, h_symb, test_set, message_passing=False, include_time=
         include_time=include_time,
         atol=atol,
         rtol=rtol,
-        integration_method=method
+        integration_method=method,
+        exploit_graph=exploit_graph
     )
     symb = symb.to(torch.device(device))
     
@@ -244,6 +259,7 @@ def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range =
         edge_index=edge_index,
         edge_attr=None,
         t_span = t
+        # raw_data = data
     )
 
     return [snapshot]

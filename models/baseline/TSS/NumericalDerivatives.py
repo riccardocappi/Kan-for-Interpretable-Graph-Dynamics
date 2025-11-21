@@ -8,18 +8,33 @@ Created on Wed July 7 14:40:18 2021
 import pandas as pd
 import numpy as np 
 
-def NumericalDeriv(TimeSeries,dim,Nnodes,deltT):
-    x_center = TimeSeries[2:-2,:]
-    x_PlusTwo = TimeSeries[4:,:]
-    x_PlusOne = TimeSeries[3:-1,:]
-    x_MinusTwo = TimeSeries[:-4,:]
-    x_MinusOne = TimeSeries[1:-3,:]
-    dxdt = (x_MinusTwo - 8 * x_MinusOne + 8 * x_PlusOne - x_PlusTwo) / (12 * deltT)
+def NumericalDeriv(TimeSeries,dim,Nnodes,deltT, method = "five_point"):
+    if method == "five_point":
+        x_center = TimeSeries[2:-2,:]
+        x_PlusTwo = TimeSeries[4:,:]
+        x_PlusOne = TimeSeries[3:-1,:]
+        x_MinusTwo = TimeSeries[:-4,:]
+        x_MinusOne = TimeSeries[1:-3,:]
+        dxdt = (x_MinusTwo - 8 * x_MinusOne + 8 * x_PlusOne - x_PlusTwo) / (12 * deltT)
+    elif method == "finite_diff":
+        dxdt_full = np.zeros_like(TimeSeries)
+
+        dxdt_full[1:-1] = (TimeSeries[2:] - TimeSeries[:-2]) / (2 * deltT)
+
+        dxdt_full[0]  = (TimeSeries[1] - TimeSeries[0]) / deltT
+        dxdt_full[-1] = (TimeSeries[-1] - TimeSeries[-2]) / deltT
+
+        dxdt = dxdt_full
+    else:
+        raise ValueError(f"Unknown derivative method: {method}")
+    
+    
     T_len = len(dxdt[:,0])
     NumDiv = np.zeros(shape=(T_len*Nnodes,dim))
     for j in range(0,dim):
         for i in range(0,Nnodes):
             NumDiv[i*T_len:(i+1)*T_len,j]  = dxdt[:,dim*i+j]
+            
     if dim == 1:
         column_values = ['dx1']
     if dim == 2:

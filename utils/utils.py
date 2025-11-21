@@ -689,6 +689,7 @@ def fit_mpnn(model_path, device='cpu', pysr_model = None, sample_size=-1, messag
         top_5_eqs_g.to_csv(f"{model_path}/top_5_equations_g.csv")
     else:
         symb_g = sp.S(0.)
+        exec_time_g = 0
     
     # H_Net
     cached_input = torch.load(f'{model_path}/h_net/cached_data/cached_input', weights_only=False, map_location=torch.device(device))
