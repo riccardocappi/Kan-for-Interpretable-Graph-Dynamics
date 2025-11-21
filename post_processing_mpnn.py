@@ -14,13 +14,6 @@ import os
 os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 from utils.utils import *
-import optuna
-from optuna.storages import JournalStorage
-from optuna.storages.journal import JournalFileBackend
-from experiments.experiments_gkan import ExperimentsGKAN
-from experiments.experiments_mpnn import ExperimentsMPNN
-import sympytorch
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -39,13 +32,8 @@ def set_pytorch_seed(seed=42):
 
 from models.utils.MPNN import MPNN
 from models.baseline.MPNN_ODE import MPNN_ODE
-from train_and_eval import eval_model
-from datasets.SyntheticData import SyntheticData
-from sympy import symbols, sin, summation, simplify
+from models.baseline.MLP_ODE import MLP_ODE
 import networkx as nx
-from torch_geometric.utils import from_networkx
-from utils.utils import integrate
-from torch_geometric.data import Data
 from experiments.experiments_mpnn import activations
 from models.utils.MLP import MLP
 from models.baseline.LLC import LLC_ODE
@@ -53,15 +41,15 @@ from models.baseline.LLC_Conv import Q_inter, Q_self
 from experiments.experiments_mpnn import activations
 
 from sympy import latex
-from torch.utils.data import DataLoader
 
 from sympy import latex
-from torch.utils.data import DataLoader
-from post_processing import get_model, make_callable, get_symb_test_error, get_test_set, integrate_test_set, plot_predictions, get_list_test_errors, get_test_pred
+from post_processing import get_symb_test_error, get_test_set, integrate_test_set, get_list_test_errors, get_test_pred
 from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
 
 
-def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', adjoint=True, atol=1e-5, rtol=1e-5, device="cuda"):
+def build_model_from_file_mpnn(model_path, message_passing=False, include_time=False, method='dopri5', 
+                               adjoint=True, atol=1e-5, rtol=1e-5, device="cuda", exploit_graph_struct=True):
+    
     best_params_file = f"{model_path}/best_params.json"
     best_state_path = f"{model_path}/mpnn/state_dict.pth"
     with open(best_params_file, 'r') as f:
@@ -69,21 +57,24 @@ def build_model_from_file_mpnn(model_path, message_passing=False, include_time=F
     
     in_dim = 1
     
-    hidden_layers = [best_hyperparams["hidden_dims_g_net"] for _ in range(best_hyperparams["n_hidden_layers_g_net"])]
-    hidden_layers = [2*in_dim] + hidden_layers + [in_dim]    
-    # g_net
-    g_net = MLP(
-        hidden_layers=hidden_layers,
-        af = activations[best_hyperparams['af_g_net']],
-        dropout_rate=best_hyperparams['drop_p_g_net'],
-    )
+    if exploit_graph_struct:
+        hidden_layers = [best_hyperparams["hidden_dims_g_net"] for _ in range(best_hyperparams["n_hidden_layers_g_net"])]
+        hidden_layers = [2*in_dim] + hidden_layers + [in_dim]    
+        # g_net
+        g_net = MLP(
+            hidden_layers=hidden_layers,
+            af = activations[best_hyperparams['af_g_net']],
+            dropout_rate=best_hyperparams['drop_p_g_net'],
+        )
+    else:
+        g_net = lambda x: torch.zeros_like(x, device=x.device)
+        
     
     time_dim = 1 if include_time else 0
-    in_dim_h = 2 if message_passing else 1
+    in_dim_h = 2 if (message_passing and exploit_graph_struct) else 1
     in_dim_h += time_dim
     hidden_layers = [best_hyperparams["hidden_dims_h_net"] for _ in range(best_hyperparams["n_hidden_layers_h_net"])]
     hidden_layers = [in_dim_h] + hidden_layers + [in_dim] 
-    
     
     # h_net
     h_net = MLP(
@@ -96,17 +87,28 @@ def build_model_from_file_mpnn(model_path, message_passing=False, include_time=F
         h_net=h_net,
         g_net=g_net,
         message_passing=message_passing,
-        include_time=include_time
+        include_time=include_time,
+        exploit_graph_struct=exploit_graph_struct
     )
     
-    model = MPNN_ODE(
-        conv=mpnn,
-        model_path='./saved_models_optuna/tmp',
-        integration_method=method,
-        adjoint=adjoint,
-        atol=atol,
-        rtol=rtol
-    )
+    if exploit_graph_struct:
+        model = MPNN_ODE(
+            conv=mpnn,
+            model_path='./saved_models_optuna/tmp',
+            integration_method=method,
+            adjoint=adjoint,
+            atol=atol,
+            rtol=rtol
+        )
+    else:
+        model = MLP_ODE(
+            conv=mpnn,
+            model_path='./saved_models_optuna/tmp',
+            adjoint=adjoint,
+            integration_method=method,
+            atol=atol,
+            rtol=rtol
+        )
     
     model = model.to(torch.device(device))
     model.load_state_dict(torch.load(best_state_path, weights_only=False, map_location=torch.device(device)))
@@ -194,7 +196,8 @@ def valid_symb_model(
     atol=1e-5,
     rtol=1e-5,
     method='dopri5',
-    sample_size=10000
+    sample_size=10000,
+    exploit_graph_struct = True
 ):
     seed = 9999
     graph = nx.barabasi_albert_graph(100, 3, seed=seed)
@@ -241,7 +244,8 @@ def valid_symb_model(
             pysr_model=pysr_model,
             sample_size=sample_size,
             message_passing=False,
-            verbose=False
+            verbose=False,
+            exploit_graph_struct=exploit_graph_struct
         )
         
         return g_symb, h_symb
@@ -275,7 +279,8 @@ def valid_symb_model(
         sample_size=sample_size,
         message_passing=False,
         verbose=True,
-        include_time=False
+        include_time=False,
+        exploit_graph_struct=exploit_graph_struct
     )
     
     return gkan_symb, symb_g, symb_h, exec_time
@@ -295,6 +300,7 @@ def post_process_mpnn(
     adjoint=True,
     eval_model=True,
     model_type="MPNN",
+    exploit_graph = True,
     res_file_name="post_process_res_more_metrics.json"
 ):
     
@@ -314,7 +320,8 @@ def post_process_mpnn(
                 rtol=rtol,
                 method=method,
                 is_symb=is_symb,
-                device=device
+                device=device,
+                exploit_graph=exploit_graph
             )
             
             test_losses_symb = get_list_test_errors(y_pred_test, y_true_test, criterion=mean_absolute_error)
@@ -346,11 +353,12 @@ def post_process_mpnn(
         atol=atol,
         rtol=rtol,
         method=method,
-        sample_size = sample_size
+        sample_size = sample_size,
+        exploit_graph_struct=exploit_graph
     )
     
     print(latex(quantise(bb_symb)))
-    res_bb = get_avg_test_error(g_symb=bb_g_symb, h_symb=bb_h_symb)
+    res_bb = get_avg_test_error(g_symb=bb_g_symb, h_symb=bb_h_symb, is_symb=True)
     
     results_dict["black_box_symb_quant"] = str(quantise(bb_symb))
     results_dict["black_box_symb"] = str(bb_symb)
@@ -379,7 +387,8 @@ def post_process_mpnn(
                 method=method,
                 adjoint=adjoint,
                 atol=atol,
-                rtol=rtol
+                rtol=rtol,
+                exploit_graph_struct=exploit_graph
             )
         elif model_type == "LLC":
             best_model = build_model_from_file_llc(
@@ -429,10 +438,19 @@ if __name__ == '__main__':
         action="store_true", 
         help="Set this flag to enable LLC mode"
     )
+    
+    parser.add_argument(
+        "--no_graph", 
+        action="store_true"
+    )
+    
     args = parser.parse_args()
     
     set_pytorch_seed(0)
     is_llc = args.is_llc
+    exploit_graph = not args.no_graph
+    
+    print(f"Exploit graph: {exploit_graph}")
     
     print(f"\n\nIS LLC? {is_llc}\n\n")
     """## LB Losses
@@ -569,215 +587,225 @@ if __name__ == '__main__':
 
     #### IC=1
     """
-    # if not is_llc:
-    #     model_path_mpnn = './saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_12/0'
-    # else: model_path_mpnn = './saved_models_optuna/model-biochemical-llc/biochemical_llc_2/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-biochemical-llc/biochemical_llc_no_fp_true/0'
+    else: 
+        # model_path_mpnn = './saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_no_fp_true/0'
+        model_path_mpnn = "./saved_models_optuna/model-biochemical-mlp/biochemical_mlp_ode/0"
     
-    # post_process_mpnn(
-    #     config=bio_config,
-    #     model_path=model_path_mpnn,
-    #     test_set=BIO,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5",
-    #     model_type="LLC" if is_llc else "MPNN"
-    # )
+    post_process_mpnn(
+        config=bio_config,
+        model_path=model_path_mpnn,
+        test_set=BIO,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5",
+        model_type="LLC" if is_llc else "MPNN",
+        exploit_graph=exploit_graph
+    )
 
     """#### SNR"""
-    if is_llc:
-        model_paths = [
-            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3/0",
-            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3/0",
-            "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3/0"
-        ]
-    else:
-        model_paths = [
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-            "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
-        ]
+    # if is_llc:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_70db_3_denoise/0",
+    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_50db_3_denoise/0",
+    #         "./saved_models_optuna/model-biochemical-llc/biochemical_llc_20db_3_denoise/0"
+    #     ]
+    # else:
+    #     model_paths = [
+    #         # "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_den_true_70db/0",
+    #         # "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_den_true_50db/0",
+    #         # "./saved_models_optuna/model-biochemical-mpnn/biochemical_mpnn_den_true_20db/0"
+    #     ]
 
-    for model_path in model_paths:
-        print(model_path)
+    # for model_path in model_paths:
+    #     print(model_path)
         
-        post_process_mpnn(
-            config=bio_config,
-            model_path=model_path,
-            test_set=BIO,
-            device='cuda',
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            model_type="LLC" if is_llc else "MPNN"
-        )
+    #     post_process_mpnn(
+    #         config=bio_config,
+    #         model_path=model_path,
+    #         test_set=BIO,
+    #         device='cuda',
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         model_type="LLC" if is_llc else "MPNN",
+    #         exploit_graph=exploit_graph
+    #     )
 
     """### Kuramoto
 
     #### IC=1
     """
-    # if is_llc:
-    #     model_path_mpnn = './saved_models_optuna/model-kuramoto-llc/kuramoto_llc_2/0'
-    # else:
-    #     model_path_mpnn = './saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_12/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-kuramoto-llc/kuramoto_llc_2/0'
+    else:
+        # model_path_mpnn = './saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_12/0'
+        model_path_mpnn = "./saved_models_optuna/model-kuramoto-mlp/kuramoto_mlp_ode/0"
 
-    # post_process_mpnn(
-    #     config=kur_config,
-    #     model_path=model_path_mpnn,
-    #     test_set=KUR,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5",
-    #     model_type="LLC" if is_llc else "MPNN"
-    # )
+    post_process_mpnn(
+        config=kur_config,
+        model_path=model_path_mpnn,
+        test_set=KUR,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5",
+        model_type="LLC" if is_llc else "MPNN",
+        exploit_graph=exploit_graph
+    )
 
     """#### SNR"""
 
-    if is_llc:
-        model_paths = [
-            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_70db_3/0",
-            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_50db_3/0",
-            "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_20db_3/0"
-        ]
-    else:
-        model_paths = [
-            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-            "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
-        ]
+    # if is_llc:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_70db_3_denoise/0",
+    #         "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_50db_3_denoise/0",
+    #         "./saved_models_optuna/model-kuramoto-llc/kuramoto_llc_20db_3_denoise/0"
+    #     ]
+    # else:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+    #         "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+    #         "./saved_models_optuna/model-kuramoto-mpnn/kuramoto_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
+    #     ]
 
-    for model_path in model_paths:
-        print(model_path)
+    # for model_path in model_paths:
+    #     print(model_path)
         
-        post_process_mpnn(
-            config=kur_config,
-            model_path=model_path,
-            test_set=KUR,
-            device='cuda',
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            model_type="LLC" if is_llc else "MPNN"
-        )
+    #     post_process_mpnn(
+    #         config=kur_config,
+    #         model_path=model_path,
+    #         test_set=KUR,
+    #         device='cuda',
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         model_type="LLC" if is_llc else "MPNN"
+    #     )
 
     """### Epidemics
 
     #### IC=1
     """
 
-    # if is_llc:
-    #     model_path_mpnn = './saved_models_optuna/model-epidemics-llc/epidemics_llc_2/0'
-    # else:
-    #     model_path_mpnn = './saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_12/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-epidemics-llc/epidemics_llc_2/0'
+    else:
+        # model_path_mpnn = './saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_12/0'
+        model_path_mpnn = "./saved_models_optuna/model-epidemics-mlp/epidemics_mlp_ode/0"
 
-    # post_process_mpnn(
-    #     config=epid_config,
-    #     model_path=model_path_mpnn,
-    #     test_set=EPID,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5",
-    #     model_type="LLC" if is_llc else "MPNN"
-    # )
+    post_process_mpnn(
+        config=epid_config,
+        model_path=model_path_mpnn,
+        test_set=EPID,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5",
+        model_type="LLC" if is_llc else "MPNN",
+        exploit_graph=exploit_graph
+    )
 
     """#### SNR"""
 
-    if is_llc:
-        model_paths = [
-            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_70db_3/0",
-            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_50db_3/0",
-            "./saved_models_optuna/model-epidemics-llc/epidemics_llc_20db_3/0"
-        ]
-    else:
-        model_paths = [
-            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-            "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
-        ]
+    # if is_llc:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-epidemics-llc/epidemics_llc_70db_3_denoise/0",
+    #         "./saved_models_optuna/model-epidemics-llc/epidemics_llc_50db_3_denoise/0",
+    #         "./saved_models_optuna/model-epidemics-llc/epidemics_llc_20db_3_denoise/0"
+    #     ]
+    # else:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+    #         "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+    #         "./saved_models_optuna/model-epidemics-mpnn/epidemics_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
+    #     ]
 
-    for model_path in model_paths:
-        print(model_path)
-        post_process_mpnn(
-            config=epid_config,
-            model_path=model_path,
-            test_set=EPID,
-            device='cuda',
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            model_type="LLC" if is_llc else "MPNN"
-        )
+    # for model_path in model_paths:
+    #     print(model_path)
+    #     post_process_mpnn(
+    #         config=epid_config,
+    #         model_path=model_path,
+    #         test_set=EPID,
+    #         device='cuda',
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         model_type="LLC" if is_llc else "MPNN"
+    #     )
 
     """### Population
 
     #### IC=1
     """
-    # if is_llc:
-    #     model_path_mpnn = './saved_models_optuna/model-population-llc/population_llc_2/0'
-    # else:
-    #     model_path_mpnn = './saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_12/0'
+    if is_llc:
+        model_path_mpnn = './saved_models_optuna/model-population-llc/population_llc_2/0'
+    else:
+        # model_path_mpnn = './saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_12/0'
+        model_path_mpnn = "./saved_models_optuna/model-population-mlp/population_mlp_ode/0"
 
-    # post_process_mpnn(
-    #     config=pop_config,
-    #     model_path=model_path_mpnn,
-    #     test_set=POP,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5",
-    #     model_type="LLC" if is_llc else "MPNN"
-    # )
+    post_process_mpnn(
+        config=pop_config,
+        model_path=model_path_mpnn,
+        test_set=POP,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5",
+        model_type="LLC" if is_llc else "MPNN",
+        exploit_graph=exploit_graph
+    )
 
     """#### SNR"""
 
-    if is_llc:
-        model_paths = [
-            "./saved_models_optuna/model-population-llc/population_llc_70db_3/0",
-            "./saved_models_optuna/model-population-llc/population_llc_50db_3/0",
-            "./saved_models_optuna/model-population-llc/population_llc_20db_3/0"
-        ]
-    else:
-        model_paths = [
-            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-            "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
-        ]
+    # if is_llc:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-population-llc/population_llc_70db_3_denoise/0",
+    #         "./saved_models_optuna/model-population-llc/population_llc_50db_3_denoise/0",
+    #         "./saved_models_optuna/model-population-llc/population_llc_20db_3_denoise/0"
+    #     ]
+    # else:
+    #     model_paths = [
+    #         "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_70db_2_denoise/0",
+    #         "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_50db_2_denoise/0",
+    #         "./saved_models_optuna/model-population-mpnn/population_mpnn_ic1_s5_pd_mult_noise_20db_2_denoise/0"
+    #     ]
 
-    for model_path in model_paths:
-        print(model_path)
-        post_process_mpnn(
-            config=pop_config,
-            model_path=model_path,
-            test_set=POP,
-            device='cuda',
-            sample_size=10000,
-            message_passing=False,
-            include_time=False,
-            atol=1e-5,
-            rtol=1e-5,
-            method="dopri5",
-            model_type="LLC" if is_llc else "MPNN"
-        )
+    # for model_path in model_paths:
+    #     print(model_path)
+    #     post_process_mpnn(
+    #         config=pop_config,
+    #         model_path=model_path,
+    #         test_set=POP,
+    #         device='cuda',
+    #         sample_size=10000,
+    #         message_passing=False,
+    #         include_time=False,
+    #         atol=1e-5,
+    #         rtol=1e-5,
+    #         method="dopri5",
+    #         model_type="LLC" if is_llc else "MPNN"
+    #     )

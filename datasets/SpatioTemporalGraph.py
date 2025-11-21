@@ -4,7 +4,7 @@ import torch
 import os
 from abc import ABC, abstractmethod
 from utils.utils import sample_irregularly_per_ics
-
+from copy import deepcopy
 
 def interp_points(raw_data, degree=3):
     raw_data_smoothed = []
@@ -77,6 +77,7 @@ class SpatioTemporalGraph(InMemoryDataset, ABC):
         assert (raw_data.size(0) == time.size(0)) and (raw_data.size(1) == time.size(1))
         
         if self.denoise:
+            self.raw_data_tmp = deepcopy(raw_data)
             raw_data = interp_points(raw_data, degree=3)
         
         if self.num_samples > 0:
