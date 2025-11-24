@@ -258,8 +258,8 @@ def integrate_test_set(graph, dynamics, seed=12345, device='cuda', input_range =
         y = data[1:],
         edge_index=edge_index,
         edge_attr=None,
-        t_span = t
-        # raw_data = data
+        t_span = t,
+        raw_data = data
     )
 
     return [snapshot]
@@ -527,7 +527,7 @@ def post_process_gkan(
     method='dopri5',
     adjoint=True,
     eval_model=True,
-    res_file_name = 'post_process_res_more_metrics_2.json',
+    res_file_name = 'post_process_res_more_metrics.json',
     compute_mult = True,
     grid_orig = None,
     skip_bb = False,
@@ -867,164 +867,163 @@ if __name__ == '__main__':
     
     """#### SNR"""
 
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_den_true_70db/0",
-    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_den_true_50db/0",
-    #     "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_den_true_20db/0"
-    # ]
+    model_paths_gkan = [
+        "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_den_true_70db/0",
+        "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_den_true_50db/0",
+        "./saved_models_optuna/model-biochemical-gkan/biochemical_gkan_den_true_20db/0"
+    ]
 
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
+    for model_path in model_paths_gkan:
+        print(model_path)
 
-    #     post_process_gkan(
-    #         config=bio_config,
-    #         model_path=model_path,
-    #         test_set=BIO,
-    #         device='cuda',
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True,
-    #         res_file_name = 'post_process_res_more_metrics_3.json'
-    #     )
+        post_process_gkan(
+            config=bio_config,
+            model_path=model_path,
+            test_set=BIO,
+            device='cuda',
+            sample_size=10000,
+            message_passing=False,
+            include_time=False,
+            atol=1e-5,
+            rtol=1e-5,
+            method="dopri5",
+            eval_model=True,
+            compute_mult=True
+        )
 
     """### Kuramoto
 
     #### IC=1
     """
 
-    # model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_no_fp_true/0"
 
-    # post_process_gkan(
-    #     config=kur_config,
-    #     model_path=model_path_gkan,
-    #     test_set=KUR,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
+    post_process_gkan(
+        config=kur_config,
+        model_path=model_path_gkan,
+        test_set=KUR,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5"
+    )
 
     # """#### SNR"""
 
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-    #     "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-    #     "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_ic1_s5_pd_mult_noise_20db_2_denoise/0",
-    # ]
+    model_paths_gkan = [
+        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_den_true_70db/0",
+        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_den_true_50db/0",
+        "./saved_models_optuna/model-kuramoto-gkan/kuramoto_gkan_den_true_20db/0",
+    ]
 
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
+    for model_path in model_paths_gkan:
+        print(model_path)
 
-    #     post_process_gkan(
-    #         config=kur_config,
-    #         model_path=model_path,
-    #         test_set=KUR,
-    #         device='cuda',
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True
-    #     )
+        post_process_gkan(
+            config=kur_config,
+            model_path=model_path,
+            test_set=KUR,
+            device='cuda',
+            sample_size=10000,
+            message_passing=False,
+            include_time=False,
+            atol=1e-5,
+            rtol=1e-5,
+            method="dopri5",
+            eval_model=True,
+            compute_mult=True
+        )
 
     """### Epidemics
 
     #### IC=1
     """
 
-    # model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_no_fp_true_2/0"
 
-    # post_process_gkan(
-    #     config=epid_config,
-    #     model_path=model_path_gkan,
-    #     test_set=EPID,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
+    post_process_gkan(
+        config=epid_config,
+        model_path=model_path_gkan,
+        test_set=EPID,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5"
+    )
 
     # """#### SNR"""
 
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-    #     "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_ic1_s5_pd_mult_noise_20db_2_denoise/0",
-    # ]
+    model_paths_gkan = [
+        "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_den_true_70db_2/0",
+        "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_den_true_50db_2/0",
+        "./saved_models_optuna/model-epidemics-gkan/epidemics_gkan_den_true_20db_2/0",
+    ]
 
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
-    #     post_process_gkan(
-    #         config=epid_config,
-    #         model_path=model_path,
-    #         test_set=EPID,
-    #         device='cuda',
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True
-    #     )
+    for model_path in model_paths_gkan:
+        print(model_path)
+        post_process_gkan(
+            config=epid_config,
+            model_path=model_path,
+            test_set=EPID,
+            device='cuda',
+            sample_size=10000,
+            message_passing=False,
+            include_time=False,
+            atol=1e-5,
+            rtol=1e-5,
+            method="dopri5",
+            eval_model=True,
+            compute_mult=True
+        )
 
     # """### Population
 
     # #### IC=1
     # """
 
-    # model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_12/0"
+    model_path_gkan = "./saved_models_optuna/model-population-gkan/population_gkan_no_fp_true/0"
 
-    # post_process_gkan(
-    #     config=pop_config,
-    #     model_path=model_path_gkan,
-    #     test_set=POP,
-    #     device='cuda',
-    #     sample_size=10000,
-    #     message_passing=False,
-    #     include_time=False,
-    #     atol=1e-5,
-    #     rtol=1e-5,
-    #     method="dopri5"
-    # )
+    post_process_gkan(
+        config=pop_config,
+        model_path=model_path_gkan,
+        test_set=POP,
+        device='cuda',
+        sample_size=10000,
+        message_passing=False,
+        include_time=False,
+        atol=1e-5,
+        rtol=1e-5,
+        method="dopri5"
+    )
     
 
-    # """#### SNR"""
+    """#### SNR"""
 
-    # model_paths_gkan = [
-    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_70db_2_denoise/0",
-    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_50db_2_denoise/0",
-    #     "./saved_models_optuna/model-population-gkan/population_gkan_ic1_s5_pd_mult_noise_20db_2_denoise/0",
-    # ]
+    model_paths_gkan = [
+        "./saved_models_optuna/model-population-gkan/population_gkan_den_true_70db/0",
+        "./saved_models_optuna/model-population-gkan/population_gkan_den_true_50db/0",
+        "./saved_models_optuna/model-population-gkan/population_gkan_den_true_20db/0",
+    ]
 
-    # for model_path in model_paths_gkan:
-    #     print(model_path)
-    #     post_process_gkan(
-    #         config=pop_config,
-    #         model_path=model_path,
-    #         test_set=POP,
-    #         device='cuda',
-    #         sample_size=10000,
-    #         message_passing=False,
-    #         include_time=False,
-    #         atol=1e-5,
-    #         rtol=1e-5,
-    #         method="dopri5",
-    #         eval_model=True,
-    #         compute_mult=True
-    #     )
+    for model_path in model_paths_gkan:
+        print(model_path)
+        post_process_gkan(
+            config=pop_config,
+            model_path=model_path,
+            test_set=POP,
+            device='cuda',
+            sample_size=10000,
+            message_passing=False,
+            include_time=False,
+            atol=1e-5,
+            rtol=1e-5,
+            method="dopri5",
+            eval_model=True,
+            compute_mult=True
+        )
