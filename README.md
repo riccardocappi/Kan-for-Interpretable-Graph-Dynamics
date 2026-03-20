@@ -1,4 +1,4 @@
-# GKAN-ODE
+# Discovering Generalizable Governing Equations for Graph Dynamical Systems with Interpretable Neural Networks
 
 ## Code organization
 The pipeline logic is described by the `Experiments` class and it includes three components:
