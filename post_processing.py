@@ -32,6 +32,7 @@ from train_and_eval import get_pred_batch
 import sympytorch
 import itertools
 from sklearn.metrics import mean_absolute_error, mean_squared_error, root_mean_squared_error
+import pickle
 
 storage = JournalStorage(JournalFileBackend("optuna_journal_storage.log"))
 
@@ -73,7 +74,7 @@ from sympy import latex
 from torch.utils.data import DataLoader
 
 def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e-5, integration_method = 'scipy_solver',
-              eval=True, options = {}, all_t = False, exploit_graph=True):
+              eval=True, options = {}, all_t = False, exploit_graph=True, pred_deriv=False):
     conv = MPNN(
         g_net = g,
         h_net = h,
@@ -91,7 +92,8 @@ def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e
             atol=atol,
             rtol=rtol,
             options = options,
-            all_t=all_t
+            all_t=all_t,
+            predict_deriv=pred_deriv
         )
     else:
         symb = MLP_ODE(
@@ -102,7 +104,8 @@ def get_model(g, h, message_passing=True, include_time=False, atol=1e-5, rtol=1e
             atol=atol,
             rtol=rtol,
             options = options,
-            all_t=all_t
+            all_t=all_t,
+            predict_deriv=pred_deriv
         )
 
     if eval:
@@ -218,6 +221,15 @@ def get_test_set(dynamics, device='cuda', input_range=(0, 1), t_span = (0, 1), *
         nx.watts_strogatz_graph(50, 6, 0.3, seed=seeds[1]),
         nx.erdos_renyi_graph(100, 0.05, seed=seeds[2])
     ]
+    
+    save_dir = "./data_test_set"
+    os.makedirs(save_dir, exist_ok=True)
+    fpath = os.path.join(save_dir, f"{dynamics}.pkl")
+
+    if os.path.exists(fpath):
+        print(f"Loading test set from {fpath}")
+        with open(fpath, 'rb') as f:
+            return pickle.load(f)
 
     test_set = []
     for i, graph in enumerate(graphs):
@@ -232,6 +244,9 @@ def get_test_set(dynamics, device='cuda', input_range=(0, 1), t_span = (0, 1), *
         )
         test_set.append(snapshots)
 
+    with open(fpath, 'wb') as f:
+        pickle.dump(test_set, f)
+    
     return test_set
 
 

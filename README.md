@@ -1,154 +1,190 @@
 # Discovering Generalizable Governing Equations for Graph Dynamical Systems with Interpretable Neural Networks
 
-## Code organization
-The pipeline logic is described by the `Experiments` class and it includes three components:
-- Pre-processing.
-- Model selection with `optuna`.
-- Saving best model checkpoint to file
+This repository contains the code used to train and evaluate Kolmogorov-Arnold Network (KAN) based models for learning the governing equations of graph dynamical systems, and to recover interpretable, symbolic closed-form expressions from the trained models.
 
-`Experiments` is an abstract class and defines some abstract methods that each specific experiment class must implement. In particular, each sub-class of `Experiments` must specify how to pre process data and how to construct the current model, given an `optuna` trial. For example, the `ExperimentsGKAN` class defines the experiments pipeline for the GKAN-ODE models. It implements the `get_model_opt` abstract method by constructing a GKAN model with the parameters returned by the current optuna trial.
+## Table of contents
+- [Installation](#installation)
+- [Project structure](#project-structure)
+- [Running experiments](#running-experiments)
+- [Config specification](#config-specification)
+- [Results](#results)
+
+## Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/riccardocappi/Kan-for-Interpretable-Graph-Dynamics.git
+cd Kan-for-Interpretable-Graph-Dynamics
 ```
+
+### 2. Install the dependencies
+
+All required dependencies are installed via the provided `install.sh` script. It is recommended to run it inside a fresh virtual environment (e.g. `venv` or `conda`):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+
+bash install.sh
+```
+
+The script installs PyTorch 2.3.1 with CUDA 11.8 support, PyTorch Geometric and its companion packages (`torch-scatter`, `torch-sparse`), and the remaining Python dependencies (`optuna`, `torchdiffeq`, `pysr`, `tsl`, `sympytorch`, etc.). If you need a different PyTorch/CUDA combination, edit the `PYTORCH_VERSION` and the `--index-url` in `install.sh` before running it.
+
+## Project structure
+
+```
+.
+├── main.py                  # Entry point: parses CLI args and launches an experiment
+├── install.sh                # Installs all project dependencies
+├── configs/                   # YAML configuration files for each experiment/dynamics
+├── experiments/                # Experiment pipelines (pre-processing, model selection, checkpointing)
+│   ├── Experiments.py            # Abstract base class defining the experiment pipeline
+│   ├── experiments_gkan.py        # Pipeline for GKAN-ODE models
+│   ├── experiments_mpnn.py        # Pipeline for MPNN-ODE models
+│   ├── experiments_llc.py         # Pipeline for LLC models
+│   └── experiments_mlp.py         # Pipeline for MLP-ODE models
+├── models/                    # Model definitions
+│   ├── GKAN_ODE.py               # GKAN-ODE model
+│   ├── kan/                      # KAN and KAN-layer implementations
+│   ├── baseline/                  # Baseline models (MPNN, LLC, MLP)
+│   └── utils/                     # Shared building blocks (MPNN layer, MLP, ODEBlock)
+├── datasets/                  # Synthetic and real-world dataset generation utilities
+│   ├── SyntheticData.py           # Generates synthetic trajectories via scipy's solve_ivp
+│   ├── RealEpidemics.py           # Loaders for real-world epidemic datasets
+│   ├── SpatioTemporalGraph.py     # Graph/spatio-temporal data structures
+│   └── data_utils.py              # Library of governing-equation/dynamics functions
+├── utils/                     # General utilities (config loading, curve fitting, ...)
+├── train_and_eval.py           # Training loop, evaluation and early stopping logic
+├── post_processing*.py         # Post-processing scripts (symbolic regression, metrics, plots)
+```
+
+## Running experiments
+
+Experiments are orchestrated by the `Experiments` abstract class, which implements a three-stage pipeline:
+1. **Pre-processing** – generates (or loads) the dataset for the selected dynamics.
+2. **Model selection** – searches the hyper-parameter space with [Optuna](https://optuna.org/).
+3. **Checkpointing** – saves the best model found, along with any cached data needed for downstream symbolic regression.
+
+Each concrete subclass of `Experiments` (e.g. `ExperimentsGKAN`, `ExperimentsMPNN`, `ExperimentsLLC`, `ExperimentsMLP`) only needs to specify:
+- how to pre-process the data, and
+- how to build the model for a given Optuna `trial`.
+
+For example, `ExperimentsGKAN.get_model_opt` builds a GKAN-ODE model from the parameters sampled by the current trial:
+
+```python
 def get_model_opt(self, trial):
     ...
     g_net = KAN(**g_net_config)
-    h_net = KAN(**h_net_config)        
-    
+    h_net = KAN(**h_net_config)
+
     conv = MPNN(
         h_net=h_net,
         g_net=g_net,
         message_passing=self.config.get("message_passing", True),
         include_time=self.config.get("include_time", True)
     )
-    
+
     model = GKAN_ODE(
-        conv = conv,
-        model_path = f"{self.model_path}/gkan",
+        conv=conv,
+        model_path=f"{self.model_path}/gkan",
         adjoint=self.config.get('adjoint', False),
         integration_method=self.integration_method,
         lmbd_g=lamb_g,
         lmbd_h=lamb_h,
-        atol=self.config.get('atol', 1e-6), 
+        atol=self.config.get('atol', 1e-6),
         rtol=self.config.get('rtol', 1e-3),
         predict_deriv=self.predict_deriv
     )
 
-    model = model.to(torch.device(self.device))
-        
-    return model
-
-
-```
-Note that the returned model must be instance of `ODEBlock`. This class integrates its Message Passing Neural Network using `torchdiffeq`. 
-
-`ODEBlock` provides the general structure that each implemented model must follow in order to properly work with the Experiments pipeline. In particular, each model must implement the following three methods:
-- regularization_loss: Computes the regularization loss (e.g. L1 norm of model's weights. Can be also 0. for non-KAN-based models). This function is called during the training process in the `fit` method defined in `train_and_eval.py`.
-
-- save_cached_data: This function is called in the post-processing step of `Experiments`, when saving model checkpoint. Here you should save to file model's outputs and inputs that can be used later for symbolic regression. 
-
-- reset_params: reset the parameters of the model. This function is called to reset model's weights after each run in the `objective` function of the `Experiments` class.
-
-To generate datasets, we use the `scipy` numerical integrator `solve_ivp`. The list of considered dynamics can be found in the `data_utils.py` file. The code to generate the datasets can be found instead in the `SyntheticData` class.
-
-## Usage
-An experiment can be run with different arguments:
-- `--config`: The path to the .yml file that specifies the configuration of the experiment
-
-- `--method`: The optuna searching method. It can be "optuna" or "grid_search". If "optuna" is selected, the `TPESampler` is used to sample from the hyper-parameters space. Default is "optuna"
-
-- `--n_trials`: Number of optuna trials. Note that if grid_search method is specified, this argument will be ignored, and will be executed as many trials as the number of combinations of the hyper-parameter grid.
-
-- `--study_name`: Name of the optuna study
-
-- `--process_id`: Id of the current process. Each process id has its own folder in which optuna logs are saved. Each parallel process on the same study should have a unique process_id.
-
-Examples:
-```
-python main.py --config=./configs/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
-```
-To run multiple parallel processes is sufficient to execute the main file multiple times, with different process_id:
-
-```
-python main.py --config=./configs/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
-python main.py --config=./configs/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=1
+    return model.to(torch.device(self.device))
 ```
 
-These processes share the same optuna study, which is stored inside a SQLite DB named "sqlite:///optuna_study.db". The actual name of each optuna study is composed of two strings: The `model_name` argument specified in the config.yml file, and the `--study_name` argument. For example, if I specify `model_name: 'model-kuramoto-gkan'` and `--study_name = kuramoto`, the final study name will be 'model-kuramoto-gkan-kuramoto'. Therefore, two processes share the same optuna study if they specify the same `model_name` and the same `--study_name`.
+The returned model must be an instance of `ODEBlock`, which integrates the underlying message-passing neural network with `torchdiffeq` and defines the interface expected by the `Experiments` pipeline. Concretely, every model must implement:
+- **`regularization_loss`** – the regularization term added to the training loss (e.g. the L1 norm of the model's weights; `0.` for non-KAN-based models). Called from `fit` in `train_and_eval.py`.
+- **`save_cached_data`** – called during post-processing to persist the model's inputs/outputs for later symbolic regression.
+- **`reset_params`** – resets the model's weights; called before each new run inside `Experiments.objective`.
 
-When an Experiment is run, it creates a folder with the following structure:
+Datasets are generated with `scipy`'s `solve_ivp` integrator. The available governing equations/dynamics are listed in [datasets/data_utils.py](datasets/data_utils.py), and dataset generation itself is implemented in the `SyntheticData` class.
+
+### Command-line arguments
+
+| Argument | Description | Default |
+|---|---|---|
+| `--config` | Path to the `.yml` file describing the experiment | `./configs/config_kuramoto.yml` |
+| `--method` | Hyper-parameter search method: `optuna` or `grid_search`. With `optuna`, sampling uses the `TPESampler` | `optuna` |
+| `--n_trials` | Number of Optuna trials. Ignored when `--method=grid_search`, in which case every combination in the hyper-parameter grid is run | `10` |
+| `--study_name` | Name of the Optuna study | `example` |
+| `--process_id` | Id of the current process. Each process writes its logs to its own folder, so parallel processes sharing a study must use distinct ids | `0` |
+
+### Example
+
+```bash
+python main.py --config=./configs/config_pred_deriv/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
+```
+
+To run several parallel processes on the same study, launch `main.py` multiple times with different `--process_id` values:
+
+```bash
+python main.py --config=./configs/config_pred_deriv/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=0
+python main.py --config=./configs/config_pred_deriv/config_ic1/config_kuramoto.yml --method=optuna --n_trials=30 --study_name=kuramoto --process_id=1
+```
+
+These processes share the same Optuna study, backed by a Optuna storage system. The full study name is the concatenation of the `model_name` field in the config file and the `--study_name` CLI argument. For instance, `model_name: 'model-kuramoto-gkan'` together with `--study_name=kuramoto` produces the study name `model-kuramoto-gkan-kuramoto`. Two processes therefore share a study only if both `model_name` and `--study_name` match.
+
+Running an experiment creates the following output structure:
 
 ```
-___ saved_models_optuna
-    |___ model_name
-        |___ study_name
-            |___ process_id
-                |___ optuna_logs
+saved_models_optuna/
+└── model_name/
+    └── study_name/
+        └── process_id/
+            └── optuna_logs/
 ```
 
 ## Config specification
-The config.yml file should contain the specifics of the experiment. It is divided in two parts.
-### General arguments for setting up the experiment
-The first set of arguments that must be present in the config file is the following:
-- `name`: Name of the dynamics
-- `model_name`: Name of the model
-- `model_type`: It can be "MPNN" or "GKAN"
-- `epochs`: Number of epochs
-- `patience`: Patience for early stopping
-- `opt`: Optimizer. It can be "Adam" or "LBFGS"
-- `log`: How often to save logs to file
-- `t_span`: Time span of the numerical integrator when generating the datasets
-- `t_eval_steps`: Number of generated time steps of the dataset
-- `seed`: Seed for replicate data generation
-- `pytorch_seed`: Seed for pytorch
-- `device`: Device. It can be "cpu" or "cuda"
-- `input_range`: Input range for node features
-- `in_dim`: Dimensionality of input feature matrix
-- `n_iter`: Number of initial conditions
-- `integration_kwargs`: Any additional argument to pass to the specified dynamics function.
-- `R`: Number of training runs for each combination of hyper-parameters.
-- `atol`:   
-  Absolute tolerance used by the numerical integrator
 
-- `rtol`: 
-  Relative tolerance for the numerical integrator.
+The `.yml` config file passed via `--config` fully describes an experiment and is organized into two sections.
 
-- `adjoint`:
-  Whether to use the adjoint sensitivity method
+### General experiment arguments
 
-- `include_time`: 
-  If `True`, includes the time variable as part of the input features
-
-
-- `preprocess_data`: 
-  If `True`, applies preprocessing steps
-
-- `stride`: stride of sliding windows
-
-- `storage`:  
-  Specifies the storage type or location for experiment results.
-
-- `save_cache_data`:
-  Whether to save final results for symbolic regression
-
-
-- `data_folder`: 
-  Path to the folder where the dataset is stored or will be saved after generation.
-
-- `criterion`: *(str)*  
-  Loss function used for training. Common options include `"MAE"` (Mean Absolute Error) or `"MSE"` (Mean Squared Error).
-
-- `method`: *(str)*  
-  ODE integration method used by the solver. `"dopri5"` is a Runge-Kutta method.
-
+| Key | Description |
+|---|---|
+| `name` | Name of the dynamics |
+| `model_name` | Name of the model |
+| `model_type` | `"MPNN"`, `"GKAN"`, `"LLC"`, or `"MLP"` |
+| `epochs` | Number of training epochs |
+| `patience` | Patience for early stopping |
+| `opt` | Optimizer: `"Adam"` or `"LBFGS"` |
+| `log` | Frequency (in epochs) at which logs are saved to file |
+| `t_span` | Time span of the numerical integrator used to generate the datasets |
+| `t_eval_steps` | Number of generated time steps in the dataset |
+| `seed` | Seed for data generation |
+| `pytorch_seed` | Seed for PyTorch |
+| `device` | `"cpu"` or `"cuda"` |
+| `input_range` | Input range for node features |
+| `in_dim` | Dimensionality of the input feature matrix |
+| `n_iter` | Number of initial conditions |
+| `integration_kwargs` | Additional keyword arguments passed to the dynamics function |
+| `R` | Number of training runs per hyper-parameter combination |
+| `atol` | Absolute tolerance of the numerical integrator |
+| `rtol` | Relative tolerance of the numerical integrator |
+| `adjoint` | Whether to use the adjoint sensitivity method |
+| `include_time` | If `True`, includes time as an input feature |
+| `preprocess_data` | If `True`, applies preprocessing steps |
+| `stride` | Stride of the sliding window |
+| `storage` | Storage backend/location for experiment results |
+| `save_cache_data` | Whether to save the final results needed for symbolic regression |
+| `data_folder` | Path to the folder where the dataset is stored/generated |
+| `criterion` | Training loss: `"MAE"` or `"MSE"` |
+| `method` | ODE solver integration method (e.g. `"dopri5"`, a Runge-Kutta method) |
 
 ### Hyper-parameter search space
-The search space of the hyper-parameters. Mandatory hyper-parameters are:
-- `lr`: Learning rate
-- `batch_size`: Batch size
 
-The search space dictionary can be accessed in the Experiment class with `self.search_space`
-
+The second section defines the hyper-parameter search space, accessible at runtime via `self.search_space` on the `Experiments` instance. The mandatory hyper-parameters are:
+- `lr` – learning rate
+- `batch_size` – batch size
 
 ## Results
-IMPORTANT!! ALL the post processing files, won't run since they need to upload the saved results from the experiments. Unfortunately, such files were to heavy to be uploaded for submission. Hence, if you want to replicate the plots and post process results, you will need to run from scratch all the experiments and modify file paths in the notebook cells and python files.
 
-
+> **Note:** the post-processing scripts/notebooks in this repository will **not** run out of the box, since they expect the saved outputs of a full experiment run, which were too large to include in this submission. To reproduce the plots and post-processed results, run the experiments from scratch and update the relevant file paths in the notebooks and Python scripts accordingly.
