@@ -20,23 +20,23 @@ cd Kan-for-Interpretable-Graph-Dynamics
 
 ### 2. Install the dependencies
 
-All required dependencies are installed via the provided `install.sh` script. It is recommended to run it inside a fresh virtual environment (e.g. `venv` or `conda`):
+Create a conda environment with Python 3.12 and install the pinned dependencies from `requirements.txt` with pip:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+conda create -n myenv python=3.12.0
+conda activate myenv
 
-bash install.sh
+pip install -r requirements.txt
 ```
 
-The script installs PyTorch 2.3.1 with CUDA 11.8 support, PyTorch Geometric and its companion packages (`torch-scatter`, `torch-sparse`), and the remaining Python dependencies (`optuna`, `torchdiffeq`, `pysr`, `tsl`, `sympytorch`, etc.). If you need a different PyTorch/CUDA combination, edit the `PYTORCH_VERSION` and the `--index-url` in `install.sh` before running it.
+`requirements.txt` pins PyTorch 2.3.1 with CUDA 11.8 support, PyTorch Geometric and its companion packages (`torch-scatter`, `torch-sparse`), and the remaining Python dependencies (`optuna`, `torchdiffeq`, `pysr`, `tsl`, `sympytorch`, etc.), matching the environment the repository was developed and tested with. If you need a different PyTorch/CUDA combination (or a CPU-only install), edit the `--extra-index-url`/`--find-links` lines and the `torch`/`torch_scatter`/`torch_sparse` versions at the top of `requirements.txt` accordingly — see the [PyTorch](https://pytorch.org/get-started/locally/) and [PyG wheel](https://data.pyg.org/whl/) install pages.
 
 ## Project structure
 
 ```
 .
 ├── main.py                  # Entry point: parses CLI args and launches an experiment
-├── install.sh                # Installs all project dependencies
+├── requirements.txt           # Pinned Python dependencies (install via pip)
 ├── configs/                   # YAML configuration files for each experiment/dynamics
 ├── experiments/                # Experiment pipelines (pre-processing, model selection, checkpointing)
 │   ├── Experiments.py            # Abstract base class defining the experiment pipeline
