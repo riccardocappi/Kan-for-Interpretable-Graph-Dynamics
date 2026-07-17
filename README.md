@@ -1,6 +1,19 @@
 # Discovering Generalizable Governing Equations for Graph Dynamical Systems with Interpretable Neural Networks
 
-This repository contains the code used to train and evaluate Kolmogorov-Arnold Network (KAN) based models for learning the governing equations of graph dynamical systems, and to recover interpretable, symbolic closed-form expressions from the trained models.
+If you use this code in your research, please cite our paper:
+
+```bibtex
+@article{
+cappi2026discovering,
+title={Discovering Generalizable Governing Equations for Graph Dynamical Systems with Interpretable Neural Networks},
+author={Riccardo Cappi and Paolo Frazzetto and Nicol{\`o} Navarin and Alessandro Sperduti},
+journal={Transactions on Machine Learning Research},
+issn={2835-8856},
+year={2026},
+url={https://openreview.net/forum?id=a2mPNSSAYL},
+note={}
+}
+```
 
 ## Table of contents
 - [Installation](#installation)
